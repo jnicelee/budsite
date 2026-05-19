@@ -15,6 +15,7 @@ import {
   Medal,
   Menu,
   Sparkles,
+  Trash2,
   Trophy,
   Users,
   X,
@@ -427,6 +428,12 @@ async function updateMembershipRequestStatus(id, status, reason) {
   if (error) console.error("Supabase membership request review failed", error);
 }
 
+async function deleteMembershipRequest(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("membership_requests").delete().eq("id", id);
+  if (error) console.error("Supabase membership request delete failed", error);
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -813,6 +820,13 @@ function JoinPage({ auth }) {
     setReviewReasons((current) => ({ ...current, [id]: "" }));
   };
 
+  const removeMembershipRequest = (id) => {
+    const nextRequests = requests.filter((request) => request.id !== id);
+    setRequests(nextRequests);
+    saveStoredMembershipRequests(nextRequests);
+    deleteMembershipRequest(id);
+  };
+
   return (
     <Page>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -901,7 +915,15 @@ function JoinPage({ auth }) {
             {requests.map((request) => {
               const hasDecision = request.status === "Accepted" || request.status === "Denied";
               return (
-                <div key={request.id} className={`grid gap-4 border p-5 lg:grid-cols-[1fr_0.95fr] ${hasDecision ? "border-[#c9c2bc] bg-[#ece8e4] opacity-85" : "border-[#ded8d2] bg-white"}`}>
+                <div key={request.id} className={`relative grid gap-4 border p-5 pr-14 lg:grid-cols-[1fr_0.95fr] ${hasDecision ? "border-[#a9a29c] bg-[#d4d0cc] opacity-90" : "border-[#ded8d2] bg-white"}`}>
+                  <button
+                    type="button"
+                    onClick={() => removeMembershipRequest(request.id)}
+                    aria-label={`Delete request from ${request.name}`}
+                    className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center border border-[#bdb6b0] bg-white/80 text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-xl font-black text-[#2D2926]">{request.name}</h3>
