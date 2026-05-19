@@ -37,6 +37,7 @@ const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
 const SECONDARY_EBOARD_EMAIL = "iankim6488@gmail.com";
 const MASTER_EBOARD_PASSWORD = "computa";
 const ADMIN_ROLE = "admin";
+const MEMBER_MANAGER_EMAILS = ["joshml@bu.edu", "njsaxena@bu.edu"];
 
 const navItems = [
   { label: "About", href: "/about" },
@@ -1653,9 +1654,11 @@ function PrivateHubPage({ auth, onLogout }) {
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
 
   const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
+  const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEdit = isAdmin;
-  const visibleTab = isEboard ? activeTab : "member";
+  const canUsePrivateTabs = isEboard || canManageMembers;
+  const visibleTab = canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
   const approvedBudgetRows = budget.rows.filter((row) => row.status === "Approved");
@@ -1703,12 +1706,12 @@ function PrivateHubPage({ auth, onLogout }) {
       saveStoredMemberAccounts(databaseAccounts);
     }
 
-    if (isAdmin) hydrateMemberAccounts();
+    if (canManageMembers) hydrateMemberAccounts();
 
     return () => {
       ignore = true;
     };
-  }, [isAdmin]);
+  }, [canManageMembers]);
 
   if (!auth) {
     return (
@@ -1905,7 +1908,7 @@ function PrivateHubPage({ auth, onLogout }) {
   };
 
   const updateMemberStatus = (id, role) => {
-    if (!isAdmin) return;
+    if (!canManageMembers) return;
     const nextAccounts = memberAccounts.map((account) => (
       account.id === id ? { ...account, role, updated_at: new Date().toISOString() } : account
     ));
@@ -1915,7 +1918,7 @@ function PrivateHubPage({ auth, onLogout }) {
   };
 
   const revokeMember = (id) => {
-    if (!isAdmin) return;
+    if (!canManageMembers) return;
     const nextAccounts = memberAccounts.map((account) => (
       account.id === id ? { ...account, status: "revoked", updated_at: new Date().toISOString() } : account
     ));
@@ -1937,6 +1940,11 @@ function PrivateHubPage({ auth, onLogout }) {
             {isAdmin && (
               <span className="bg-[#2D2926] px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-white">
                 Administrator
+              </span>
+            )}
+            {!isAdmin && canManageMembers && (
+              <span className="bg-[#CC0000] px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-white">
+                Member Manager
               </span>
             )}
             <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
@@ -1966,7 +1974,7 @@ function PrivateHubPage({ auth, onLogout }) {
             E-Board Workspace
           </button>
         )}
-        {isAdmin && (
+        {canManageMembers && (
           <button
             type="button"
             onClick={() => setActiveTab("members")}
@@ -2052,11 +2060,11 @@ function PrivateHubPage({ auth, onLogout }) {
         </div>
       )}
 
-      {visibleTab === "members" && isAdmin && (
+      {visibleTab === "members" && canManageMembers && (
         <Card className="p-5">
           <div className="flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <Eyebrow>Administrator</Eyebrow>
+              <Eyebrow>{isAdmin ? "Administrator" : "Member Manager"}</Eyebrow>
               <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Member Accounts</h2>
               <p className="mt-2 text-sm leading-6 text-[#5b5450]">Change account status between member and e-board, or revoke membership access.</p>
             </div>
