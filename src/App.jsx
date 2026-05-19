@@ -1008,7 +1008,8 @@ function MeetingsPage({ auth }) {
             Meeting notes, organized like a team record.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">
-            Don't worry! Secretary records the meetings in case you miss one. Organized newest first, so decisions and updates stay easy to browse.
+            <span className="block">Don't worry! Secretary records the meetings in case you miss one.</span>
+            <span className="block">Organized newest first, so decisions and updates stay easy to browse.</span>
           </p>
         </div>
         <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-8 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:p-10">
