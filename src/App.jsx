@@ -243,18 +243,6 @@ function saveStoredNotes(notes) {
   window.localStorage.setItem(EBOARD_NOTES_STORAGE_KEY, JSON.stringify(notes));
 }
 
-function mergeNotes(databaseNotes, fallbackNotes) {
-  const notesById = new Map();
-  [...fallbackNotes, ...databaseNotes].forEach((note) => {
-    if (!note?.id) return;
-    notesById.set(note.id, { ...notesById.get(note.id), ...note });
-  });
-  return [...notesById.values()].sort((a, b) => {
-    const dateCompare = (b.date || "").localeCompare(a.date || "");
-    return dateCompare || (b.id || "").localeCompare(a.id || "");
-  });
-}
-
 function getStoredAgenda() {
   try {
     const stored = window.localStorage.getItem(EBOARD_AGENDA_STORAGE_KEY);
@@ -410,7 +398,7 @@ async function loadDatabaseState() {
 
   return {
     agenda: agendaResult.data.length > 0 ? normalizeAgendaItems(agendaResult.data) : normalizeAgendaItems(agendaItems),
-    notes: mergeNotes(notesResult.data, getStoredNotes()),
+    notes: notesResult.data,
     budget: {
       total: Number(budgetSettingsResult.data?.total) || 5750,
       rows: budgetRowsResult.data.length > 0
@@ -980,9 +968,8 @@ function MeetingsPage({ auth }) {
         return;
       }
       if (ignore) return;
-      const mergedNotes = mergeNotes(data || [], getStoredNotes());
-      setMeetingPosts(mergedNotes);
-      saveStoredNotes(mergedNotes);
+      setMeetingPosts(data || []);
+      saveStoredNotes(data || []);
     }
 
     hydrateMeetingPosts();
