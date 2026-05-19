@@ -830,21 +830,31 @@ function JoinPage({ auth }) {
   return (
     <Page>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="bg-[#CC0000] p-8 text-left text-white md:p-10">
-          <Eyebrow light>Join BUDS</Eyebrow>
-          <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight md:text-5xl">
-            Request membership in the Boston University Debate Society.
-          </h1>
-          <p className="mt-5 text-lg leading-8 text-white/88">
-            Tell us who you are and why you want to join. New requests appear in the administrator review section for approval or denial with a reason.
-          </p>
-          <div className="mt-8 border border-white/35 bg-white/10 p-5">
-            <p className="font-black uppercase tracking-[0.12em] text-white">Practice</p>
-            <p className="mt-3 text-sm leading-6 text-white/90">Mondays and Wednesdays, 7-8 PM in SAR 101.</p>
+        <div className="flex min-h-[34rem] flex-col justify-between border border-[#9a0000] bg-[#CC0000] p-8 text-left text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)] md:p-10">
+          <div>
+            <span className="inline-flex bg-[#2D2926] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
+              Join BUDS
+            </span>
+            <h1 className="mt-8 max-w-xl text-4xl font-black leading-tight tracking-tight text-white md:text-5xl">
+              Request membership in the Boston University Debate Society.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/90">
+              Send a quick request with your BU email. Administrators can review new members, accept or deny requests, and leave a decision reason.
+            </p>
           </div>
-        </Card>
+          <div className="mt-10 grid gap-4 border border-white/40 bg-white p-6 text-[#2D2926]">
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-1 shrink-0 text-[#CC0000]" />
+              <div>
+                <p className="font-black uppercase tracking-[0.12em] text-[#CC0000]">Practice</p>
+                <p className="mt-2 text-base font-bold leading-7 text-[#2D2926]">Mondays and Wednesdays, 7-8 PM</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-[#5b5450]">SAR 101. Beginners are welcome.</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Card className="p-8 md:p-10">
+        <Card className="border-t-8 border-t-[#CC0000] p-8 md:p-10">
           <Eyebrow>Membership Request</Eyebrow>
           <form onSubmit={submitMembershipRequest} className="mt-6 grid gap-5">
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
