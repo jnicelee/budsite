@@ -923,7 +923,12 @@ function PrivateHubPage({ auth, onLogout }) {
           <h1 className="mt-1 text-2xl font-black tracking-tight text-[#2D2926] md:text-3xl">
             {isEboard ? "E-Board Workspace" : "Member Resources"}
           </h1>
-          <p className="mt-1 text-xs font-semibold text-[#6d6560]">{auth.email}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold text-[#6d6560]">{auth.email}</p>
+            <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
+              {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
+            </span>
+          </div>
         </div>
         <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
           Log out <LogOut size={16} />
