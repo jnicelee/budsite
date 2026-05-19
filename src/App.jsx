@@ -603,6 +603,24 @@ async function revokeMemberAccount(id) {
   if (error) console.error("Supabase member revoke failed", error);
 }
 
+async function unrevokeMemberAccount(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("member_accounts")
+    .update({ status: "active", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) console.error("Supabase member unrevoke failed", error);
+}
+
+async function deleteMemberAccount(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("member_accounts")
+    .delete()
+    .eq("id", id);
+  if (error) console.error("Supabase member delete failed", error);
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -2048,6 +2066,25 @@ function PrivateHubPage({ auth, onLogout }) {
     revokeMemberAccount(id);
   };
 
+  const unrevokeMember = (id) => {
+    if (!canManageMembers) return;
+    const nextAccounts = memberAccounts.map((account) => (
+      account.id === id ? { ...account, status: "active", updated_at: new Date().toISOString() } : account
+    ));
+    setMemberAccounts(nextAccounts);
+    saveStoredMemberAccounts(nextAccounts);
+    unrevokeMemberAccount(id);
+  };
+
+  const deleteMember = (account) => {
+    if (!canManageMembers) return;
+    if (!window.confirm(`Are you sure? Delete ${account.name || account.email} from the members list?`)) return;
+    const nextAccounts = memberAccounts.filter((memberAccount) => memberAccount.id !== account.id);
+    setMemberAccounts(nextAccounts);
+    saveStoredMemberAccounts(nextAccounts);
+    deleteMemberAccount(account.id);
+  };
+
   return (
     <Page className={isEboard ? "max-w-[98rem] py-4 md:py-5" : ""}>
       <div className="mb-3 flex flex-col gap-3 border-b-4 border-[#CC0000] bg-white p-3 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:flex-row md:items-center md:justify-between">
@@ -2231,14 +2268,34 @@ function PrivateHubPage({ auth, onLogout }) {
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => revokeMember(account.id)}
-                        disabled={account.status === "revoked"}
-                        className="inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:bg-[#8f8781]"
-                      >
-                        Revoke
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {account.status === "revoked" ? (
+                          <button
+                            type="button"
+                            onClick={() => unrevokeMember(account.id)}
+                            className="inline-flex items-center gap-2 bg-[#2D2926] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#48423e]"
+                          >
+                            Unrevoke
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => revokeMember(account.id)}
+                            className="inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#a90000]"
+                          >
+                            Revoke
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => deleteMember(account)}
+                          className="grid h-9 w-9 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
+                          aria-label={`Delete ${account.name || account.email}`}
+                          title="Delete member"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
