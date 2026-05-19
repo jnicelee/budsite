@@ -742,6 +742,7 @@ function JoinPage({ auth }) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
+  const [submitMessageType, setSubmitMessageType] = useState("success");
   const [reviewReasons, setReviewReasons] = useState({});
   const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
 
@@ -768,6 +769,7 @@ function JoinPage({ auth }) {
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
 
     if (!isBuEmail) {
+      setSubmitMessageType("error");
       setSubmitMessage("Please use a BU email address ending in bu.edu.");
       return;
     }
@@ -789,11 +791,12 @@ function JoinPage({ auth }) {
     setName("");
     setEmail("");
     setMessage("");
+    setSubmitMessageType("success");
     setSubmitMessage("Request sent. An administrator can review it from this page.");
   };
 
   const reviewMembershipRequest = (id, status) => {
-    const reason = reviewReasons[id]?.trim();
+    const reason = reviewReasons[id]?.trim() || (status === "Accepted" ? "Welcome to BUDS!" : "");
     if (!reason) {
       setReviewReasons((current) => ({ ...current, [id]: "Please add a reason before deciding." }));
       return;
@@ -852,16 +855,27 @@ function JoinPage({ auth }) {
               />
             </label>
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-              Why do you want to join?
+              <span>
+                Why do you want to join? <span className="text-xs font-bold text-[#9b948e]">Optional</span>
+              </span>
               <textarea
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={5}
-                required
+                placeholder="Share anything you want us to know."
                 className="resize-none border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
               />
             </label>
-            {submitMessage && <p className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">{submitMessage}</p>}
+            {submitMessage && (
+              <p className={`border-l-4 px-4 py-3 text-sm font-bold ${
+                submitMessageType === "success"
+                  ? "border-[#0b6b35] bg-[#e5f7ec] text-[#0b6b35]"
+                  : "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
+              }`}
+              >
+                {submitMessage}
+              </p>
+            )}
             <button type="submit" className="inline-flex items-center justify-center gap-2 bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
               Submit request <ArrowRight size={16} />
             </button>
@@ -894,7 +908,7 @@ function JoinPage({ auth }) {
                     </span>
                   </div>
                   <p className="mt-1 text-sm font-semibold text-[#6d6560]">{request.email}</p>
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message}</p>
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message || "No optional note added."}</p>
                   {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
                 </div>
                 <div className="grid gap-3">
@@ -904,7 +918,7 @@ function JoinPage({ auth }) {
                       value={reviewReasons[request.id] ?? ""}
                       onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
                       rows={4}
-                      placeholder="Required before accepting or denying"
+                      placeholder="Defaults to Welcome to BUDS! when accepting"
                       className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                     />
                   </label>
