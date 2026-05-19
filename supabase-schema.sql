@@ -23,6 +23,13 @@ create table if not exists eboard_budget_rows (
   created_at timestamptz not null default now()
 );
 
+create table if not exists eboard_budget_revenue (
+  id text primary key,
+  category text not null,
+  amount numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists eboard_notes (
   id text primary key,
   date date not null,
@@ -69,6 +76,7 @@ on conflict (id) do nothing;
 alter table eboard_agenda enable row level security;
 alter table eboard_budget_settings enable row level security;
 alter table eboard_budget_rows enable row level security;
+alter table eboard_budget_revenue enable row level security;
 alter table eboard_notes enable row level security;
 alter table private_links enable row level security;
 alter table membership_requests enable row level security;
@@ -103,6 +111,17 @@ using (true);
 
 create policy "Allow prototype writes for budget rows"
 on eboard_budget_rows for all
+to anon
+using (true)
+with check (true);
+
+create policy "Allow prototype reads for budget revenue"
+on eboard_budget_revenue for select
+to anon
+using (true);
+
+create policy "Allow prototype writes for budget revenue"
+on eboard_budget_revenue for all
 to anon
 using (true)
 with check (true);

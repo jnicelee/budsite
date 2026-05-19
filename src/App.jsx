@@ -103,6 +103,8 @@ const initialBudgetRows = [
   { id: "budget-4", category: "Merch and supplies", allocated: 750, spent: 0, status: "On Hold" },
 ];
 
+const initialBudgetRevenueRows = [];
+
 const accomplishments = [
   "Tournament wins and finals appearances",
   "Speaker awards and novice breaks",
@@ -267,14 +269,22 @@ function normalizeAgendaItems(items) {
 function getStoredBudget() {
   try {
     const stored = window.localStorage.getItem(EBOARD_BUDGET_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : { total: 5750, rows: initialBudgetRows };
+    return normalizeBudget(stored ? JSON.parse(stored) : { total: 5750, rows: initialBudgetRows, revenueRows: initialBudgetRevenueRows });
   } catch {
-    return { total: 5750, rows: initialBudgetRows };
+    return normalizeBudget({ total: 5750, rows: initialBudgetRows, revenueRows: initialBudgetRevenueRows });
   }
 }
 
 function saveStoredBudget(budget) {
-  window.localStorage.setItem(EBOARD_BUDGET_STORAGE_KEY, JSON.stringify(budget));
+  window.localStorage.setItem(EBOARD_BUDGET_STORAGE_KEY, JSON.stringify(normalizeBudget(budget)));
+}
+
+function normalizeBudget(budget) {
+  return {
+    total: Number(budget.total) || 5750,
+    rows: budget.rows || initialBudgetRows,
+    revenueRows: budget.revenueRows || initialBudgetRevenueRows,
+  };
 }
 
 function getStoredPrivateLinks() {
@@ -340,6 +350,14 @@ function normalizeSupabaseBudgetRow(row) {
   };
 }
 
+function normalizeSupabaseRevenueRow(row) {
+  return {
+    id: row.id,
+    category: row.category,
+    amount: Number(row.amount) || 0,
+  };
+}
+
 async function loadDatabaseState() {
   if (!isSupabaseConfigured) return null;
 
@@ -348,21 +366,24 @@ async function loadDatabaseState() {
     notesResult,
     budgetSettingsResult,
     budgetRowsResult,
+    budgetRevenueResult,
     privateLinksResult,
   ] = await Promise.all([
     supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: false }),
     supabase.from("eboard_notes").select("id,date,title,body").order("date", { ascending: false }),
     supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
     supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
+    supabase.from("eboard_budget_revenue").select("id,category,amount").order("created_at", { ascending: true }),
     supabase.from("private_links").select("id,label,description,url").order("created_at", { ascending: true }),
   ]);
 
-  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || privateLinksResult.error) {
+  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error) {
     console.error("Supabase load failed", {
       agendaError: agendaResult.error,
       notesError: notesResult.error,
       budgetSettingsError: budgetSettingsResult.error,
       budgetRowsError: budgetRowsResult.error,
+      budgetRevenueError: budgetRevenueResult.error,
       privateLinksError: privateLinksResult.error,
     });
     return null;
@@ -381,6 +402,9 @@ async function loadDatabaseState() {
       rows: budgetRowsResult.data.length > 0
         ? budgetRowsResult.data.map(normalizeSupabaseBudgetRow)
         : initialBudgetRows,
+      revenueRows: budgetRevenueResult.data.length > 0
+        ? budgetRevenueResult.data.map(normalizeSupabaseRevenueRow)
+        : initialBudgetRevenueRows,
     },
     privateLinks: privateLinksResult.data.length > 0 ? enrichPrivateLinks(privateLinksResult.data) : privateLinks,
   };
@@ -416,6 +440,18 @@ async function deleteBudgetRow(id) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from("eboard_budget_rows").delete().eq("id", id);
   if (error) console.error("Supabase budget row delete failed", error);
+}
+
+async function upsertBudgetRevenueRow(row) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_budget_revenue").upsert(row);
+  if (error) console.error("Supabase budget revenue upsert failed", error);
+}
+
+async function deleteBudgetRevenueRow(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_budget_revenue").delete().eq("id", id);
+  if (error) console.error("Supabase budget revenue delete failed", error);
 }
 
 async function insertNote(note) {
@@ -1302,6 +1338,8 @@ function PrivateHubPage({ auth, onLogout }) {
   const [agendaCompleteFlash, setAgendaCompleteFlash] = useState(false);
   const [budget, setBudget] = useState(() => getStoredBudget());
   const [newBudgetCategory, setNewBudgetCategory] = useState("");
+  const [newRevenueCategory, setNewRevenueCategory] = useState("");
+  const [newRevenueAmount, setNewRevenueAmount] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
 
@@ -1313,7 +1351,9 @@ function PrivateHubPage({ auth, onLogout }) {
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
   const totalSpent = budget.rows.reduce((sum, row) => sum + (Number(row.spent) || 0), 0);
   const totalAllocated = budget.rows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
-  const remainingBudget = (Number(budget.total) || 0) - totalSpent;
+  const totalRevenue = budget.revenueRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const effectiveBudget = (Number(budget.total) || 0) + totalRevenue;
+  const remainingBudget = effectiveBudget - totalSpent;
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
     links: memberLinks.filter((link) => link.section === section),
@@ -1498,6 +1538,37 @@ function PrivateHubPage({ auth, onLogout }) {
     });
     upsertBudgetRow(nextRow);
     setNewBudgetCategory("");
+  };
+
+  const addBudgetRevenueRow = (event) => {
+    event.preventDefault();
+    if (!canEdit) return;
+    const category = newRevenueCategory.trim();
+    const amount = Number(newRevenueAmount);
+    if (!category || amount <= 0) return;
+
+    const nextRow = { id: `revenue-${Date.now()}`, category, amount };
+    const nextBudget = {
+      ...budget,
+      revenueRows: [
+        ...(budget.revenueRows || []),
+        nextRow,
+      ],
+    };
+    updateBudget(nextBudget);
+    upsertBudgetRevenueRow(nextRow);
+    setNewRevenueCategory("");
+    setNewRevenueAmount("");
+  };
+
+  const removeBudgetRevenueRow = (id) => {
+    if (!canEdit) return;
+    const nextBudget = {
+      ...budget,
+      revenueRows: (budget.revenueRows || []).filter((row) => row.id !== id),
+    };
+    updateBudget(nextBudget);
+    deleteBudgetRevenueRow(id);
   };
 
   const updateMemberLink = (id, field, value) => {
@@ -1819,7 +1890,7 @@ function PrivateHubPage({ auth, onLogout }) {
               </div>
               <div className="mb-4 grid gap-3 sm:grid-cols-3">
                 <label className="grid gap-1 bg-[#2D2926] p-3 text-white">
-                  <span className="text-xs font-black uppercase tracking-[0.08em] text-white/70">Total Budget</span>
+                  <span className="text-xs font-black uppercase tracking-[0.08em] text-white/70">Base Budget</span>
                   <input
                     type="number"
                     min="0"
@@ -1830,12 +1901,12 @@ function PrivateHubPage({ auth, onLogout }) {
                   />
                 </label>
                 <div className="bg-[#f6f4f2] p-3">
-                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Spent</p>
-                  <p className="mt-1 text-2xl font-black text-[#CC0000]">{formatCurrency(totalSpent)}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Revenue</p>
+                  <p className="mt-1 text-2xl font-black text-[#0b6b35]">+{formatCurrency(totalRevenue)}</p>
                 </div>
                 <div className="bg-[#f6f4f2] p-3">
-                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Remaining</p>
-                  <p className="mt-1 text-2xl font-black text-[#2D2926]">{formatCurrency(remainingBudget)}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Effective Total</p>
+                  <p className="mt-1 text-2xl font-black text-[#2D2926]">{formatCurrency(effectiveBudget)}</p>
                 </div>
               </div>
 
@@ -1912,8 +1983,60 @@ function PrivateHubPage({ auth, onLogout }) {
                 </button>
               </form>
               <p className="mt-3 text-xs font-bold uppercase tracking-[0.08em] text-[#6d6560]">
-                Allocated total: {formatCurrency(totalAllocated)}
+                Allocated total: {formatCurrency(totalAllocated)} | Spent: {formatCurrency(totalSpent)} | Remaining: {formatCurrency(remainingBudget)}
               </p>
+              <div className="mt-4 border-t border-[#ded8d2] pt-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">Revenue Additions</h3>
+                  <span className="text-sm font-black text-[#0b6b35]">+{formatCurrency(totalRevenue)}</span>
+                </div>
+                <form onSubmit={addBudgetRevenueRow} className="grid gap-2 sm:grid-cols-[1fr_8rem_auto]">
+                  <input
+                    type="text"
+                    value={newRevenueCategory}
+                    onChange={(event) => setNewRevenueCategory(event.target.value)}
+                    placeholder={canEdit ? "Revenue category, e.g. Hosted tournament" : "Administrator-only editing"}
+                    disabled={!canEdit}
+                    className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={newRevenueAmount}
+                    onChange={(event) => setNewRevenueAmount(event.target.value)}
+                    placeholder="Amount"
+                    disabled={!canEdit}
+                    className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
+                  />
+                  <button type="submit" disabled={!canEdit} className="bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-40">
+                    Add Money
+                  </button>
+                </form>
+                <div className="mt-3 grid gap-2">
+                  {(budget.revenueRows || []).length === 0 && (
+                    <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
+                      No revenue logged yet.
+                    </div>
+                  )}
+                  {(budget.revenueRows || []).map((row) => (
+                    <div key={row.id} className="flex items-center justify-between gap-3 border border-[#ded8d2] bg-[#e5f7ec] px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="font-black text-[#2D2926]">{row.category}</p>
+                        <p className="text-sm font-bold text-[#0b6b35]">+{formatCurrency(row.amount)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeBudgetRevenueRow(row.id)}
+                        disabled={!canEdit}
+                        aria-label={`Remove ${row.category} revenue`}
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-[#b7d9c4] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </Card>
           </div>
 
