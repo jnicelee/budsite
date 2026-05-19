@@ -242,6 +242,18 @@ function saveStoredNotes(notes) {
   window.localStorage.setItem(EBOARD_NOTES_STORAGE_KEY, JSON.stringify(notes));
 }
 
+function mergeNotes(databaseNotes, fallbackNotes) {
+  const notesById = new Map();
+  [...fallbackNotes, ...databaseNotes].forEach((note) => {
+    if (!note?.id) return;
+    notesById.set(note.id, { ...notesById.get(note.id), ...note });
+  });
+  return [...notesById.values()].sort((a, b) => {
+    const dateCompare = (b.date || "").localeCompare(a.date || "");
+    return dateCompare || (b.id || "").localeCompare(a.id || "");
+  });
+}
+
 function getStoredAgenda() {
   try {
     const stored = window.localStorage.getItem(EBOARD_AGENDA_STORAGE_KEY);
@@ -397,7 +409,7 @@ async function loadDatabaseState() {
 
   return {
     agenda: agendaResult.data.length > 0 ? normalizeAgendaItems(agendaResult.data) : normalizeAgendaItems(agendaItems),
-    notes: notesResult.data,
+    notes: mergeNotes(notesResult.data, getStoredNotes()),
     budget: {
       total: Number(budgetSettingsResult.data?.total) || 5750,
       rows: budgetRowsResult.data.length > 0
@@ -663,7 +675,7 @@ function SecondaryButton({ href, children, className = "" }) {
 
 function Page({ children, className = "" }) {
   return (
-    <section className={`mx-auto min-h-[calc(100vh-4.75rem)] w-full max-w-7xl px-5 py-10 md:px-8 md:py-16 ${className}`}>
+    <section className={`mx-auto min-h-[calc(100vh-4.75rem)] w-full max-w-[98rem] px-5 py-10 md:px-8 md:py-16 ${className}`}>
       {children}
     </section>
   );
@@ -671,7 +683,7 @@ function Page({ children, className = "" }) {
 
 function HomePage() {
   return (
-    <section className="mx-auto grid w-full max-w-7xl items-start gap-10 px-5 py-7 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr]">
+    <section className="mx-auto grid w-full max-w-[98rem] items-start gap-10 px-5 py-7 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr]">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
         <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#2D2926]">
           <Trophy size={16} className="text-[#CC0000]" /> Ranked #4 nationally in 2026
@@ -794,7 +806,7 @@ function AboutPage() {
   ];
 
   return (
-    <Page className="max-w-[86rem]">
+    <Page>
       <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
         <section className="relative overflow-hidden border border-[#ded8d2] bg-[#CC0000] p-7 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
           <div className="absolute right-6 top-6 flex h-24 w-24 items-center justify-center border-2 border-white/30 text-3xl font-black tracking-tight text-white md:h-32 md:w-32 md:text-5xl">
@@ -929,7 +941,7 @@ function CalendarPage({ calendarEmbedUrl }) {
   return (
     <Page>
       <PageHeader eyebrow="Calendar" title="Practices, tournaments, and team events.">
-        Replace the calendar ID in the code with your public Google Calendar embed link.
+        Feel free to pull up to any meeting! No Pressure!
       </PageHeader>
       <Card className="overflow-hidden p-3">
         <div className="aspect-[16/10] overflow-hidden border border-[#ded8d2] bg-white md:aspect-[16/8]">
@@ -967,8 +979,9 @@ function MeetingsPage({ auth }) {
         return;
       }
       if (ignore) return;
-      setMeetingPosts(data || []);
-      saveStoredNotes(data || []);
+      const mergedNotes = mergeNotes(data || [], getStoredNotes());
+      setMeetingPosts(mergedNotes);
+      saveStoredNotes(mergedNotes);
     }
 
     hydrateMeetingPosts();
@@ -987,15 +1000,15 @@ function MeetingsPage({ auth }) {
   };
 
   return (
-    <Page className="max-w-[84rem]">
+    <Page>
       <div className="mb-8 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
         <div className="border border-[#2D2926] bg-[#2D2926] p-8 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
           <Eyebrow light>Meetings</Eyebrow>
           <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
-            E-board notes, organized like a team record.
+            Meeting notes, organized like a team record.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">
-            Secretary notes saved in the e-board workspace appear here as meeting posts, newest first, so decisions and updates stay easy to browse.
+            Don't worry! Secretary records the meetings in case you miss one. Organized newest first, so decisions and updates stay easy to browse.
           </p>
         </div>
         <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-8 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:p-10">
@@ -2464,7 +2477,7 @@ export default function App() {
   const [auth, setAuth] = useState(() => getStoredAuth());
 
   const calendarEmbedUrl = useMemo(() => {
-    return "https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_ID_HERE&ctz=America%2FNew_York";
+    return "https://calendar.google.com/calendar/embed?src=c_2be8297a9561724f2234792e9cd68ed9f2fc5d6c6be910056b5a728d5098cf7%40group.calendar.google.com&ctz=America%2FNew_York";
   }, []);
 
   useEffect(() => {
