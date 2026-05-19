@@ -29,6 +29,7 @@ const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
 const MEMBER_PASSWORD = "buds-members";
 const EBOARD_PASSWORD = "buds-eboard";
 const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
+const SECONDARY_EBOARD_EMAIL = "iankim6488@gmail.com";
 const MASTER_EBOARD_PASSWORD = "computa";
 
 const navItems = [
@@ -652,10 +653,10 @@ function LoginPage({ onLogin }) {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
-    const isMasterEboard = normalizedEmail === MASTER_EBOARD_EMAIL && password === MASTER_EBOARD_PASSWORD;
+    const isMasterEboard = [MASTER_EBOARD_EMAIL, SECONDARY_EBOARD_EMAIL].includes(normalizedEmail) && password === MASTER_EBOARD_PASSWORD;
     const hasValidRolePassword = password === (loginType === "eboard" ? EBOARD_PASSWORD : MEMBER_PASSWORD);
 
-    if (!isBuEmail) {
+    if (!isBuEmail && !isMasterEboard) {
       setError("Please use a BU email address ending in bu.edu.");
       return;
     }
@@ -683,7 +684,7 @@ function LoginPage({ onLogin }) {
             This is a frontend-only password gate for now. Use <span className="font-black text-white">{MEMBER_PASSWORD}</span> for members and <span className="font-black text-white">{EBOARD_PASSWORD}</span> for e-board.
           </p>
           <p className="mt-4 text-sm leading-6 text-white/70">
-            Master e-board login: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>.
+            Master e-board logins: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> or <span className="font-black text-white">{SECONDARY_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>.
           </p>
           <p className="mt-4 text-sm leading-6 text-white/60">
             Real privacy should be connected to a backend auth service before storing actual team documents, budgets, or notes.
