@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  CalendarDays,
   ChevronRight,
   ClipboardList,
   DollarSign,
@@ -17,7 +16,6 @@ import {
   Sparkles,
   Trash2,
   Trophy,
-  Users,
   X,
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
@@ -584,57 +582,78 @@ function Page({ children, className = "" }) {
 
 function HomePage() {
   return (
-    <Page className="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr]">
+    <section className="mx-auto grid w-full max-w-7xl items-start gap-10 px-5 py-7 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr]">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-sm font-bold text-[#2D2926]">
-          <Sparkles size={16} className="text-[#CC0000]" /> Boston University Debate Society
+        <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#2D2926]">
+          <Trophy size={16} className="text-[#CC0000]" /> Ranked #4 nationally in 2026
         </div>
-        <h1 className="max-w-4xl text-5xl font-black leading-[0.95] tracking-tight text-[#2D2926] md:text-7xl">
-          Debate with bite, clarity, and a BU red finish.
+        <h1 className="max-w-4xl text-5xl font-black leading-[0.94] tracking-tight text-[#2D2926] md:text-6xl xl:text-[4.35rem]">
+          Nationally ranked debate, open to anyone at BU.
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-[#5b5450]">
-          BUDS is BU's parliamentary debate team, a home for competitive argument, novice education, tournament travel, and a team culture built to last past graduation.
+        <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5b5450]">
+          BUDS competes in APDA, the American Parliamentary Debate Association. No tryouts, no dues, no experience required, just weekly chances to travel, argue, learn, and represent Boston University.
         </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <PrimaryButton href="/novice-hub">
-            Start debating <ArrowRight size={16} />
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+          <PrimaryButton href="/join" className="px-6">
+            Join BUDS <ArrowRight size={16} />
           </PrimaryButton>
-          <SecondaryButton href="/calendar">
-            View calendar <CalendarDays size={16} />
+          <SecondaryButton href="/novice-hub" className="px-6">
+            New to debate? <Sparkles size={16} />
           </SecondaryButton>
+        </div>
+        <div className="mt-7 grid gap-3 sm:grid-cols-3">
+          {["No tryouts", "No dues", "Weekly tournaments"].map((item) => (
+            <div key={item} className="border-l-4 border-[#CC0000] bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-[0_10px_26px_rgba(45,41,38,0.05)]">
+              {item}
+            </div>
+          ))}
         </div>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="grid gap-5">
-        <Card className="relative overflow-hidden bg-[#2D2926] p-8 text-white">
-          <div className="absolute right-0 top-0 h-full w-3 bg-[#CC0000]" />
-          <Eyebrow light>Season dashboard</Eyebrow>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            <div>
-              <p className="text-5xl font-black">APDA</p>
-              <p className="mt-3 text-sm leading-6 text-white/70">American Parliamentary Debate Association</p>
+        <div className="overflow-hidden border border-[#1f1b19] bg-[#2D2926] text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)]">
+          <div className="grid gap-0 md:grid-cols-[0.95fr_1.05fr]">
+            <div className="flex min-h-64 flex-col justify-between bg-[#CC0000] p-7 text-white md:min-h-[29rem] md:p-8">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-white/80">2026 national rank</p>
+                <p className="mt-5 text-[7rem] font-black leading-none tracking-tight md:text-[7.5rem]">#4</p>
+              </div>
+              <p className="max-w-xs text-base font-bold leading-7 text-white/90">
+                A top national team that still starts with an open door.
+              </p>
             </div>
-            <div>
-              <p className="text-5xl font-black text-[#CC0000]">BU</p>
-              <p className="mt-3 text-sm leading-6 text-white/70">Competitive debate in Boston</p>
+            <div className="grid content-between gap-6 p-7 md:p-8">
+              <div>
+                <Eyebrow light>Format</Eyebrow>
+                <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA parliamentary debate</h2>
+                <p className="mt-4 text-sm leading-6 text-white/72">
+                  Two-person teams, limited prep, persuasion under pressure, and tournaments across the collegiate circuit.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 border border-white/15">
+                <div className="border-b border-r border-white/15 p-4">
+                  <p className="text-3xl font-black leading-none">0</p>
+                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">Tryouts</p>
+                </div>
+                <div className="border-b border-white/15 p-4">
+                  <p className="text-3xl font-black leading-none">$0</p>
+                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">Member fees</p>
+                </div>
+                <div className="border-r border-white/15 p-4">
+                  <p className="text-3xl font-black leading-none">APDA</p>
+                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">League format</p>
+                </div>
+                <div className="p-4">
+                  <p className="text-3xl font-black leading-none">Travel</p>
+                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">Weekly</p>
+                </div>
+              </div>
             </div>
           </div>
-        </Card>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Card>
-            <Trophy className="mb-5 text-[#CC0000]" />
-            <h2 className="text-2xl font-black text-[#2D2926]">Accomplishments</h2>
-            <p className="mt-3 text-sm leading-6 text-[#5b5450]">Track wins, breaks, speaker awards, and season milestones in one readable place.</p>
-          </Card>
-          <Card>
-            <Users className="mb-5 text-[#CC0000]" />
-            <h2 className="text-2xl font-black text-[#2D2926]">Community</h2>
-            <p className="mt-3 text-sm leading-6 text-[#5b5450]">Open practices, alumni support, lectures, and novice training for every experience level.</p>
-          </Card>
         </div>
+
       </motion.div>
-    </Page>
+    </section>
   );
 }
 
@@ -2006,25 +2025,29 @@ export default function App() {
     <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,rgba(45,41,38,0.045)_1px,transparent_1px),linear-gradient(rgba(45,41,38,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
-      <header className="sticky top-0 z-50 border-b border-[#ded8d2] bg-white/95 backdrop-blur">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
-          <SiteLink href="/" className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#CC0000] text-sm font-black text-white">BU</div>
-            <div className="min-w-0">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#2D2926]">BUDS</p>
-              <p className="truncate text-xs font-medium text-[#6d6560]">Boston University Debate Society</p>
+      <header className="sticky top-0 z-50 border-b border-[#e9e3dd] bg-white/90 shadow-[0_14px_40px_rgba(45,41,38,0.05)] backdrop-blur-xl">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-3 md:px-8">
+          <SiteLink href="/" className="group flex min-w-0 items-center gap-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm bg-[#CC0000] text-base font-black text-white transition group-hover:bg-[#A00000]">
+              BU
+            </div>
+            <div className="min-w-0 border-l border-[#ded8d2] pl-3">
+              <p className="text-base font-black uppercase leading-none tracking-[0.18em] text-[#2D2926]">BUDS</p>
+              <p className="mt-1 hidden truncate text-sm font-medium text-[#6d6560] sm:block">Boston University Debate Society</p>
             </div>
           </SiteLink>
 
-          <div className="hidden items-center border border-[#ded8d2] bg-[#f6f4f2] p-1 md:flex">
+          <div className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
               const active = item.href === path;
               return (
                 <SiteLink
                   key={item.href}
                   href={item.href}
-                  className={`px-4 py-2 text-sm font-extrabold transition ${
-                    active ? "bg-[#2D2926] text-white" : "text-[#2D2926] hover:bg-white"
+                  className={`rounded-full px-4 py-2 text-sm font-extrabold transition ${
+                    active
+                      ? "bg-[#2D2926] text-white shadow-[0_8px_18px_rgba(45,41,38,0.16)]"
+                      : "text-[#4b4541] hover:bg-white hover:text-[#2D2926] hover:shadow-sm"
                   }`}
                 >
                   {item.label}
@@ -2033,12 +2056,16 @@ export default function App() {
             })}
           </div>
 
-          <div className="hidden items-center gap-2 md:flex">
-            <PrimaryButton href="/join">Join</PrimaryButton>
-            <SecondaryButton href={auth ? "/hub" : "/login"}>{auth ? "Hub" : "Login"}</SecondaryButton>
+          <div className="hidden items-center gap-3 md:flex">
+            <PrimaryButton href="/join" className="rounded-sm px-6">
+              Join <ArrowRight size={16} />
+            </PrimaryButton>
+            <SecondaryButton href={auth ? "/hub" : "/login"} className="rounded-sm bg-[#fbfaf9] px-6">
+              {auth ? "Hub" : "Login"}
+            </SecondaryButton>
           </div>
 
-          <button className="border border-[#ded8d2] bg-white p-2 md:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <button className="rounded-sm border border-[#ded8d2] bg-white p-3 shadow-sm md:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Menu size={20} />
           </button>
         </nav>
@@ -2046,12 +2073,18 @@ export default function App() {
 
       {menuOpen && (
         <div className="fixed inset-0 z-[60] bg-[#2D2926]/45 p-4 backdrop-blur-sm md:hidden">
-          <div className="border border-[#ded8d2] bg-white p-5 shadow-2xl">
+          <div className="overflow-hidden rounded-sm border border-[#ded8d2] bg-white shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
-              <p className="font-black text-[#2D2926]">Menu</p>
-              <button onClick={() => setMenuOpen(false)} aria-label="Close menu"><X /></button>
+              <div className="flex items-center gap-3 px-5 pt-5">
+                <div className="flex h-11 w-11 items-center justify-center bg-[#CC0000] text-sm font-black text-white">BU</div>
+                <div>
+                  <p className="font-black uppercase tracking-[0.16em] text-[#2D2926]">BUDS</p>
+                  <p className="text-xs font-semibold text-[#6d6560]">Menu</p>
+                </div>
+              </div>
+              <button className="mr-5 mt-5 border border-[#ded8d2] p-2" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X size={18} /></button>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 px-5 pb-5">
               {navItems.map((item) => {
                 const active = item.href === path;
                 return (
@@ -2066,9 +2099,16 @@ export default function App() {
                 );
               })}
               <SiteLink
+                href="/join"
+                onClick={() => setMenuOpen(false)}
+                className="mt-2 flex items-center justify-between bg-[#CC0000] px-4 py-3 font-black uppercase tracking-[0.08em] text-white"
+              >
+                Join <ArrowRight size={16} />
+              </SiteLink>
+              <SiteLink
                 href={auth ? "/hub" : "/login"}
                 onClick={() => setMenuOpen(false)}
-                className={`px-4 py-3 font-black ${path === "/login" || path === "/hub" ? "bg-[#CC0000] text-white" : "bg-[#f6f4f2] text-[#2D2926]"}`}
+                className={`px-4 py-3 font-black ${path === "/login" || path === "/hub" ? "bg-[#2D2926] text-white" : "bg-[#f6f4f2] text-[#2D2926]"}`}
               >
                 {auth ? "Private Hub" : "Login"}
               </SiteLink>
