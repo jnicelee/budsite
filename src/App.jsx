@@ -42,6 +42,7 @@ const navItems = [
   { label: "About", href: "/about" },
   { label: "Novice Hub", href: "/novice-hub" },
   { label: "Calendar", href: "/calendar" },
+  { label: "Meetings", href: "/meetings" },
   { label: "History", href: "/history" },
   { label: "E-Board", href: "/eboard" },
   { label: "Contact", href: "/contact" },
@@ -460,6 +461,12 @@ async function insertNote(note) {
   if (error) console.error("Supabase note insert failed", error);
 }
 
+async function deleteNote(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_notes").delete().eq("id", id);
+  if (error) console.error("Supabase note delete failed", error);
+}
+
 async function upsertPrivateLink(link) {
   if (!isSupabaseConfigured) return;
   const { id, label, description, url } = link;
@@ -574,6 +581,17 @@ function formatCurrency(value) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
+}
+
+function formatMeetingDate(value) {
+  if (!value) return "Date pending";
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
 
 function Eyebrow({ children, light = false }) {
@@ -904,6 +922,128 @@ function CalendarPage({ calendarEmbedUrl }) {
           />
         </div>
       </Card>
+    </Page>
+  );
+}
+
+function MeetingsPage({ auth }) {
+  const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
+  const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE || auth?.email === MASTER_EBOARD_EMAIL;
+  const sortedPosts = [...meetingPosts].sort((a, b) => {
+    const dateCompare = (b.date || "").localeCompare(a.date || "");
+    return dateCompare || (b.id || "").localeCompare(a.id || "");
+  });
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateMeetingPosts() {
+      if (!isSupabaseConfigured) return;
+      const { data, error } = await supabase
+        .from("eboard_notes")
+        .select("id,date,title,body")
+        .order("date", { ascending: false });
+      if (error) {
+        console.error("Supabase meeting notes load failed", error);
+        return;
+      }
+      if (ignore) return;
+      setMeetingPosts(data || []);
+      saveStoredNotes(data || []);
+    }
+
+    hydrateMeetingPosts();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const removeMeetingPost = (id) => {
+    if (!canDeletePosts) return;
+    const nextPosts = meetingPosts.filter((post) => post.id !== id);
+    setMeetingPosts(nextPosts);
+    saveStoredNotes(nextPosts);
+    deleteNote(id);
+  };
+
+  return (
+    <Page className="max-w-[84rem]">
+      <div className="mb-8 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="border border-[#2D2926] bg-[#2D2926] p-8 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
+          <Eyebrow light>Meetings</Eyebrow>
+          <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
+            E-board notes, organized like a team record.
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">
+            Secretary notes saved in the e-board workspace appear here as meeting posts, newest first, so decisions and updates stay easy to browse.
+          </p>
+        </div>
+        <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-8 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:p-10">
+          <div className="grid grid-cols-2 border border-[#ded8d2]">
+            <div className="border-b border-r border-[#ded8d2] p-5">
+              <p className="text-4xl font-black leading-none text-[#CC0000]">{sortedPosts.length}</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published posts</p>
+            </div>
+            <div className="border-b border-[#ded8d2] p-5">
+              <p className="text-4xl font-black leading-none text-[#2D2926]">Live</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">From secretary notes</p>
+            </div>
+            <div className="border-r border-[#ded8d2] p-5">
+              <p className="text-4xl font-black leading-none text-[#2D2926]">Date</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Ordered archive</p>
+            </div>
+            <div className="p-5">
+              <p className="text-4xl font-black leading-none text-[#2D2926]">EBD</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Delete access</p>
+            </div>
+          </div>
+          <p className="text-sm font-semibold leading-6 text-[#5b5450]">
+            Only logged-in e-board members can delete meeting posts. Everyone can read the public meeting archive.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {sortedPosts.length === 0 && (
+          <Card className="border-dashed p-10 text-center">
+            <Eyebrow>No posts yet</Eyebrow>
+            <h2 className="mt-3 text-3xl font-black text-[#2D2926]">Secretary notes will appear here automatically.</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#5b5450]">
+              Save meeting notes from the e-board workspace with a date and brief title, and this page will turn them into an organized archive.
+            </p>
+          </Card>
+        )}
+        {sortedPosts.map((post, index) => (
+          <article key={post.id} className="group grid gap-0 border border-[#ded8d2] bg-white shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] lg:grid-cols-[8rem_1fr]">
+            <div className="flex items-center justify-between border-b border-[#ded8d2] bg-[#CC0000] p-5 text-white lg:block lg:border-b-0 lg:border-r">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-white/70">No.</p>
+              <p className="mt-0 text-5xl font-black leading-none lg:mt-3">{String(index + 1).padStart(2, "0")}</p>
+            </div>
+            <div className="p-6 md:p-8">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">{formatMeetingDate(post.date)}</p>
+                  <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-4xl">{post.title || "Untitled meeting"}</h2>
+                </div>
+                {canDeletePosts && (
+                  <button
+                    type="button"
+                    onClick={() => removeMeetingPost(post.id)}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f6f4f2] text-[#6d6560] opacity-100 transition hover:border-[#CC0000] hover:text-[#CC0000] md:opacity-0 md:group-hover:opacity-100"
+                    aria-label={`Delete ${post.title || "meeting post"}`}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                )}
+              </div>
+              <p className="mt-5 whitespace-pre-wrap text-base leading-8 text-[#4d4743]">
+                {post.body || "No notes body added."}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
     </Page>
   );
 }
@@ -2305,6 +2445,8 @@ export default function App() {
         return <NoviceHubPage />;
       case "/calendar":
         return <CalendarPage calendarEmbedUrl={calendarEmbedUrl} />;
+      case "/meetings":
+        return <MeetingsPage auth={auth} />;
       case "/history":
         return <HistoryPage />;
       case "/eboard":
