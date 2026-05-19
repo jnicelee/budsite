@@ -1207,8 +1207,8 @@ function ContactPage() {
               <p className="mt-3 text-sm leading-6 text-[#5b5450]">Use the membership request form so admins can add you to the team flow.</p>
             </div>
           </div>
-          <div className="mt-6 flex justify-end">
-            <PrimaryButton href="/join">
+          <div className="mt-8 flex justify-center">
+            <PrimaryButton href="/join" className="min-w-[280px] px-10 py-4 text-base">
               Request to join <ArrowRight size={16} />
             </PrimaryButton>
           </div>
