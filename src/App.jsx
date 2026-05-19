@@ -835,7 +835,7 @@ function AboutPage() {
             </div>
           </Card>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="bg-[#2D2926] p-6 text-white">
+            <Card className="!bg-[#2D2926] p-6 text-white">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-white/60">Best For</p>
               <p className="mt-4 text-2xl font-black leading-tight">Curious people who like ideas, performance, politics, philosophy, law, comedy, or competition.</p>
             </Card>
