@@ -27,6 +27,7 @@ const EBOARD_BUDGET_STORAGE_KEY = "buds-eboard-budget";
 const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
 const MEMBERSHIP_REQUESTS_STORAGE_KEY = "buds-membership-requests";
 const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
+const COMPLETED_AGENDA_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
 const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
 const MEMBER_ACCOUNT_ROLES = ["member", "eboard"];
@@ -241,14 +242,26 @@ function saveStoredNotes(notes) {
 function getStoredAgenda() {
   try {
     const stored = window.localStorage.getItem(EBOARD_AGENDA_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : agendaItems;
+    return normalizeAgendaItems(stored ? JSON.parse(stored) : agendaItems);
   } catch {
-    return agendaItems;
+    return normalizeAgendaItems(agendaItems);
   }
 }
 
 function saveStoredAgenda(items) {
-  window.localStorage.setItem(EBOARD_AGENDA_STORAGE_KEY, JSON.stringify(items));
+  window.localStorage.setItem(EBOARD_AGENDA_STORAGE_KEY, JSON.stringify(normalizeAgendaItems(items)));
+}
+
+function isExpiredCompletedAgendaItem(item) {
+  if (!item.completed_at) return false;
+  const completedAt = Date.parse(item.completed_at);
+  return Number.isFinite(completedAt) && Date.now() - completedAt > COMPLETED_AGENDA_RETENTION_MS;
+}
+
+function normalizeAgendaItems(items) {
+  return items
+    .map((item) => ({ ...item, completed_at: item.completed_at ?? null }))
+    .filter((item) => !isExpiredCompletedAgendaItem(item));
 }
 
 function getStoredBudget() {
@@ -337,7 +350,7 @@ async function loadDatabaseState() {
     budgetRowsResult,
     privateLinksResult,
   ] = await Promise.all([
-    supabase.from("eboard_agenda").select("id,text,owner,due").order("created_at", { ascending: true }),
+    supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: true }),
     supabase.from("eboard_notes").select("id,date,title,body").order("date", { ascending: false }),
     supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
     supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
@@ -355,8 +368,13 @@ async function loadDatabaseState() {
     return null;
   }
 
+  const expiredAgendaItems = agendaResult.data.filter(isExpiredCompletedAgendaItem);
+  if (expiredAgendaItems.length > 0) {
+    await Promise.all(expiredAgendaItems.map((item) => deleteAgendaItem(item.id)));
+  }
+
   return {
-    agenda: agendaResult.data.length > 0 ? agendaResult.data : agendaItems,
+    agenda: agendaResult.data.length > 0 ? normalizeAgendaItems(agendaResult.data) : normalizeAgendaItems(agendaItems),
     notes: notesResult.data,
     budget: {
       total: Number(budgetSettingsResult.data?.total) || 5750,
@@ -1386,6 +1404,7 @@ function PrivateHubPage({ auth, onLogout }) {
       text,
       owner: newAgendaOwner.trim() || "Unassigned",
       due: newAgendaDue || "Add date",
+      completed_at: null,
     };
     const nextAgenda = [...agenda, nextAgendaItem];
 
@@ -1399,22 +1418,31 @@ function PrivateHubPage({ auth, onLogout }) {
 
   const completeAgendaItem = (item) => {
     if (!canEdit) return;
-    const nextAgenda = agenda.filter((agendaItem) => agendaItem.id !== item.id);
-    setLastDeletedAgendaItem(item);
+    const completed_at = item.completed_at ? null : new Date().toISOString();
+    const updatedItem = { ...item, completed_at };
+    const nextAgenda = agenda.map((agendaItem) => (
+      agendaItem.id === item.id ? updatedItem : agendaItem
+    ));
+    setLastDeletedAgendaItem(completed_at ? item : null);
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
-    deleteAgendaItem(item.id);
-    setAgendaCompleteFlash(true);
-    window.setTimeout(() => setAgendaCompleteFlash(false), 1000);
+    upsertAgendaItem(updatedItem);
+    if (completed_at) {
+      setAgendaCompleteFlash(true);
+      window.setTimeout(() => setAgendaCompleteFlash(false), 1000);
+    }
   };
 
   const undoAgendaDelete = () => {
     if (!canEdit) return;
     if (!lastDeletedAgendaItem) return;
-    const nextAgenda = [lastDeletedAgendaItem, ...agenda];
+    const restoredItem = { ...lastDeletedAgendaItem, completed_at: null };
+    const nextAgenda = agenda.map((agendaItem) => (
+      agendaItem.id === restoredItem.id ? restoredItem : agendaItem
+    ));
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
-    upsertAgendaItem(lastDeletedAgendaItem);
+    upsertAgendaItem(restoredItem);
     setLastDeletedAgendaItem(null);
   };
 
@@ -1755,22 +1783,31 @@ function PrivateHubPage({ auth, onLogout }) {
                       No agenda items right now. Add one above.
                     </div>
                   )}
-                  {agenda.map((item) => (
-                    <label key={item.id} className="flex gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                      <input
-                        type="checkbox"
-                        onChange={() => completeAgendaItem(item)}
-                        disabled={!canEdit}
-                        className="mt-1 h-4 w-4 shrink-0 accent-[#CC0000]"
-                      />
-                      <span className="min-w-0">
-                        <span className="block font-black leading-snug text-[#2D2926]">{item.text}</span>
-                        <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.08em] text-[#6d6560]">
-                          {item.owner || "Unassigned"} - Due: {item.due || "Add date"}
+                  {agenda.map((item) => {
+                    const isComplete = Boolean(item.completed_at);
+                    return (
+                      <label key={item.id} className={`flex gap-3 border p-3 transition ${isComplete ? "border-[#c9c2bc] bg-[#d4d0cc] opacity-80" : "border-[#ded8d2] bg-[#f6f4f2]"}`}>
+                        <input
+                          type="checkbox"
+                          checked={isComplete}
+                          onChange={() => completeAgendaItem(item)}
+                          disabled={!canEdit}
+                          className="mt-1 h-4 w-4 shrink-0 accent-[#CC0000]"
+                        />
+                        <span className="min-w-0">
+                          <span className={`block font-black leading-snug ${isComplete ? "text-[#5b5450] line-through" : "text-[#2D2926]"}`}>{item.text}</span>
+                          <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.08em] text-[#6d6560]">
+                            {item.owner || "Unassigned"} - Due: {item.due || "Add date"}
+                          </span>
+                          {isComplete && (
+                            <span className="mt-1 block text-xs font-bold text-[#6d6560]">
+                              Completed {new Date(item.completed_at).toLocaleDateString()} - can be unchecked for 2 weeks.
+                            </span>
+                          )}
                         </span>
-                      </span>
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </Card>

@@ -3,6 +3,7 @@ create table if not exists eboard_agenda (
   text text not null,
   owner text not null default 'Unassigned',
   due text not null default 'Add date',
+  completed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
