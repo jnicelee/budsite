@@ -1970,11 +1970,11 @@ function PrivateHubPage({ auth, onLogout }) {
                         <>
                           <label className="grid gap-2">
                             <span className="sr-only">Link Name</span>
-                            <input
-                              type="text"
+                            <textarea
                               value={link.label}
                               onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
-                              className="w-full border-0 bg-transparent p-0 text-3xl font-black tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
+                              rows={2}
+                              className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-3xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
                             />
                           </label>
                           <label className="mt-6 grid flex-1 gap-2">
@@ -1989,7 +1989,7 @@ function PrivateHubPage({ auth, onLogout }) {
                         </>
                       ) : (
                         <>
-                          <h3 className="text-3xl font-black tracking-normal text-[#2D2926]">{link.label}</h3>
+                          <h3 className="break-words text-3xl font-black leading-tight tracking-normal text-[#2D2926]">{link.label}</h3>
                           <p className="mt-6 flex-1 text-lg font-medium leading-8 text-[#5b5450]">{link.description}</p>
                         </>
                       )}
