@@ -26,7 +26,9 @@ const EBOARD_NOTES_STORAGE_KEY = "buds-eboard-notes";
 const EBOARD_AGENDA_STORAGE_KEY = "buds-eboard-agenda";
 const EBOARD_BUDGET_STORAGE_KEY = "buds-eboard-budget";
 const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
+const MEMBERSHIP_REQUESTS_STORAGE_KEY = "buds-membership-requests";
 const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
+const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
 const MEMBER_PASSWORD = "buds-members";
 const EBOARD_PASSWORD = "buds-eboard";
 const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
@@ -40,7 +42,7 @@ const navItems = [
   { label: "Calendar", href: "/calendar" },
   { label: "History", href: "/history" },
   { label: "E-Board", href: "/eboard" },
-  { label: "Join", href: "/join" },
+  { label: "Contact", href: "/contact" },
 ];
 
 const noviceResources = [
@@ -274,6 +276,19 @@ function saveStoredPrivateLinks(links) {
   window.localStorage.setItem(PRIVATE_LINKS_STORAGE_KEY, JSON.stringify(links));
 }
 
+function getStoredMembershipRequests() {
+  try {
+    const stored = window.localStorage.getItem(MEMBERSHIP_REQUESTS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredMembershipRequests(requests) {
+  window.localStorage.setItem(MEMBERSHIP_REQUESTS_STORAGE_KEY, JSON.stringify(requests));
+}
+
 function enrichPrivateLinks(links) {
   return links
     .map((link, index) => {
@@ -382,6 +397,34 @@ async function upsertPrivateLink(link) {
   const { id, label, description, url } = link;
   const { error } = await supabase.from("private_links").upsert({ id, label, description, url });
   if (error) console.error("Supabase private link upsert failed", error);
+}
+
+async function loadMembershipRequests() {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from("membership_requests")
+    .select("id,name,email,message,status,reason,created_at,reviewed_at")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Supabase membership requests load failed", error);
+    return null;
+  }
+  return data;
+}
+
+async function insertMembershipRequest(request) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("membership_requests").insert(request);
+  if (error) console.error("Supabase membership request insert failed", error);
+}
+
+async function updateMembershipRequestStatus(id, status, reason) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("membership_requests")
+    .update({ status, reason, reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) console.error("Supabase membership request review failed", error);
 }
 
 function formatCurrency(value) {
@@ -653,18 +696,18 @@ function EBoardPage() {
   );
 }
 
-function JoinPage() {
+function ContactPage() {
   return (
     <Page>
-      <Card className="overflow-hidden bg-[#2D2926] p-0 text-black">
+      <Card className="overflow-hidden bg-[#2D2926] p-0 text-white">
         <div className="grid md:grid-cols-[1fr_0.82fr]">
           <div className="p-8 md:p-12">
-            <Eyebrow light>Get involved</Eyebrow>
+            <Eyebrow light>Contact</Eyebrow>
             <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight md:text-5xl">
               Come to practice. Watch a round. Ask a question.
             </h1>
-            <p className="mt-5 max-w-2xl leading-7 text-white/75">
-              Add your practice times, room, Instagram, mailing list, and any public events here. This is the page prospective members should understand in under ten seconds.
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/78">
+              BUDS is open to BU students of every experience level. Reach out, stop by practice, or request membership through the join form when you are ready.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a href="mailto:boston.university.debate@gmail.com" className="inline-flex items-center justify-center gap-2 bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -673,19 +716,212 @@ function JoinPage() {
               <a href="https://www.instagram.com/budebatesociety?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/30 px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
                 Instagram <ExternalLink size={16} />
               </a>
+              <PrimaryButton href="/join">
+                Request to join <ArrowRight size={16} />
+              </PrimaryButton>
             </div>
           </div>
-          <div className="bg-[#CC0000] p-8 md:p-12">
-            <div className="border border-white/35 bg-white/10 p-6">
+          <div className="bg-[#CC0000] p-8 text-left md:p-12">
+            <div className="border border-white/35 bg-white/10 p-6 text-left">
               <MapPin className="mb-5 text-white" />
-              <p className="text-2xl font-black">Practice information</p>
-              <p className="mt-4 text-sm leading-6 text-white/85">Weekly Practices: Mondays & Wednesdays 7-8 PM</p>
-              <p className="mt-2 text-sm leading-6 text-white/85">Location: SAR 101</p>
-              <p className="mt-2 text-sm leading-6 text-white/85">Open to all BU students, including complete beginners.</p>
+              <p className="text-2xl font-black text-white">Practice information</p>
+              <p className="mt-4 text-sm leading-6 text-white/90">Weekly Practices: Mondays and Wednesdays, 7-8 PM</p>
+              <p className="mt-2 text-sm leading-6 text-white/90">Location: SAR 101</p>
+              <p className="mt-2 text-sm leading-6 text-white/90">Open to all BU students, including complete beginners.</p>
             </div>
           </div>
         </div>
       </Card>
+    </Page>
+  );
+}
+
+function JoinPage({ auth }) {
+  const [requests, setRequests] = useState(() => getStoredMembershipRequests());
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [reviewReasons, setReviewReasons] = useState({});
+  const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateRequests() {
+      const databaseRequests = await loadMembershipRequests();
+      if (!databaseRequests || ignore) return;
+      setRequests(databaseRequests);
+      saveStoredMembershipRequests(databaseRequests);
+    }
+
+    hydrateRequests();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const submitMembershipRequest = (event) => {
+    event.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
+
+    if (!isBuEmail) {
+      setSubmitMessage("Please use a BU email address ending in bu.edu.");
+      return;
+    }
+
+    const nextRequest = {
+      id: `member-${Date.now()}`,
+      name: name.trim(),
+      email: normalizedEmail,
+      message: message.trim(),
+      status: "Pending",
+      reason: "",
+      created_at: new Date().toISOString(),
+      reviewed_at: null,
+    };
+    const nextRequests = [nextRequest, ...requests];
+    setRequests(nextRequests);
+    saveStoredMembershipRequests(nextRequests);
+    insertMembershipRequest(nextRequest);
+    setName("");
+    setEmail("");
+    setMessage("");
+    setSubmitMessage("Request sent. An administrator can review it from this page.");
+  };
+
+  const reviewMembershipRequest = (id, status) => {
+    const reason = reviewReasons[id]?.trim();
+    if (!reason) {
+      setReviewReasons((current) => ({ ...current, [id]: "Please add a reason before deciding." }));
+      return;
+    }
+
+    const nextRequests = requests.map((request) => (
+      request.id === id
+        ? { ...request, status, reason, reviewed_at: new Date().toISOString() }
+        : request
+    ));
+    setRequests(nextRequests);
+    saveStoredMembershipRequests(nextRequests);
+    updateMembershipRequestStatus(id, status, reason);
+    setReviewReasons((current) => ({ ...current, [id]: "" }));
+  };
+
+  return (
+    <Page>
+      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <Card className="bg-[#CC0000] p-8 text-left text-white md:p-10">
+          <Eyebrow light>Join BUDS</Eyebrow>
+          <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight md:text-5xl">
+            Request membership in the Boston University Debate Society.
+          </h1>
+          <p className="mt-5 text-lg leading-8 text-white/88">
+            Tell us who you are and why you want to join. New requests appear in the administrator review section for approval or denial with a reason.
+          </p>
+          <div className="mt-8 border border-white/35 bg-white/10 p-5">
+            <p className="font-black uppercase tracking-[0.12em] text-white">Practice</p>
+            <p className="mt-3 text-sm leading-6 text-white/90">Mondays and Wednesdays, 7-8 PM in SAR 101.</p>
+          </div>
+        </Card>
+
+        <Card className="p-8 md:p-10">
+          <Eyebrow>Membership Request</Eyebrow>
+          <form onSubmit={submitMembershipRequest} className="mt-6 grid gap-5">
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              Name
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              BU Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="name@bu.edu"
+                required
+                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              Why do you want to join?
+              <textarea
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                rows={5}
+                required
+                className="resize-none border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
+            </label>
+            {submitMessage && <p className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">{submitMessage}</p>}
+            <button type="submit" className="inline-flex items-center justify-center gap-2 bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+              Submit request <ArrowRight size={16} />
+            </button>
+          </form>
+        </Card>
+      </div>
+
+      {isAdmin && (
+        <Card className="mt-6">
+          <div className="flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <Eyebrow>Administrator</Eyebrow>
+              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Membership requests</h2>
+            </div>
+            <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{requests.length} total</p>
+          </div>
+          <div className="mt-5 grid gap-4">
+            {requests.length === 0 && (
+              <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-5 text-sm font-bold text-[#5b5450]">
+                No membership requests yet.
+              </div>
+            )}
+            {requests.map((request) => (
+              <div key={request.id} className="grid gap-4 border border-[#ded8d2] bg-white p-5 lg:grid-cols-[1fr_0.95fr]">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-black text-[#2D2926]">{request.name}</h3>
+                    <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f6f4f2] text-[#6d6560]"}`}>
+                      {MEMBERSHIP_REQUEST_STATUSES.includes(request.status) ? request.status : "Pending"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm font-semibold text-[#6d6560]">{request.email}</p>
+                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message}</p>
+                  {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
+                </div>
+                <div className="grid gap-3">
+                  <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                    Decision reason
+                    <textarea
+                      value={reviewReasons[request.id] ?? ""}
+                      onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
+                      rows={4}
+                      placeholder="Required before accepting or denying"
+                      className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                    />
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button type="button" onClick={() => reviewMembershipRequest(request.id, "Accepted")} className="flex-1 bg-[#2D2926] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
+                      Accept
+                    </button>
+                    <button type="button" onClick={() => reviewMembershipRequest(request.id, "Denied")} className="flex-1 bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
+                      Deny
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </Page>
   );
 }
@@ -1422,8 +1658,10 @@ export default function App() {
         return <HistoryPage />;
       case "/eboard":
         return <EBoardPage />;
+      case "/contact":
+        return <ContactPage />;
       case "/join":
-        return <JoinPage />;
+        return <JoinPage auth={auth} />;
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":

@@ -38,6 +38,17 @@ create table if not exists private_links (
   created_at timestamptz not null default now()
 );
 
+create table if not exists membership_requests (
+  id text primary key,
+  name text not null,
+  email text not null,
+  message text not null default '',
+  status text not null default 'Pending' check (status in ('Pending', 'Accepted', 'Denied')),
+  reason text not null default '',
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
 insert into eboard_budget_settings (id, total)
 values ('default', 5750)
 on conflict (id) do nothing;
@@ -47,6 +58,7 @@ alter table eboard_budget_settings enable row level security;
 alter table eboard_budget_rows enable row level security;
 alter table eboard_notes enable row level security;
 alter table private_links enable row level security;
+alter table membership_requests enable row level security;
 
 create policy "Allow prototype reads for BUDS app"
 on eboard_agenda for select
@@ -99,6 +111,17 @@ using (true);
 
 create policy "Allow prototype writes for private links"
 on private_links for all
+to anon
+using (true)
+with check (true);
+
+create policy "Allow prototype reads for membership requests"
+on membership_requests for select
+to anon
+using (true);
+
+create policy "Allow prototype writes for membership requests"
+on membership_requests for all
 to anon
 using (true)
 with check (true);
