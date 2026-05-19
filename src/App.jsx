@@ -78,24 +78,28 @@ const homeCarouselSlides = [
 ];
 const noviceResources = [
   {
-    title: "APDA 101",
-    description: "A plain-language guide to rounds, speaker roles, prep time, points of information, and how tournaments work.",
-    tag: "Start here",
+    title: "APDA Online Website",
+    description: "League hub for resources, club standings, the APDA forum, and other debate information.",
+    tag: "Resource",
+    url: "https://apda.online/",
   },
   {
-    title: "Case Construction",
-    description: "Templates for PMCs, LOCs, mechanisms, burdens, and weighing so new debaters can build rounds faster.",
-    tag: "Core skill",
+    title: "APDA Novice Guide to Debate",
+    description: "Beginner-friendly guide made by APDA debaters that explains the basics of parliamentary debate for newcomers.",
+    tag: "Resource",
+    url: "https://docs.google.com/document/d/17ST1qeuoEmJB6zcFU80zfD6pmmSQVjwoERZu8btnOlM/edit?usp=sharing",
   },
   {
-    title: "Practice Drills",
-    description: "Short exercises for extensions, rebuttal, weighing, impact comparison, and flowing.",
-    tag: "Weekly use",
+    title: "APDA Dictionary",
+    description: "Reference for common APDA terms and lingo used in rounds, tournaments, and team discussions.",
+    tag: "Resource",
+    url: "https://docs.google.com/document/d/1M2odwpanTZe5w7Q4WCOCuBzlKkg2Re4-R48iIB3JT3g/edit?usp=sharing",
   },
   {
-    title: "Round Library",
-    description: "Annotated videos, sample cases, judge feedback, and model speeches from BUDS members.",
-    tag: "Members",
+    title: "APDA Master Guide",
+    description: "More exhaustive APDA knowledge base with links, advice, notes, and advanced resources.",
+    tag: "Resource",
+    url: "https://docs.google.com/document/d/1hO5OMV78lV0K4KjhqEFq3SqCRDGGdWmQT3DwS9ltZvA/edit?usp=sharing",
   },
 ];
 
@@ -1055,9 +1059,14 @@ function NoviceHubPage() {
             <span className="w-fit bg-[#CC0000] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white">{resource.tag}</span>
             <h2 className="mt-6 text-2xl font-black leading-tight text-[#2D2926]">{resource.title}</h2>
             <p className="mt-3 flex-1 text-sm leading-6 text-[#5b5450]">{resource.description}</p>
-            <button className="mt-6 inline-flex items-center gap-2 text-left text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]">
-              Add link <ChevronRight className="transition group-hover:translate-x-1" size={16} />
-            </button>
+            <a
+              href={resource.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-flex items-center gap-2 text-left text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]"
+            >
+              Open link <ChevronRight className="transition group-hover:translate-x-1" size={16} />
+            </a>
           </Card>
         ))}
       </div>
