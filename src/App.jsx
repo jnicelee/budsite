@@ -594,6 +594,23 @@ function formatMeetingDate(value) {
   }).format(date);
 }
 
+function getMemberLinkTitleValue(link) {
+  return link.id === "link-tournament-signups" ? "Tournament\nSign-Ups" : link.label;
+}
+
+function MemberLinkTitle({ link }) {
+  if (link.id === "link-tournament-signups") {
+    return (
+      <>
+        Tournament
+        <span className="block whitespace-nowrap">Sign-Ups</span>
+      </>
+    );
+  }
+
+  return link.label;
+}
+
 function Eyebrow({ children, light = false }) {
   return (
     <p className={`text-xs font-black uppercase tracking-[0.22em] ${light ? "text-white/75" : "text-[#CC0000]"}`}>
@@ -1973,7 +1990,7 @@ function PrivateHubPage({ auth, onLogout }) {
                           <label className="grid gap-2">
                             <span className="sr-only">Link Name</span>
                             <textarea
-                              value={link.label}
+                              value={getMemberLinkTitleValue(link)}
                               onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
                               rows={2}
                               className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-3xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
@@ -1991,7 +2008,9 @@ function PrivateHubPage({ auth, onLogout }) {
                         </>
                       ) : (
                         <>
-                          <h3 className="break-words text-3xl font-black leading-tight tracking-normal text-[#2D2926]">{link.label}</h3>
+                          <h3 className="break-words text-3xl font-black leading-tight tracking-normal text-[#2D2926]">
+                            <MemberLinkTitle link={link} />
+                          </h3>
                           <p className="mt-6 flex-1 text-lg font-medium leading-8 text-[#5b5450]">{link.description}</p>
                         </>
                       )}
