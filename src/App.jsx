@@ -1697,9 +1697,9 @@ function PrivateHubPage({ auth, onLogout }) {
       )}
 
       {visibleTab === "eboard" && isEboard && (
-        <div className="grid gap-3 xl:h-[calc(100vh-14.5rem)] xl:grid-cols-[0.92fr_1.28fr] xl:overflow-hidden">
-          <div className="grid min-h-0 gap-3 xl:grid-rows-[1fr_0.9fr]">
-            <Card className="relative flex min-h-0 flex-col p-4">
+        <div className="grid gap-5">
+          <div className="grid gap-5 xl:grid-cols-2">
+            <Card className="relative flex min-h-[34rem] flex-col p-5">
               <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#2D2926] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
                 Checked off
               </div>
@@ -1775,7 +1775,7 @@ function PrivateHubPage({ auth, onLogout }) {
               </div>
             </Card>
 
-            <Card className="flex min-h-0 flex-col p-4">
+            <Card className="flex min-h-[34rem] flex-col p-5">
               <div className="mb-4 flex items-center gap-3">
                 <DollarSign className="text-[#CC0000]" />
                 <h2 className="text-xl font-black text-[#2D2926]">Budget Tracker</h2>
@@ -1880,8 +1880,8 @@ function PrivateHubPage({ auth, onLogout }) {
             </Card>
           </div>
 
-          <div className="grid min-h-0 content-start">
-            <Card className="flex min-h-0 flex-col p-4 xl:h-full">
+          <div className="grid">
+            <Card className="flex min-h-0 flex-col p-5">
               <div className="mb-5 flex items-center gap-3">
                 <FileText className="text-[#CC0000]" />
                 <h2 className="text-xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
