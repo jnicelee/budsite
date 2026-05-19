@@ -2313,7 +2313,7 @@ function PrivateHubPage({ auth, onLogout }) {
         <div className="grid gap-5">
           <div className="grid gap-5 xl:grid-cols-2">
             <Card className="relative flex min-h-[34rem] flex-col p-5">
-              <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#2D2926] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
+              <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white shadow-[0_12px_30px_rgba(11,107,53,0.25)] transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
                 Checked off
               </div>
               <div className="mb-4 flex items-center justify-between gap-3">
