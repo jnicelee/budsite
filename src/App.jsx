@@ -1070,15 +1070,15 @@ function NoviceHubPage() {
           </Card>
         ))}
       </div>
-      <Card className="mt-6 flex flex-col gap-5 bg-[#2D2926] p-8 text-white md:flex-row md:items-center md:justify-between">
+      <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-8 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] md:grid-cols-[1fr_auto] md:items-center">
         <div>
-          <div className="mb-2 flex items-center gap-2 font-black text-white"><Lock size={16} /> Learn by Watching Rounds</div>
-          <p className="max-w-3xl text-sm leading-6 text-white/70">
+          <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
+          <p className="max-w-4xl text-xl font-black leading-tight text-white md:text-2xl">
             The best way to learn APDA is to stay for a practice round, or "pround," after practice. Demonstration rounds, walkthroughs, and examples are also shown regularly during meetings so new debaters can see how cases, rebuttals, and weighing work in real time.
           </p>
         </div>
-        <button className="bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">Members Only</button>
-      </Card>
+        <div className="border border-white/30 px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white md:justify-self-end">Members Only</div>
+      </section>
     </Page>
   );
 }
