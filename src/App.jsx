@@ -28,8 +28,10 @@ const EBOARD_AGENDA_STORAGE_KEY = "buds-eboard-agenda";
 const EBOARD_BUDGET_STORAGE_KEY = "buds-eboard-budget";
 const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
 const MEMBERSHIP_REQUESTS_STORAGE_KEY = "buds-membership-requests";
+const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
 const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
 const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
+const MEMBER_ACCOUNT_ROLES = ["member", "eboard"];
 const MEMBER_PASSWORD = "buds-members";
 const EBOARD_PASSWORD = "buds-eboard";
 const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
@@ -290,6 +292,19 @@ function saveStoredMembershipRequests(requests) {
   window.localStorage.setItem(MEMBERSHIP_REQUESTS_STORAGE_KEY, JSON.stringify(requests));
 }
 
+function getStoredMemberAccounts() {
+  try {
+    const stored = window.localStorage.getItem(MEMBER_ACCOUNTS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredMemberAccounts(accounts) {
+  window.localStorage.setItem(MEMBER_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
+}
+
 function enrichPrivateLinks(links) {
   return links
     .map((link, index) => {
@@ -404,7 +419,7 @@ async function loadMembershipRequests() {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from("membership_requests")
-    .select("id,name,email,message,status,reason,created_at,reviewed_at")
+    .select("id,name,email,password,message,status,reason,created_at,reviewed_at")
     .order("created_at", { ascending: false });
   if (error) {
     console.error("Supabase membership requests load failed", error);
@@ -432,6 +447,73 @@ async function deleteMembershipRequest(id) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from("membership_requests").delete().eq("id", id);
   if (error) console.error("Supabase membership request delete failed", error);
+}
+
+async function loadMemberAccounts() {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from("member_accounts")
+    .select("id,name,email,password,role,status,created_at,updated_at")
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.error("Supabase member accounts load failed", error);
+    return null;
+  }
+  return data;
+}
+
+async function findMemberAccount(email, password) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from("member_accounts")
+    .select("id,name,email,role,status")
+    .eq("email", email)
+    .eq("password", password)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) {
+    console.error("Supabase member login failed", error);
+    return null;
+  }
+  return data;
+}
+
+async function findMemberAccountByEmail(email) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from("member_accounts")
+    .select("id,name,email,password,role,status")
+    .eq("email", email)
+    .maybeSingle();
+  if (error) {
+    console.error("Supabase member account lookup failed", error);
+    return null;
+  }
+  return data;
+}
+
+async function upsertMemberAccount(account) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("member_accounts").upsert(account);
+  if (error) console.error("Supabase member account upsert failed", error);
+}
+
+async function updateMemberAccountRole(id, role) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("member_accounts")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) console.error("Supabase member role update failed", error);
+}
+
+async function revokeMemberAccount(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("member_accounts")
+    .update({ status: "revoked", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) console.error("Supabase member revoke failed", error);
 }
 
 function formatCurrency(value) {
@@ -766,6 +848,7 @@ function JoinPage({ auth }) {
   const [requests, setRequests] = useState(() => getStoredMembershipRequests());
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [requestPassword, setRequestPassword] = useState("");
   const [message, setMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitMessageType, setSubmitMessageType] = useState("success");
@@ -800,10 +883,17 @@ function JoinPage({ auth }) {
       return;
     }
 
+    if (requestPassword.trim().length < 6) {
+      setSubmitMessageType("error");
+      setSubmitMessage("Please choose a password with at least 6 characters.");
+      return;
+    }
+
     const nextRequest = {
       id: `member-${Date.now()}`,
       name: name.trim(),
       email: normalizedEmail,
+      password: requestPassword,
       message: message.trim(),
       status: "Pending",
       reason: "",
@@ -816,6 +906,7 @@ function JoinPage({ auth }) {
     insertMembershipRequest(nextRequest);
     setName("");
     setEmail("");
+    setRequestPassword("");
     setMessage("");
     setSubmitMessageType("success");
     setSubmitMessage("Request sent. An administrator can review it from this page.");
@@ -836,6 +927,18 @@ function JoinPage({ auth }) {
     setRequests(nextRequests);
     saveStoredMembershipRequests(nextRequests);
     updateMembershipRequestStatus(id, status, reason);
+    const reviewedRequest = requests.find((request) => request.id === id);
+    if (status === "Accepted" && reviewedRequest) {
+      upsertMemberAccount({
+        id: reviewedRequest.email,
+        name: reviewedRequest.name,
+        email: reviewedRequest.email,
+        password: reviewedRequest.password,
+        role: "member",
+        status: "active",
+        updated_at: new Date().toISOString(),
+      });
+    }
     setReviewReasons((current) => ({ ...current, [id]: "" }));
   };
 
@@ -896,6 +999,18 @@ function JoinPage({ auth }) {
                 required
                 className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
               />
+            </label>
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              Choose Password
+              <input
+                type="password"
+                value={requestPassword}
+                onChange={(event) => setRequestPassword(event.target.value)}
+                minLength={6}
+                required
+                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
+              <span className="text-xs font-bold normal-case tracking-normal text-[#8f8781]">At least 6 characters. This is what you will use to log in if accepted.</span>
             </label>
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               <span>
@@ -1000,7 +1115,7 @@ function LoginPage({ onLogin }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
@@ -1012,6 +1127,36 @@ function LoginPage({ onLogin }) {
     if (normalizedEmail === MASTER_EBOARD_EMAIL && !isAdminLogin) {
       setError("The administrator account must use the administrator password.");
       return;
+    }
+
+    if (!isAdminLogin && !isSecondaryEboardLogin) {
+      const existingAccount = await findMemberAccountByEmail(normalizedEmail);
+      if (existingAccount) {
+        if (existingAccount.status === "revoked") {
+          setError("This membership has been revoked. Contact BUDS if this is a mistake.");
+          return;
+        }
+
+        if (existingAccount.password !== password) {
+          setError("Incorrect account password.");
+          return;
+        }
+
+        const auth = { role: existingAccount.role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
+        saveStoredAuth(auth);
+        onLogin(auth);
+        navigateTo("/hub");
+        return;
+      }
+
+      const account = await findMemberAccount(normalizedEmail, password);
+      if (account) {
+        const auth = { role: account.role, email: account.email, name: account.name, accountId: account.id };
+        saveStoredAuth(auth);
+        onLogin(auth);
+        navigateTo("/hub");
+        return;
+      }
     }
 
     if (!isBuEmail && !isSpecialLogin) {
@@ -1037,12 +1182,12 @@ function LoginPage({ onLogin }) {
       </PageHeader>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="bg-[#2D2926] p-8 text-white">
-          <Eyebrow light>Demo passwords</Eyebrow>
+          <Eyebrow light>Private Access</Eyebrow>
           <p className="mt-5 text-lg leading-8 text-white/78">
-            This is a frontend-only password gate for now. Use <span className="font-black text-white">{MEMBER_PASSWORD}</span> for members and <span className="font-black text-white">{EBOARD_PASSWORD}</span> for e-board.
+            Accepted members can log in with the password they chose on the join form. E-board accounts can be promoted from the administrator Members tab.
           </p>
           <p className="mt-4 text-sm leading-6 text-white/70">
-            Administrator login: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>. Secondary e-board login: <span className="font-black text-white">{SECONDARY_EBOARD_EMAIL}</span> with the same password.
+            Administrator login: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>. Legacy shared passwords are still available for setup: <span className="font-black text-white">{MEMBER_PASSWORD}</span> and <span className="font-black text-white">{EBOARD_PASSWORD}</span>.
           </p>
           <p className="mt-4 text-sm leading-6 text-white/60">
             Real privacy should be connected to a backend auth service before storing actual team documents, budgets, or notes.
@@ -1121,6 +1266,7 @@ function PrivateHubPage({ auth, onLogout }) {
   const [budget, setBudget] = useState(() => getStoredBudget());
   const [newBudgetCategory, setNewBudgetCategory] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
+  const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
 
   const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
   const isEboard = auth?.role === "eboard" || isAdmin;
@@ -1159,6 +1305,23 @@ function PrivateHubPage({ auth, onLogout }) {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateMemberAccounts() {
+      const databaseAccounts = await loadMemberAccounts();
+      if (!databaseAccounts || ignore) return;
+      setMemberAccounts(databaseAccounts);
+      saveStoredMemberAccounts(databaseAccounts);
+    }
+
+    if (isAdmin) hydrateMemberAccounts();
+
+    return () => {
+      ignore = true;
+    };
+  }, [isAdmin]);
 
   if (!auth) {
     return (
@@ -1301,6 +1464,26 @@ function PrivateHubPage({ auth, onLogout }) {
     if (updatedLink) upsertPrivateLink(updatedLink);
   };
 
+  const updateMemberStatus = (id, role) => {
+    if (!isAdmin) return;
+    const nextAccounts = memberAccounts.map((account) => (
+      account.id === id ? { ...account, role, updated_at: new Date().toISOString() } : account
+    ));
+    setMemberAccounts(nextAccounts);
+    saveStoredMemberAccounts(nextAccounts);
+    updateMemberAccountRole(id, role);
+  };
+
+  const revokeMember = (id) => {
+    if (!isAdmin) return;
+    const nextAccounts = memberAccounts.map((account) => (
+      account.id === id ? { ...account, status: "revoked", updated_at: new Date().toISOString() } : account
+    ));
+    setMemberAccounts(nextAccounts);
+    saveStoredMemberAccounts(nextAccounts);
+    revokeMemberAccount(id);
+  };
+
   return (
     <Page className={isEboard ? "max-w-[98rem] py-4 md:py-5" : ""}>
       <div className="mb-3 flex flex-col gap-3 border-b-4 border-[#CC0000] bg-white p-3 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:flex-row md:items-center md:justify-between">
@@ -1341,6 +1524,15 @@ function PrivateHubPage({ auth, onLogout }) {
             className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "eboard" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
           >
             E-Board Workspace
+          </button>
+        )}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("members")}
+            className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "members" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+          >
+            Members
           </button>
         )}
       </div>
@@ -1416,6 +1608,73 @@ function PrivateHubPage({ auth, onLogout }) {
             ))}
           </div>
         </div>
+      )}
+
+      {visibleTab === "members" && isAdmin && (
+        <Card className="p-5">
+          <div className="flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <Eyebrow>Administrator</Eyebrow>
+              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Member Accounts</h2>
+              <p className="mt-2 text-sm leading-6 text-[#5b5450]">Change account status between member and e-board, or revoke membership access.</p>
+            </div>
+            <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{memberAccounts.length} accounts</p>
+          </div>
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
+              <thead className="bg-[#2D2926] text-white">
+                <tr>
+                  <th className="px-4 py-3 font-black">Name</th>
+                  <th className="px-4 py-3 font-black">Email</th>
+                  <th className="px-4 py-3 font-black">Status</th>
+                  <th className="px-4 py-3 font-black">Role</th>
+                  <th className="px-4 py-3 font-black">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {memberAccounts.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] px-4 py-6 text-center font-bold text-[#5b5450]">
+                      No accepted member accounts yet.
+                    </td>
+                  </tr>
+                )}
+                {memberAccounts.map((account) => (
+                  <tr key={account.id} className={`${account.status === "revoked" ? "bg-[#d4d0cc] opacity-80" : "bg-white"} border-b border-[#ded8d2]`}>
+                    <td className="px-4 py-3 font-black text-[#2D2926]">{account.name}</td>
+                    <td className="px-4 py-3 font-semibold text-[#5b5450]">{account.email}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 text-xs font-black uppercase tracking-[0.08em] ${account.status === "revoked" ? "bg-[#2D2926] text-white" : "bg-[#e5f7ec] text-[#0b6b35]"}`}>
+                        {account.status === "revoked" ? "Revoked" : "Active"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={MEMBER_ACCOUNT_ROLES.includes(account.role) ? account.role : "member"}
+                        onChange={(event) => updateMemberStatus(account.id, event.target.value)}
+                        disabled={account.status === "revoked"}
+                        className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 font-bold uppercase tracking-[0.08em] text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-50"
+                      >
+                        <option value="member">Member</option>
+                        <option value="eboard">E-Board</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => revokeMember(account.id)}
+                        disabled={account.status === "revoked"}
+                        className="inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:bg-[#8f8781]"
+                      >
+                        Revoke
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
       {visibleTab === "eboard" && isEboard && (

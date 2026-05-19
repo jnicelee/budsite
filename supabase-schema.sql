@@ -42,11 +42,23 @@ create table if not exists membership_requests (
   id text primary key,
   name text not null,
   email text not null,
+  password text not null default '',
   message text not null default '',
   status text not null default 'Pending' check (status in ('Pending', 'Accepted', 'Denied')),
   reason text not null default '',
   created_at timestamptz not null default now(),
   reviewed_at timestamptz
+);
+
+create table if not exists member_accounts (
+  id text primary key,
+  name text not null,
+  email text not null unique,
+  password text not null,
+  role text not null default 'member' check (role in ('member', 'eboard')),
+  status text not null default 'active' check (status in ('active', 'revoked')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 insert into eboard_budget_settings (id, total)
@@ -59,6 +71,7 @@ alter table eboard_budget_rows enable row level security;
 alter table eboard_notes enable row level security;
 alter table private_links enable row level security;
 alter table membership_requests enable row level security;
+alter table member_accounts enable row level security;
 
 create policy "Allow prototype reads for BUDS app"
 on eboard_agenda for select
@@ -122,6 +135,17 @@ using (true);
 
 create policy "Allow prototype writes for membership requests"
 on membership_requests for all
+to anon
+using (true)
+with check (true);
+
+create policy "Allow prototype reads for member accounts"
+on member_accounts for select
+to anon
+using (true);
+
+create policy "Allow prototype writes for member accounts"
+on member_accounts for all
 to anon
 using (true)
 with check (true);
