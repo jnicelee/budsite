@@ -1477,13 +1477,25 @@ function PrivateHubPage({ auth, onLogout }) {
     if (!canEdit) return;
     if (!lastDeletedAgendaItem) return;
     const restoredItem = { ...lastDeletedAgendaItem, completed_at: null };
-    const nextAgenda = agenda.map((agendaItem) => (
-      agendaItem.id === restoredItem.id ? restoredItem : agendaItem
-    ));
+    const itemStillExists = agenda.some((agendaItem) => agendaItem.id === restoredItem.id);
+    const nextAgenda = itemStillExists
+      ? agenda.map((agendaItem) => (
+        agendaItem.id === restoredItem.id ? restoredItem : agendaItem
+      ))
+      : [restoredItem, ...agenda];
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
     upsertAgendaItem(restoredItem);
     setLastDeletedAgendaItem(null);
+  };
+
+  const removeAgendaItem = (item) => {
+    if (!canEdit) return;
+    const nextAgenda = agenda.filter((agendaItem) => agendaItem.id !== item.id);
+    setLastDeletedAgendaItem(item);
+    setAgenda(nextAgenda);
+    saveStoredAgenda(nextAgenda);
+    deleteAgendaItem(item.id);
   };
 
   const updateBudget = (nextBudget) => {
@@ -1857,26 +1869,37 @@ function PrivateHubPage({ auth, onLogout }) {
                   {agenda.map((item) => {
                     const isComplete = Boolean(item.completed_at);
                     return (
-                      <label key={item.id} className={`flex gap-3 border p-3 transition ${isComplete ? "border-[#c9c2bc] bg-[#d4d0cc] opacity-80" : "border-[#ded8d2] bg-[#f6f4f2]"}`}>
-                        <input
-                          type="checkbox"
-                          checked={isComplete}
-                          onChange={() => completeAgendaItem(item)}
-                          disabled={!canEdit}
-                          className="mt-1 h-4 w-4 shrink-0 accent-[#CC0000]"
-                        />
-                        <span className="min-w-0">
-                          <span className={`block font-black leading-snug ${isComplete ? "text-[#5b5450] line-through" : "text-[#2D2926]"}`}>{item.text}</span>
-                          <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.08em] text-[#6d6560]">
-                            {item.owner || "Unassigned"} - Due: {item.due || "Add date"}
-                          </span>
-                          {isComplete && (
-                            <span className="mt-1 block text-xs font-bold text-[#6d6560]">
-                              Completed {new Date(item.completed_at).toLocaleDateString()} - can be unchecked for 2 weeks.
+                      <div key={item.id} className={`group flex items-start gap-3 border p-3 transition ${isComplete ? "border-[#c9c2bc] bg-[#d4d0cc] opacity-80" : "border-[#ded8d2] bg-[#f6f4f2]"}`}>
+                        <label className="flex min-w-0 flex-1 gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isComplete}
+                            onChange={() => completeAgendaItem(item)}
+                            disabled={!canEdit}
+                            className="mt-1 h-4 w-4 shrink-0 accent-[#CC0000]"
+                          />
+                          <span className="min-w-0">
+                            <span className={`block font-black leading-snug ${isComplete ? "text-[#5b5450] line-through" : "text-[#2D2926]"}`}>{item.text}</span>
+                            <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.08em] text-[#6d6560]">
+                              {item.owner || "Unassigned"} - Due: {item.due || "Add date"}
                             </span>
-                          )}
-                        </span>
-                      </label>
+                            {isComplete && (
+                              <span className="mt-1 block text-xs font-bold text-[#6d6560]">
+                                Completed {new Date(item.completed_at).toLocaleDateString()} - can be unchecked for 2 weeks.
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeAgendaItem(item)}
+                          disabled={!canEdit}
+                          aria-label={`Delete ${item.text}`}
+                          className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center border border-[#c9c2bc] bg-white text-[#6d6560] opacity-0 transition hover:border-[#CC0000] hover:text-[#CC0000] focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
