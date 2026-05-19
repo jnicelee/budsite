@@ -2712,7 +2712,7 @@ export default function App() {
     <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,rgba(45,41,38,0.045)_1px,transparent_1px),linear-gradient(rgba(45,41,38,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
-      <header className="sticky top-0 z-50 border-b border-[#e9e3dd] bg-white/90 shadow-[0_14px_40px_rgba(45,41,38,0.05)] backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-[#c9c7c3] bg-[#e1dfdc]/95 shadow-[0_16px_42px_rgba(45,41,38,0.08)] backdrop-blur-xl">
         <nav className="mx-auto flex max-w-[98rem] items-center justify-between gap-5 px-5 py-3 md:px-8">
           <SiteLink href="/" className="group flex min-w-0 items-center gap-3">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm bg-[#CC0000] text-base font-black text-white transition group-hover:bg-[#A00000]">
