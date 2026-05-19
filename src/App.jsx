@@ -66,15 +66,22 @@ const noviceResources = [
 ];
 
 const privateLinks = [
-  { id: "link-master-document", label: "Master Document", description: "Team-wide reference document for cases, logistics, expectations, and shared resources.", url: "#" },
-  { id: "link-tournament-signup", label: "Tournament Sign Up Sheet", description: "Add tournament availability, partner preferences, travel needs, and judging notes.", url: "#" },
-  { id: "link-practice-signup", label: "Practice Sign Up Sheet", description: "Track attendance, speaking drills, practice rounds, and novice pairing requests.", url: "#" },
-  { id: "link-matter-file", label: "Matter File", description: "Central research bank for examples, mechanisms, weighing blocks, and recurring case areas.", url: "#" },
-  { id: "link-round-recordings", label: "Round Recordings", description: "Private video library for practice rounds, tournament rounds, and feedback review.", url: "#" },
-  { id: "link-judge-feedback", label: "Judge Feedback Archive", description: "Collect ballots, oral feedback, and coaching notes by tournament and team.", url: "#" },
-  { id: "link-casebook", label: "Casebook", description: "Shared shells, extensions, opposition prep, and practice cases for members.", url: "#" },
-  { id: "link-travel-logistics", label: "Travel Logistics", description: "Hotels, rides, reimbursement forms, packing notes, and tournament weekend details.", url: "#" },
+  { id: "link-buds-drive", section: "BUDS Team Specific Links", order: 1, label: "BUDS Drive", description: "Google Drive that contains the casebook, resources, equity forms, meeting notes, and other shared team materials.", url: "http://tinyurl.com/budsdrive" },
+  { id: "link-equity-complaint", section: "BUDS Team Specific Links", order: 2, label: "Equity Complaint Form", description: "Form to express concerns about inequity among debaters or within the team environment.", url: "https://tinyurl.com/budsequity" },
+  { id: "link-tournament-signups", section: "BUDS Team Specific Links", order: 3, label: "Tournament Sign-Ups", description: "List of tournaments BUDS plans to attend, where members can sign up as competitors, judges, or mark that they are looking for a partner.", url: "https://docs.google.com/spreadsheets/d/1HUdRoHPHAwAfzchtA406yVSuRHhgjy-MGMmQbiouGnk/edit?usp=sharing" },
+  { id: "link-events-calendar", section: "BUDS Team Specific Links", order: 4, label: "Events Google Calendar", description: "Add this calendar to see upcoming BUDS events, practices, and tournaments in Google Calendar.", url: "https://calendar.google.com/calendar/u/0?cid=Y18yYmU4Mjk3YTk1NjE3MjRmMjIzNDc5MmU5Y2Q2OGVkOWYyZmM1ZDZjNmJlOTEwMDU2YjVhNzI1OGQ1MDk4Y2Y3QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20" },
+  { id: "link-big-little", section: "BUDS Team Specific Links", order: 5, label: "Big-Little Form", description: "Form for new members to rank preferences for bigs in the BUDS mentor pairing system.", url: "https://forms.gle/KXnfMfoggy6Mv4A1A" },
+  { id: "link-prep-out", section: "BUDS Team Specific Links", order: 6, label: "Prep-Out Form", description: "Request prep-outs for cases you have hit so the team can build stronger shared responses.", url: "http://tinyurl.com/budsprepouts" },
+  { id: "link-birthday", section: "BUDS Team Specific Links", order: 7, label: "Birthday Form", description: "Share your birthday so BUDS can add it to the calendar, say happy birthday, and make tournament registration easier.", url: "https://forms.gle/7zdPNeiaw4XfMmoy7" },
+  { id: "link-feedback", section: "BUDS Team Specific Links", order: 8, label: "Feedback Form", description: "Propose ideas or give feedback about lectures, events, tournaments, and the club in general.", url: "https://forms.gle/ZiTMaAG1YNthi4Rh7" },
+  { id: "link-apda-website", section: "Debater Resources", order: 9, label: "APDA Website", description: "League hub for resources, club standings, the APDA forum, and other debate information.", url: "https://apda.online/" },
+  { id: "link-apda-novice-guide", section: "Debater Resources", order: 10, label: "APDA Novice Guide to Debate", description: "Beginner-friendly guide made by APDA debaters that explains the basics of parliamentary debate for newcomers.", url: "https://docs.google.com/document/d/17ST1qeuoEmJB6zcFU80zfD6pmmSQVjwoERZu8btnOlM/edit?usp=sharing" },
+  { id: "link-apda-dictionary", section: "Debater Resources", order: 11, label: "APDA Dictionary", description: "Reference for common APDA terms and lingo used in rounds, tournaments, and team discussions.", url: "https://docs.google.com/document/d/1M2odwpanTZe5w7Q4WCOCuBzlKkg2Re4-R48iIB3JT3g/edit?usp=sharing" },
+  { id: "link-apda-master-guide", section: "Debater Resources", order: 12, label: "APDA Master Guide", description: "More exhaustive APDA knowledge base with links, advice, notes, and advanced resources.", url: "https://docs.google.com/document/d/1hO5OMV78lV0K4KjhqEFq3SqCRDGGdWmQT3DwS9ltZvA/edit?usp=sharing" },
 ];
+
+const privateLinkDefaultsById = Object.fromEntries(privateLinks.map((link) => [link.id, link]));
+const privateLinkSections = ["BUDS Team Specific Links", "Debater Resources"];
 
 const agendaItems = [
   { id: "agenda-1", text: "Tournament registration and travel", owner: "President", due: "Add date" },
@@ -256,7 +263,7 @@ function saveStoredBudget(budget) {
 function getStoredPrivateLinks() {
   try {
     const stored = window.localStorage.getItem(PRIVATE_LINKS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : privateLinks;
+    return stored ? enrichPrivateLinks(JSON.parse(stored)) : privateLinks;
   } catch {
     return privateLinks;
   }
@@ -264,6 +271,20 @@ function getStoredPrivateLinks() {
 
 function saveStoredPrivateLinks(links) {
   window.localStorage.setItem(PRIVATE_LINKS_STORAGE_KEY, JSON.stringify(links));
+}
+
+function enrichPrivateLinks(links) {
+  return links
+    .map((link, index) => {
+      const defaults = privateLinkDefaultsById[link.id];
+      return {
+        ...defaults,
+        ...link,
+        section: link.section || defaults?.section || "Team Links",
+        order: link.order || defaults?.order || index + 100,
+      };
+    })
+    .sort((a, b) => a.order - b.order);
 }
 
 function normalizeSupabaseBudgetRow(row) {
@@ -313,7 +334,7 @@ async function loadDatabaseState() {
         ? budgetRowsResult.data.map(normalizeSupabaseBudgetRow)
         : initialBudgetRows,
     },
-    privateLinks: privateLinksResult.data.length > 0 ? privateLinksResult.data : privateLinks,
+    privateLinks: privateLinksResult.data.length > 0 ? enrichPrivateLinks(privateLinksResult.data) : privateLinks,
   };
 }
 
@@ -357,7 +378,8 @@ async function insertNote(note) {
 
 async function upsertPrivateLink(link) {
   if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("private_links").upsert(link);
+  const { id, label, description, url } = link;
+  const { error } = await supabase.from("private_links").upsert({ id, label, description, url });
   if (error) console.error("Supabase private link upsert failed", error);
 }
 
@@ -795,6 +817,10 @@ function PrivateHubPage({ auth, onLogout }) {
   const totalSpent = budget.rows.reduce((sum, row) => sum + (Number(row.spent) || 0), 0);
   const totalAllocated = budget.rows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
   const remainingBudget = (Number(budget.total) || 0) - totalSpent;
+  const memberLinksBySection = privateLinkSections.map((section) => ({
+    section,
+    links: memberLinks.filter((link) => link.section === section),
+  })).filter((group) => group.links.length > 0);
 
   useEffect(() => {
     let ignore = false;
@@ -994,45 +1020,57 @@ function PrivateHubPage({ auth, onLogout }) {
 
       {visibleTab === "member" && (
         <div>
-          <PageHeader eyebrow="Members Only" title="Private novice hub and team links.">
-            Replace each placeholder with the private documents, sheets, and files your team already uses.
+          <PageHeader eyebrow="Members Only" title="Private BUDS links and debate resources.">
+            Use these team documents, forms, calendars, and APDA guides throughout the season.
           </PageHeader>
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {memberLinks.map((link) => (
-              <div key={link.id} className="group border border-[#ded8d2] bg-white p-6 shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1">
-                <FileText className="mb-5 text-[#CC0000]" />
-                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
-                  Category
-                  <input
-                    type="text"
-                    value={link.label}
-                    onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
-                    className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-base font-black normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                  />
-                </label>
-                <label className="mt-3 grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
-                  Description
-                  <textarea
-                    value={link.description}
-                    onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                    rows={3}
-                    className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#5b5450] outline-none focus:border-[#CC0000]"
-                  />
-                </label>
-                <label className="mt-3 grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
-                  URL
-                  <input
-                    type="url"
-                    value={link.url}
-                    onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
-                    placeholder="https://..."
-                    className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                  />
-                </label>
-                <a href={link.url || "#"} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]">
-                  Open link <ChevronRight className="transition group-hover:translate-x-1" size={16} />
-                </a>
-              </div>
+          <div className="grid gap-7">
+            {memberLinksBySection.map((group) => (
+              <section key={group.section} className="grid gap-3">
+                <div className="flex items-center justify-between border-b-2 border-[#CC0000] pb-2">
+                  <h2 className="text-xl font-black text-[#2D2926]">{group.section}</h2>
+                  <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{group.links.length} links</span>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {group.links.map((link) => (
+                    <div key={link.id} className="group flex min-h-[21rem] flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <FileText className="shrink-0 text-[#CC0000]" />
+                        <a href={link.url || "#"} target="_blank" rel="noreferrer" aria-label={`Open ${link.label}`} className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f6f4f2] text-[#2D2926] transition group-hover:border-[#CC0000] group-hover:text-[#CC0000]">
+                          <ExternalLink size={16} />
+                        </a>
+                      </div>
+                      <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
+                        Link Name
+                        <input
+                          type="text"
+                          value={link.label}
+                          onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
+                          className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-base font-black normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                      <label className="mt-3 grid flex-1 gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
+                        Description
+                        <textarea
+                          value={link.description}
+                          onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
+                          rows={4}
+                          className="h-full min-h-24 resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#5b5450] outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                      <label className="mt-3 grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
+                        URL
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                          placeholder="https://..."
+                          className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </div>
