@@ -32,6 +32,7 @@ const EBOARD_PASSWORD = "buds-eboard";
 const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
 const SECONDARY_EBOARD_EMAIL = "iankim6488@gmail.com";
 const MASTER_EBOARD_PASSWORD = "computa";
+const ADMIN_ROLE = "admin";
 
 const navItems = [
   { label: "About", href: "/about" },
@@ -699,20 +700,27 @@ function LoginPage({ onLogin }) {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
-    const isMasterEboard = [MASTER_EBOARD_EMAIL, SECONDARY_EBOARD_EMAIL].includes(normalizedEmail) && password === MASTER_EBOARD_PASSWORD;
+    const isAdminLogin = normalizedEmail === MASTER_EBOARD_EMAIL && password === MASTER_EBOARD_PASSWORD;
+    const isSecondaryEboardLogin = normalizedEmail === SECONDARY_EBOARD_EMAIL && password === MASTER_EBOARD_PASSWORD;
+    const isSpecialLogin = isAdminLogin || isSecondaryEboardLogin;
     const hasValidRolePassword = password === (loginType === "eboard" ? EBOARD_PASSWORD : MEMBER_PASSWORD);
 
-    if (!isBuEmail && !isMasterEboard) {
+    if (normalizedEmail === MASTER_EBOARD_EMAIL && !isAdminLogin) {
+      setError("The administrator account must use the administrator password.");
+      return;
+    }
+
+    if (!isBuEmail && !isSpecialLogin) {
       setError("Please use a BU email address ending in bu.edu.");
       return;
     }
 
-    if (!isMasterEboard && !hasValidRolePassword) {
+    if (!isSpecialLogin && !hasValidRolePassword) {
       setError(`Incorrect ${loginType === "eboard" ? "e-board" : "member"} password.`);
       return;
     }
 
-    const auth = { role: isMasterEboard ? "eboard" : loginType, email: normalizedEmail };
+    const auth = { role: isAdminLogin ? ADMIN_ROLE : isSecondaryEboardLogin ? "eboard" : loginType, email: normalizedEmail };
     saveStoredAuth(auth);
     onLogin(auth);
     navigateTo("/hub");
@@ -730,7 +738,7 @@ function LoginPage({ onLogin }) {
             This is a frontend-only password gate for now. Use <span className="font-black text-white">{MEMBER_PASSWORD}</span> for members and <span className="font-black text-white">{EBOARD_PASSWORD}</span> for e-board.
           </p>
           <p className="mt-4 text-sm leading-6 text-white/70">
-            Master e-board logins: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> or <span className="font-black text-white">{SECONDARY_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>.
+            Administrator login: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>. Secondary e-board login: <span className="font-black text-white">{SECONDARY_EBOARD_EMAIL}</span> with the same password.
           </p>
           <p className="mt-4 text-sm leading-6 text-white/60">
             Real privacy should be connected to a backend auth service before storing actual team documents, budgets, or notes.
@@ -794,7 +802,7 @@ function LoginPage({ onLogin }) {
 }
 
 function PrivateHubPage({ auth, onLogout }) {
-  const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" ? "eboard" : "member"));
+  const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
@@ -810,7 +818,9 @@ function PrivateHubPage({ auth, onLogout }) {
   const [newBudgetCategory, setNewBudgetCategory] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
 
-  const isEboard = auth?.role === "eboard";
+  const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
+  const isEboard = auth?.role === "eboard" || isAdmin;
+  const canEdit = isAdmin;
   const visibleTab = isEboard ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
@@ -862,6 +872,7 @@ function PrivateHubPage({ auth, onLogout }) {
 
   const handleNoteSubmit = (event) => {
     event.preventDefault();
+    if (!canEdit) return;
     const nextNote = {
       id: `${meetingDate}-${Date.now()}`,
       date: meetingDate,
@@ -880,6 +891,7 @@ function PrivateHubPage({ auth, onLogout }) {
 
   const handleAgendaSubmit = (event) => {
     event.preventDefault();
+    if (!canEdit) return;
     const text = newAgendaText.trim();
     if (!text) return;
 
@@ -900,6 +912,7 @@ function PrivateHubPage({ auth, onLogout }) {
   };
 
   const completeAgendaItem = (item) => {
+    if (!canEdit) return;
     const nextAgenda = agenda.filter((agendaItem) => agendaItem.id !== item.id);
     setLastDeletedAgendaItem(item);
     setAgenda(nextAgenda);
@@ -910,6 +923,7 @@ function PrivateHubPage({ auth, onLogout }) {
   };
 
   const undoAgendaDelete = () => {
+    if (!canEdit) return;
     if (!lastDeletedAgendaItem) return;
     const nextAgenda = [lastDeletedAgendaItem, ...agenda];
     setAgenda(nextAgenda);
@@ -924,12 +938,14 @@ function PrivateHubPage({ auth, onLogout }) {
   };
 
   const updateBudgetTotal = (total) => {
+    if (!canEdit) return;
     const nextBudget = { ...budget, total };
     updateBudget(nextBudget);
     upsertBudgetSettings(total);
   };
 
   const updateBudgetRow = (id, field, value) => {
+    if (!canEdit) return;
     if (field === "status" && value === "Denied") {
       deleteBudgetRow(id);
       updateBudget({
@@ -954,6 +970,7 @@ function PrivateHubPage({ auth, onLogout }) {
 
   const addBudgetRow = (event) => {
     event.preventDefault();
+    if (!canEdit) return;
     const category = newBudgetCategory.trim();
     if (!category) return;
 
@@ -970,6 +987,7 @@ function PrivateHubPage({ auth, onLogout }) {
   };
 
   const updateMemberLink = (id, field, value) => {
+    if (!canEdit) return;
     const nextLinks = memberLinks.map((link) => (
       link.id === id ? { ...link, [field]: value } : link
     ));
@@ -989,6 +1007,11 @@ function PrivateHubPage({ auth, onLogout }) {
           </h1>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="text-xs font-semibold text-[#6d6560]">{auth.email}</p>
+            {isAdmin && (
+              <span className="bg-[#2D2926] px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-white">
+                Administrator
+              </span>
+            )}
             <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
               {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
             </span>
@@ -1038,38 +1061,49 @@ function PrivateHubPage({ auth, onLogout }) {
                           {group.section === "Debater Resources" ? "Resource" : "Team Link"}
                         </span>
                       </div>
-                      <label className="grid gap-2">
-                        <span className="sr-only">Link Name</span>
-                        <input
-                          type="text"
-                          value={link.label}
-                          onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
-                          className="w-full border-0 bg-transparent p-0 text-3xl font-black tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
-                        />
-                      </label>
-                      <label className="mt-6 grid flex-1 gap-2">
-                        <span className="sr-only">Description</span>
-                        <textarea
-                          value={link.description}
-                          onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                          rows={5}
-                          className="h-full min-h-32 resize-none border-0 bg-transparent p-0 text-lg font-medium leading-8 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
-                        />
-                      </label>
+                      {canEdit ? (
+                        <>
+                          <label className="grid gap-2">
+                            <span className="sr-only">Link Name</span>
+                            <input
+                              type="text"
+                              value={link.label}
+                              onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
+                              className="w-full border-0 bg-transparent p-0 text-3xl font-black tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
+                            />
+                          </label>
+                          <label className="mt-6 grid flex-1 gap-2">
+                            <span className="sr-only">Description</span>
+                            <textarea
+                              value={link.description}
+                              onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
+                              rows={5}
+                              className="h-full min-h-32 resize-none border-0 bg-transparent p-0 text-lg font-medium leading-8 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
+                            />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="text-3xl font-black tracking-normal text-[#2D2926]">{link.label}</h3>
+                          <p className="mt-6 flex-1 text-lg font-medium leading-8 text-[#5b5450]">{link.description}</p>
+                        </>
+                      )}
                       <div className="mt-7 grid gap-4">
                         <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-base font-black uppercase tracking-[0.18em] text-[#CC0000]">
                           Open link <ChevronRight className="transition group-hover:translate-x-1" size={20} />
                         </a>
-                        <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
-                          Edit URL
-                          <input
-                            type="url"
-                            value={link.url}
-                            onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
-                            placeholder="https://..."
-                            className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                          />
-                        </label>
+                        {canEdit && (
+                          <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
+                            Edit URL
+                            <input
+                              type="url"
+                              value={link.url}
+                              onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                              placeholder="https://..."
+                              className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1095,7 +1129,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 <button
                   type="button"
                   onClick={undoAgendaDelete}
-                  disabled={!lastDeletedAgendaItem}
+                  disabled={!canEdit || !lastDeletedAgendaItem}
                   className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Undo
@@ -1103,31 +1137,33 @@ function PrivateHubPage({ auth, onLogout }) {
               </div>
 
               <form onSubmit={handleAgendaSubmit} className="mb-4 grid gap-2">
-                <input
-                  type="text"
-                  value={newAgendaText}
-                  onChange={(event) => setNewAgendaText(event.target.value)}
-                  placeholder="Add agenda item or accountability task"
-                  className="border border-[#ded8d2] px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
-                />
-                <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
+                <fieldset disabled={!canEdit} className="grid gap-2 disabled:opacity-55">
                   <input
                     type="text"
-                    value={newAgendaOwner}
-                    onChange={(event) => setNewAgendaOwner(event.target.value)}
-                    placeholder="Owner"
+                    value={newAgendaText}
+                    onChange={(event) => setNewAgendaText(event.target.value)}
+                    placeholder={canEdit ? "Add agenda item or accountability task" : "Administrator-only editing"}
                     className="border border-[#ded8d2] px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
                   />
-                  <input
-                    type="date"
-                    value={newAgendaDue}
-                    onChange={(event) => setNewAgendaDue(event.target.value)}
-                    className="border border-[#ded8d2] px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
-                  />
-                  <button type="submit" className="bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white">
-                    Add
-                  </button>
-                </div>
+                  <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
+                    <input
+                      type="text"
+                      value={newAgendaOwner}
+                      onChange={(event) => setNewAgendaOwner(event.target.value)}
+                      placeholder="Owner"
+                      className="border border-[#ded8d2] px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
+                    />
+                    <input
+                      type="date"
+                      value={newAgendaDue}
+                      onChange={(event) => setNewAgendaDue(event.target.value)}
+                      className="border border-[#ded8d2] px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
+                    />
+                    <button type="submit" className="bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed">
+                      Add
+                    </button>
+                  </div>
+                </fieldset>
               </form>
 
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
@@ -1142,6 +1178,7 @@ function PrivateHubPage({ auth, onLogout }) {
                       <input
                         type="checkbox"
                         onChange={() => completeAgendaItem(item)}
+                        disabled={!canEdit}
                         className="mt-1 h-4 w-4 shrink-0 accent-[#CC0000]"
                       />
                       <span className="min-w-0">
@@ -1169,7 +1206,8 @@ function PrivateHubPage({ auth, onLogout }) {
                     min="0"
                     value={budget.total}
                     onChange={(event) => updateBudgetTotal(Number(event.target.value))}
-                    className="w-full bg-transparent text-2xl font-black outline-none"
+                    disabled={!canEdit}
+                    className="w-full bg-transparent text-2xl font-black outline-none disabled:opacity-70"
                   />
                 </label>
                 <div className="bg-[#f6f4f2] p-3">
@@ -1200,7 +1238,8 @@ function PrivateHubPage({ auth, onLogout }) {
                             type="text"
                             value={row.category}
                             onChange={(event) => updateBudgetRow(row.id, "category", event.target.value)}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
+                            disabled={!canEdit}
+                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#2D2926] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -1209,7 +1248,8 @@ function PrivateHubPage({ auth, onLogout }) {
                             min="0"
                             value={row.allocated}
                             onChange={(event) => updateBudgetRow(row.id, "allocated", event.target.value)}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000]"
+                            disabled={!canEdit}
+                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -1218,14 +1258,16 @@ function PrivateHubPage({ auth, onLogout }) {
                             min="0"
                             value={row.spent}
                             onChange={(event) => updateBudgetRow(row.id, "spent", event.target.value)}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000]"
+                            disabled={!canEdit}
+                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
                         <td className="px-2 py-2">
                           <select
                             value={BUDGET_STATUSES.includes(row.status) ? row.status : "On Hold"}
                             onChange={(event) => updateBudgetRow(row.id, "status", event.target.value)}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#CC0000] outline-none focus:border-[#CC0000]"
+                            disabled={!canEdit}
+                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           >
                             {BUDGET_STATUSES.map((status) => (
                               <option key={status} value={status}>{status}</option>
@@ -1242,10 +1284,11 @@ function PrivateHubPage({ auth, onLogout }) {
                   type="text"
                   value={newBudgetCategory}
                   onChange={(event) => setNewBudgetCategory(event.target.value)}
-                  placeholder="New budget category"
-                  className="min-w-0 flex-1 border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]"
+                  placeholder={canEdit ? "New budget category" : "Administrator-only editing"}
+                  disabled={!canEdit}
+                  className="min-w-0 flex-1 border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
                 />
-                <button type="submit" className="bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white">
+                <button type="submit" disabled={!canEdit} className="bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-40">
                   Add
                 </button>
               </form>
@@ -1262,42 +1305,44 @@ function PrivateHubPage({ auth, onLogout }) {
                 <h2 className="text-xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
               </div>
               <form onSubmit={handleNoteSubmit} className="grid gap-4">
-                <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
+                <fieldset disabled={!canEdit} className="grid gap-4 disabled:opacity-55">
+                  <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
+                    <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      Meeting Date
+                      <input
+                        type="date"
+                        value={meetingDate}
+                        onChange={(event) => setMeetingDate(event.target.value)}
+                        required
+                        className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      Brief Title
+                      <input
+                        type="text"
+                        value={meetingTitle}
+                        onChange={(event) => setMeetingTitle(event.target.value)}
+                        required
+                        placeholder={canEdit ? "Budget approvals and novice outreach" : "Administrator-only editing"}
+                        className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      />
+                    </label>
+                  </div>
                   <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                    Meeting Date
-                    <input
-                      type="date"
-                      value={meetingDate}
-                      onChange={(event) => setMeetingDate(event.target.value)}
-                      required
-                      className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                    Notes
+                    <textarea
+                      value={meetingNotes}
+                      onChange={(event) => setMeetingNotes(event.target.value)}
+                      rows={5}
+                      placeholder={canEdit ? "Type meeting minutes, decisions, votes, next steps, and owner assignments here." : "Administrator-only editing"}
+                      className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
                     />
                   </label>
-                  <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                    Brief Title
-                    <input
-                      type="text"
-                      value={meetingTitle}
-                      onChange={(event) => setMeetingTitle(event.target.value)}
-                      required
-                      placeholder="Budget approvals and novice outreach"
-                      className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                    />
-                  </label>
-                </div>
-                <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                  Notes
-                  <textarea
-                    value={meetingNotes}
-                    onChange={(event) => setMeetingNotes(event.target.value)}
-                    rows={5}
-                    placeholder="Type meeting minutes, decisions, votes, next steps, and owner assignments here."
-                    className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
-                  />
-                </label>
-                <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
-                  Save Notes
-                </button>
+                  <button type="submit" disabled={!canEdit} className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:opacity-40">
+                    Save Notes
+                  </button>
+                </fieldset>
               </form>
 
               <div className="mt-4 min-h-0 flex-1 border-t border-[#ded8d2] pt-4">
