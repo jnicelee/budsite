@@ -1177,9 +1177,6 @@ function ContactPage() {
                 LinkedIn <ExternalLink size={16} />
               </a>
             </div>
-            <PrimaryButton href="/join" className="justify-self-end">
-                Request to join <ArrowRight size={16} />
-            </PrimaryButton>
           </div>
         </div>
 
@@ -1209,6 +1206,11 @@ function ContactPage() {
               <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Ready to join?</p>
               <p className="mt-3 text-sm leading-6 text-[#5b5450]">Use the membership request form so admins can add you to the team flow.</p>
             </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <PrimaryButton href="/join">
+              Request to join <ArrowRight size={16} />
+            </PrimaryButton>
           </div>
         </div>
       </div>
