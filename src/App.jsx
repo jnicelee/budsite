@@ -712,27 +712,148 @@ function HomePage() {
 }
 
 function AboutPage() {
+  const aboutHighlights = [
+    { value: "1999", label: "Modern BUDS era" },
+    { value: "APDA", label: "National debate circuit" },
+    { value: "$0", label: "Membership dues" },
+    { value: "0", label: "Tryouts required" },
+  ];
+  const joinBenefits = [
+    {
+      icon: Sparkles,
+      title: "Beginner-friendly training",
+      copy: "You do not need previous debate experience to join. Practices teach case construction, rebuttal, weighing, flowing, speaking style, and tournament strategy from the ground up.",
+    },
+    {
+      icon: Trophy,
+      title: "Competitive travel",
+      copy: "BUDS competes on the American Parliamentary Debate Association circuit, giving members the chance to debate students from colleges across the country and build a real competitive record.",
+    },
+    {
+      icon: Medal,
+      title: "Skills that transfer",
+      copy: "Debate sharpens public speaking, research instincts, persuasion, fast thinking, teamwork, and confidence under pressure. Those skills show up everywhere from class discussions to interviews.",
+    },
+    {
+      icon: MapPin,
+      title: "A social home at BU",
+      copy: "The team is also a community: weekly practices, mentorship, tournament weekends, team events, and older members who help new debaters find their footing.",
+    },
+  ];
+  const aboutTimeline = [
+    {
+      year: "Before 1999",
+      title: "A longer BU debating tradition",
+      copy: "Boston University students competed in earlier forms of collegiate debate before the current parliamentary team took shape.",
+    },
+    {
+      year: "1999",
+      title: "The modern society forms",
+      copy: "The current Boston University Debate Society began its modern chapter in 1999, building a home for APDA-style parliamentary debate on campus.",
+    },
+    {
+      year: "Today",
+      title: "Open, competitive, and growing",
+      copy: "BUDS now combines novice training, tournament travel, member mentorship, and a culture built around learning out loud.",
+    },
+  ];
+
   return (
-    <Page>
-      <div className="grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
-        <Card className="bg-[#CC0000] p-8 text-black md:p-10">
-          <Eyebrow light>About BUDS</Eyebrow>
-          <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight md:text-5xl">
-            A team built for argument, friendship, and institutional memory.
-          </h1>
-        </Card>
-        <Card className="p-8 md:p-10">
-          <p className="text-lg leading-8 text-[#4d4743]">
-            The Boston University Debate Society is a member of the American Parliamentary Debate Association (also known as APDA). The current incarnation of the Boston University Debate Society was formed in 1999, and competes in parliamentary debate. Previously, Boston University teams competed in other varieties of collegiate debate.
-          </p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            {["No experience required", "Weekly practices", "Tournament travel"].map((item) => (
-              <div key={item} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-4 text-sm font-black text-[#2D2926]">
-                {item}
+    <Page className="max-w-[86rem]">
+      <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+        <section className="relative overflow-hidden border border-[#ded8d2] bg-[#CC0000] p-7 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
+          <div className="absolute right-6 top-6 flex h-24 w-24 items-center justify-center border-2 border-white/30 text-3xl font-black tracking-tight text-white md:h-32 md:w-32 md:text-5xl">
+            BU
+          </div>
+          <div className="max-w-2xl pr-24 md:pr-36">
+            <Eyebrow light>About BUDS</Eyebrow>
+            <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
+              Debate hard. Learn fast. Find your people.
+            </h1>
+            <p className="mt-6 text-lg font-medium leading-8 text-white/86">
+              The Boston University Debate Society is BU's home for parliamentary debate, competitive travel, novice development, and the kind of argument that makes people sharper without making them smaller.
+            </p>
+          </div>
+          <div className="mt-10 grid border border-white/25 sm:grid-cols-4">
+            {aboutHighlights.map((item, index) => (
+              <div key={item.label} className={`p-4 ${index < aboutHighlights.length - 1 ? "border-b border-white/25 sm:border-b-0 sm:border-r" : ""}`}>
+                <p className="text-3xl font-black leading-none">{item.value}</p>
+                <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-white/70">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-4">
+          <Card className="p-7 md:p-8">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#2D2926] text-white">
+                <Trophy size={22} />
+              </div>
+              <div>
+                <Eyebrow>What We Do</Eyebrow>
+                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">APDA parliamentary debate, built for BU students.</h2>
+                <p className="mt-4 text-base leading-7 text-[#5b5450]">
+                  BUDS competes in the American Parliamentary Debate Association, a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity. Members practice weekly, travel to tournaments, write cases, judge rounds, and help each other improve.
+                </p>
+              </div>
+            </div>
+          </Card>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="bg-[#2D2926] p-6 text-white">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-white/60">Best For</p>
+              <p className="mt-4 text-2xl font-black leading-tight">Curious people who like ideas, performance, politics, philosophy, law, comedy, or competition.</p>
+            </Card>
+            <Card className="p-6">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#CC0000]">Start Here</p>
+              <p className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">Show up to practice. No tryout, no dues, no prior debate resume.</p>
+            </Card>
+          </div>
+        </section>
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+        <Card className="p-7 md:p-8">
+          <Eyebrow>History</Eyebrow>
+          <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">A BU team with memory and momentum.</h2>
+          <div className="mt-6 grid gap-4">
+            {aboutTimeline.map((item) => (
+              <div key={item.year} className="grid grid-cols-[5.5rem_1fr] gap-4 border-t border-[#ded8d2] pt-4">
+                <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{item.year}</p>
+                <div>
+                  <h3 className="text-lg font-black text-[#2D2926]">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
+                </div>
               </div>
             ))}
           </div>
         </Card>
+
+        <section>
+          <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Eyebrow>Why Join</Eyebrow>
+              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">The practical upside of BUDS</h2>
+            </div>
+            <PrimaryButton href="/join" className="sm:self-center">
+              Request to join <ArrowRight size={16} />
+            </PrimaryButton>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {joinBenefits.map((benefit) => {
+              const Icon = benefit.icon;
+              return (
+                <Card key={benefit.title} className="group min-h-64 p-6 transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)]">
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center bg-[#CC0000] text-white transition group-hover:bg-[#2D2926]">
+                    <Icon size={22} />
+                  </div>
+                  <h3 className="text-2xl font-black leading-tight text-[#2D2926]">{benefit.title}</h3>
+                  <p className="mt-4 text-sm leading-6 text-[#5b5450]">{benefit.copy}</p>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </Page>
   );
