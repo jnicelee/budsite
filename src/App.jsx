@@ -1156,8 +1156,11 @@ function ContactPage() {
               </div>
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">Practice Information</p>
-                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">Mondays and Wednesdays, 7-8 PM</h2>
-                <p className="mt-4 text-lg font-bold text-[#2D2926]">SAR 101</p>
+                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">
+                  Mondays & Wednesdays
+                  <span className="block">@ 7-8 PM</span>
+                </h2>
+                <p className="mt-4 text-lg font-bold text-[#2D2926]">Location: SAR 101</p>
                 <p className="mt-3 text-base leading-7 text-[#5b5450]">Open to all BU students, including complete beginners. Come by to observe, ask questions, or jump into drills.</p>
               </div>
             </div>
