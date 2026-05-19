@@ -1146,17 +1146,19 @@ function ContactPage() {
               </a>
             </div>
           </div>
-          <div className="mt-10 grid gap-3 sm:grid-cols-2">
-            <a href="mailto:boston.university.debate@gmail.com" className="inline-flex items-center justify-center gap-2 bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+          <div className="mt-10 grid gap-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <a href="mailto:boston.university.debate@gmail.com" className="inline-flex items-center justify-center gap-2 bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                 Email the team <Mail size={16} />
-            </a>
-            <a href="https://www.instagram.com/budebatesociety" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
+              </a>
+              <a href="https://www.instagram.com/budebatesociety" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
                 Instagram <ExternalLink size={16} />
-            </a>
-            <a href="https://www.linkedin.com/company/budebatesociety/posts/?feedView=all" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
+              </a>
+              <a href="https://www.linkedin.com/company/budebatesociety/posts/?feedView=all" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
                 LinkedIn <ExternalLink size={16} />
-            </a>
-            <PrimaryButton href="/join" className="sm:col-span-2">
+              </a>
+            </div>
+            <PrimaryButton href="/join" className="justify-self-end">
                 Request to join <ArrowRight size={16} />
             </PrimaryButton>
           </div>
