@@ -372,7 +372,7 @@ async function loadDatabaseState() {
     privateLinksResult,
   ] = await Promise.all([
     supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: false }),
-    supabase.from("eboard_notes").select("id,date,title,body").order("date", { ascending: false }),
+    supabase.from("eboard_notes").select("id,date,title,body,created_at").order("date", { ascending: false }).order("created_at", { ascending: false }),
     supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
     supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
     supabase.from("eboard_budget_revenue").select("id,category,amount").order("created_at", { ascending: true }),
@@ -593,6 +593,22 @@ function formatMeetingDate(value) {
     day: "numeric",
     year: "numeric",
   }).format(date);
+}
+
+function getMeetingSortTime(post) {
+  const meetingTime = Date.parse(`${post.date || ""}T12:00:00`);
+  if (Number.isFinite(meetingTime)) return meetingTime;
+  const createdTime = Date.parse(post.created_at || "");
+  return Number.isFinite(createdTime) ? createdTime : 0;
+}
+
+function sortMeetingPosts(posts) {
+  return [...posts].sort((a, b) => {
+    const dateCompare = getMeetingSortTime(b) - getMeetingSortTime(a);
+    if (dateCompare !== 0) return dateCompare;
+    const createdCompare = (b.created_at || "").localeCompare(a.created_at || "");
+    return createdCompare || (b.id || "").localeCompare(a.id || "");
+  });
 }
 
 function getMemberLinkTitleValue(link) {
@@ -949,10 +965,7 @@ function CalendarPage({ calendarEmbedUrl }) {
 function MeetingsPage({ auth }) {
   const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
   const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE || auth?.email === MASTER_EBOARD_EMAIL;
-  const sortedPosts = [...meetingPosts].sort((a, b) => {
-    const dateCompare = (b.date || "").localeCompare(a.date || "");
-    return dateCompare || (b.id || "").localeCompare(a.id || "");
-  });
+  const sortedPosts = sortMeetingPosts(meetingPosts);
 
   useEffect(() => {
     let ignore = false;
@@ -961,8 +974,9 @@ function MeetingsPage({ auth }) {
       if (!isSupabaseConfigured) return;
       const { data, error } = await supabase
         .from("eboard_notes")
-        .select("id,date,title,body")
-        .order("date", { ascending: false });
+        .select("id,date,title,body,created_at")
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
       if (error) {
         console.error("Supabase meeting notes load failed", error);
         return;
@@ -1644,6 +1658,7 @@ function PrivateHubPage({ auth, onLogout }) {
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEdit = isAdmin;
+  const canWriteNotes = isEboard;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -1716,12 +1731,13 @@ function PrivateHubPage({ auth, onLogout }) {
 
   const handleNoteSubmit = (event) => {
     event.preventDefault();
-    if (!canEdit) return;
+    if (!canWriteNotes) return;
     const nextNote = {
       id: `${meetingDate}-${Date.now()}`,
       date: meetingDate,
       title: meetingTitle.trim(),
       body: meetingNotes.trim(),
+      created_at: new Date().toISOString(),
     };
     const nextNotes = [nextNote, ...notes];
     setNotes(nextNotes);
@@ -2377,7 +2393,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 <h2 className="text-xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
               </div>
               <form onSubmit={handleNoteSubmit} className="grid gap-4">
-                <fieldset disabled={!canEdit} className="grid gap-4 disabled:opacity-55">
+                <fieldset disabled={!canWriteNotes} className="grid gap-4 disabled:opacity-55">
                   <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
                     <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                       Meeting Date
@@ -2396,7 +2412,7 @@ function PrivateHubPage({ auth, onLogout }) {
                         value={meetingTitle}
                         onChange={(event) => setMeetingTitle(event.target.value)}
                         required
-                        placeholder={canEdit ? "Budget approvals and novice outreach" : "Administrator-only editing"}
+                        placeholder={canWriteNotes ? "Budget approvals and novice outreach" : "E-board-only editing"}
                         className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                       />
                     </label>
@@ -2407,11 +2423,11 @@ function PrivateHubPage({ auth, onLogout }) {
                       value={meetingNotes}
                       onChange={(event) => setMeetingNotes(event.target.value)}
                       rows={5}
-                      placeholder={canEdit ? "Type meeting minutes, decisions, votes, next steps, and owner assignments here." : "Administrator-only editing"}
+                      placeholder={canWriteNotes ? "Type meeting minutes, decisions, votes, next steps, and owner assignments here." : "E-board-only editing"}
                       className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
                     />
                   </label>
-                  <button type="submit" disabled={!canEdit} className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:opacity-40">
+                  <button type="submit" disabled={!canWriteNotes} className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:opacity-40">
                     Save Notes
                   </button>
                 </fieldset>
