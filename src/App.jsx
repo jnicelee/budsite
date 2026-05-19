@@ -54,7 +54,7 @@ const homeCarouselSlides = [
   {
     src: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1200&q=80",
     alt: "Students walking together on a college campus",
-    kicker: "Team life",
+    kicker: "Team Life",
     caption: "Temporary photo: BU students finding their people between classes and practice.",
   },
   {
@@ -144,7 +144,7 @@ const accomplishments = [
 const timeline = [
   {
     year: "Founded",
-    title: "A home for parliamentary debate at BU",
+    title: "A Home for Parliamentary Debate at BU",
     copy: "Add the founding year, early leadership, and the story of how BUDS became a competitive APDA team.",
   },
   {
@@ -790,7 +790,7 @@ function PhotoCarousel() {
         </div>
       </div>
       <div className="flex items-center justify-between gap-4 px-5 py-4">
-        <Eyebrow>Photo carousel</Eyebrow>
+        <Eyebrow>Photo Carousel</Eyebrow>
         <div className="flex gap-2">
           {homeCarouselSlides.map((slide, index) => (
             <button
@@ -852,7 +852,7 @@ function HomePage() {
             <div className="grid content-between gap-6 p-7 md:p-8">
               <div>
                 <Eyebrow light>Format</Eyebrow>
-                <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA parliamentary debate</h2>
+                <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA Parliamentary Debate</h2>
                 <p className="mt-4 text-sm leading-6 text-white/72">
                   Two-person teams, limited prep, persuasion under pressure, and tournaments across the collegiate circuit.
                 </p>
@@ -913,29 +913,29 @@ function AboutPage() {
     },
     {
       icon: Medal,
-      title: "Skills that transfer",
+      title: "Skills That Transfer",
       copy: "Debate sharpens public speaking, research instincts, persuasion, fast thinking, teamwork, and confidence under pressure. Those skills show up everywhere from class discussions to interviews.",
     },
     {
       icon: MapPin,
-      title: "A social home at BU",
+      title: "A Social Home at BU",
       copy: "The team is also a community: weekly practices, mentorship, tournament weekends, team events, and older members who help new debaters find their footing.",
     },
   ];
   const aboutTimeline = [
     {
       year: "Before 1999",
-      title: "A longer BU debating tradition",
+      title: "A Longer BU Debating Tradition",
       copy: "Boston University students competed in earlier forms of collegiate debate before the current parliamentary team took shape.",
     },
     {
       year: "1999",
-      title: "The modern society forms",
+      title: "The Modern Society Forms",
       copy: "The current Boston University Debate Society began its modern chapter in 1999, building a home for APDA-style parliamentary debate on campus.",
     },
     {
       year: "Today",
-      title: "Open, competitive, and growing",
+      title: "Open, Competitive, and Growing",
       copy: "BUDS now combines novice training, tournament travel, member mentorship, and a culture built around learning out loud.",
     },
   ];
@@ -974,7 +974,7 @@ function AboutPage() {
               </div>
               <div>
                 <Eyebrow>What We Do</Eyebrow>
-                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">APDA parliamentary debate, built for BU students.</h2>
+                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">APDA Parliamentary Debate, Built for BU Students.</h2>
                 <p className="mt-4 text-base leading-7 text-[#5b5450]">
                   BUDS competes in the American Parliamentary Debate Association, a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity. Members practice weekly, travel to tournaments, write cases, judge rounds, and help each other improve.
                 </p>
@@ -1017,10 +1017,10 @@ function AboutPage() {
           <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <Eyebrow>Why Join</Eyebrow>
-              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">The practical upside of BUDS</h2>
+              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">The Practical Upside of BUDS</h2>
             </div>
             <PrimaryButton href="/join" className="sm:self-center">
-              Request to join <ArrowRight size={16} />
+              Request to Join <ArrowRight size={16} />
             </PrimaryButton>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -1046,7 +1046,7 @@ function AboutPage() {
 function NoviceHubPage() {
   return (
     <Page>
-      <PageHeader eyebrow="Novice Hub" title="A cleaner path from first practice to first tournament.">
+      <PageHeader eyebrow="Novice Hub" title="A Cleaner Path from First Practice to First Tournament.">
         Give new debaters the essentials without burying them in a long scroll.
       </PageHeader>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -1063,10 +1063,10 @@ function NoviceHubPage() {
       </div>
       <Card className="mt-6 flex flex-col gap-5 bg-[#2D2926] p-8 text-white md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="mb-2 flex items-center gap-2 font-black text-white"><Lock size={16} /> Optional private hub</div>
+          <div className="mb-2 flex items-center gap-2 font-black text-white"><Lock size={16} /> Optional Private Hub</div>
           <p className="max-w-3xl text-sm leading-6 text-white/70">Use this for member-only case files, strategy guides, practice recordings, and judge feedback. Add authentication later with Firebase, Supabase, Clerk, or Vercel password protection.</p>
         </div>
-        <button className="bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">Members only</button>
+        <button className="bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">Members Only</button>
       </Card>
     </Page>
   );
@@ -1075,7 +1075,7 @@ function NoviceHubPage() {
 function CalendarPage({ calendarEmbedUrl }) {
   return (
     <Page>
-      <PageHeader eyebrow="Calendar" title="Practices, tournaments, and team events.">
+      <PageHeader eyebrow="Calendar" title="Practices, Tournaments, and Team Events.">
         Feel free to pull up to any meeting! No Pressure!
       </PageHeader>
       <Card className="overflow-hidden p-3">
@@ -1143,7 +1143,7 @@ function MeetingsPage({ auth }) {
         <div className="border border-[#2D2926] bg-[#2D2926] p-8 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
           <Eyebrow light>Meetings</Eyebrow>
           <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
-            Meeting notes, organized like a team record.
+            Meeting Notes, Organized Like a Team Record.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">
             <span className="block">Don't worry! Secretary records the meetings in case you miss one.</span>
@@ -1154,19 +1154,19 @@ function MeetingsPage({ auth }) {
           <div className="grid grid-cols-2 border border-[#ded8d2]">
             <div className="border-b border-r border-[#ded8d2] p-5">
               <p className="text-4xl font-black leading-none text-[#CC0000]">{sortedPosts.length}</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published posts</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published Posts</p>
             </div>
             <div className="border-b border-[#ded8d2] p-5">
               <p className="text-2xl font-black leading-tight text-[#2D2926]">{latestMeetingLabel}</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Latest update</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Latest Update</p>
             </div>
             <div className="border-r border-[#ded8d2] p-5">
               <p className="text-4xl font-black leading-none text-[#2D2926]">New</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Newest notes first</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Newest Notes First</p>
             </div>
             <div className="p-5">
               <p className="text-4xl font-black leading-none text-[#2D2926]">EBD</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">E-board managed</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">E-Board Managed</p>
             </div>
           </div>
           <p className="text-sm font-semibold leading-6 text-[#5b5450]">
@@ -1178,10 +1178,10 @@ function MeetingsPage({ auth }) {
       <div className="grid gap-4">
         {sortedPosts.length === 0 && (
           <Card className="border-dashed p-10 text-center">
-            <Eyebrow>No posts yet</Eyebrow>
-            <h2 className="mt-3 text-3xl font-black text-[#2D2926]">Secretary notes will appear here automatically.</h2>
+            <Eyebrow>No Posts Yet</Eyebrow>
+            <h2 className="mt-3 text-3xl font-black text-[#2D2926]">Secretary Notes Will Appear Here Automatically.</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#5b5450]">
-              Save meeting notes from the e-board workspace with a date and brief title, and this page will turn them into an organized archive.
+              Saved meeting notes with a date and brief title, and this page will turn them into an organized archive.
             </p>
           </Card>
         )}
@@ -1195,7 +1195,7 @@ function MeetingsPage({ auth }) {
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">{formatMeetingDate(post.date)}</p>
-                  <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-4xl">{post.title || "Untitled meeting"}</h2>
+                  <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-4xl">{post.title || "Untitled Meeting"}</h2>
                 </div>
                 {canDeletePosts && (
                   <button
@@ -1209,7 +1209,7 @@ function MeetingsPage({ auth }) {
                 )}
               </div>
               <p className="mt-5 whitespace-pre-wrap text-base leading-8 text-[#4d4743]">
-                {post.body || "No notes body added."}
+                {post.body || "No Notes Body Added."}
               </p>
             </div>
           </article>
@@ -1222,7 +1222,7 @@ function MeetingsPage({ auth }) {
 function HistoryPage() {
   return (
     <Page>
-      <PageHeader eyebrow="History" title="A timeline that can grow with the team.">
+      <PageHeader eyebrow="History" title="A Timeline That Can Grow with the Team.">
         Add each year once you have records, photos, e-board names, and major results.
       </PageHeader>
       <div className="grid gap-5 md:grid-cols-3">
@@ -1351,17 +1351,17 @@ function ContactPage() {
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="border border-[#ded8d2] bg-white p-5">
-              <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Best first step</p>
+              <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Best First Step</p>
               <p className="mt-3 text-sm leading-6 text-[#5b5450]">Visit a practice and introduce yourself to an e-board member.</p>
             </div>
             <div className="border border-[#ded8d2] bg-white p-5">
-              <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Ready to join?</p>
+              <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Ready to Join?</p>
               <p className="mt-3 text-sm leading-6 text-[#5b5450]">Use the membership request form so admins can add you to the team flow.</p>
             </div>
           </div>
           <div className="mt-8">
             <PrimaryButton href="/join" className="w-full px-10 py-4 text-base">
-              Request to join <ArrowRight size={16} />
+              Request to Join <ArrowRight size={16} />
             </PrimaryButton>
           </div>
         </div>
@@ -1561,7 +1561,7 @@ function JoinPage({ auth }) {
               </p>
             )}
             <button type="submit" className="inline-flex items-center justify-center gap-2 bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
-              Submit request <ArrowRight size={16} />
+              Submit Request <ArrowRight size={16} />
             </button>
           </form>
         </Card>
@@ -1572,7 +1572,7 @@ function JoinPage({ auth }) {
           <div className="flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
             <div>
               <Eyebrow>Administrator</Eyebrow>
-              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Membership requests</h2>
+              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Membership Requests</h2>
             </div>
             <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{requests.length} total</p>
           </div>
@@ -1703,7 +1703,7 @@ function LoginPage({ onLogin }) {
 
   return (
     <Page>
-      <PageHeader eyebrow="Private Login" title="Choose your BUDS access level.">
+      <PageHeader eyebrow="Private Login" title="Choose Your BUDS Access Level.">
         Members unlock private team resources. E-board unlocks the same member hub plus the e-board workspace.
       </PageHeader>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -1855,10 +1855,10 @@ function PrivateHubPage({ auth, onLogout }) {
     return (
       <Page>
         <Card className="mx-auto max-w-2xl text-center">
-          <Eyebrow>Login required</Eyebrow>
-          <h1 className="mt-4 text-4xl font-black text-[#2D2926]">Please log in to view the private BUDS hub.</h1>
+          <Eyebrow>Login Required</Eyebrow>
+          <h1 className="mt-4 text-4xl font-black text-[#2D2926]">Please Log In to View the Private BUDS Hub.</h1>
           <PrimaryButton href="/login" className="mt-8">
-            Go to login <ArrowRight size={16} />
+            Go to Login <ArrowRight size={16} />
           </PrimaryButton>
         </Card>
       </Page>
@@ -2149,7 +2149,7 @@ function PrivateHubPage({ auth, onLogout }) {
 
       {visibleTab === "member" && (
         <div>
-          <PageHeader eyebrow="Members Only" title="Private BUDS links and debate resources.">
+          <PageHeader eyebrow="Members Only" title="Private BUDS Links and Debate Resources.">
             Use these team documents, forms, calendars, and APDA guides throughout the season.
           </PageHeader>
           <div className="grid gap-7">
@@ -2247,7 +2247,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 {memberAccounts.length === 0 && (
                   <tr>
                     <td colSpan="5" className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] px-4 py-6 text-center font-bold text-[#5b5450]">
-                      No accepted member accounts yet.
+                      No Accepted Member Accounts Yet.
                     </td>
                   </tr>
                 )}
@@ -2365,7 +2365,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 <div className="grid gap-2">
                   {agenda.length === 0 && (
                     <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-4 text-sm font-bold text-[#5b5450]">
-                      No agenda items right now. Add one above.
+                      No Agenda Items Right Now. Add One Above.
                     </div>
                   )}
                   {agenda.map((item) => {
@@ -2540,7 +2540,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 <div className="mt-3 grid gap-2">
                   {(budget.revenueRows || []).length === 0 && (
                     <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
-                      No revenue logged yet.
+                      No Revenue Logged Yet.
                     </div>
                   )}
                   {(budget.revenueRows || []).map((row) => (
@@ -2620,7 +2620,7 @@ function PrivateHubPage({ auth, onLogout }) {
                     onChange={(event) => setSelectedNoteId(event.target.value)}
                     className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                   >
-                    {sortedNotes.length === 0 && <option>No saved notes yet</option>}
+                    {sortedNotes.length === 0 && <option>No Saved Notes Yet</option>}
                     {sortedNotes.map((note) => (
                       <option key={note.id} value={note.id}>{note.date} - {note.title}</option>
                     ))}
@@ -2630,7 +2630,7 @@ function PrivateHubPage({ auth, onLogout }) {
                   <div className="mt-3 max-h-[11rem] overflow-y-auto border border-[#ded8d2] bg-[#f6f4f2] p-4">
                     <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{selectedNote.date}</p>
                     <h3 className="mt-2 text-xl font-black text-[#2D2926]">{selectedNote.title}</h3>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{selectedNote.body || "No notes body added."}</p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{selectedNote.body || "No Notes Body Added."}</p>
                   </div>
                 )}
               </div>
@@ -2646,10 +2646,10 @@ function NotFoundPage() {
   return (
     <Page>
       <Card className="mx-auto max-w-2xl text-center">
-        <Eyebrow>Page not found</Eyebrow>
-        <h1 className="mt-4 text-4xl font-black text-[#2D2926]">That page is not part of BUDS yet.</h1>
+        <Eyebrow>Page Not Found</Eyebrow>
+        <h1 className="mt-4 text-4xl font-black text-[#2D2926]">That Page Is Not Part of BUDS Yet.</h1>
         <PrimaryButton href="/" className="mt-8">
-          Back home <ArrowRight size={16} />
+          Back Home <ArrowRight size={16} />
         </PrimaryButton>
       </Card>
     </Page>
