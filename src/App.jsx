@@ -966,6 +966,11 @@ function MeetingsPage({ auth }) {
   const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
   const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE || auth?.email === MASTER_EBOARD_EMAIL;
   const sortedPosts = sortMeetingPosts(meetingPosts);
+  const meetingNumberById = new Map(
+    [...sortedPosts]
+      .reverse()
+      .map((post, index) => [post.id, String(index + 1).padStart(2, "0")])
+  );
 
   useEffect(() => {
     let ignore = false;
@@ -1053,7 +1058,7 @@ function MeetingsPage({ auth }) {
           <article key={post.id} className="group grid gap-0 border border-[#ded8d2] bg-white shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] lg:grid-cols-[8rem_1fr]">
             <div className="flex items-center justify-between border-b border-[#ded8d2] bg-[#CC0000] p-5 text-white lg:block lg:border-b-0 lg:border-r">
               <p className="text-sm font-black uppercase tracking-[0.18em] text-white/70">No.</p>
-              <p className="mt-0 text-5xl font-black leading-none lg:mt-3">{String(index + 1).padStart(2, "0")}</p>
+              <p className="mt-0 text-5xl font-black leading-none lg:mt-3">{meetingNumberById.get(post.id) || String(index + 1).padStart(2, "0")}</p>
             </div>
             <div className="p-6 md:p-8">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
