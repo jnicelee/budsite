@@ -1718,11 +1718,18 @@ function LoginPage({ onLogin }) {
         Members unlock private team resources. E-board unlocks the same member hub plus the e-board workspace.
       </PageHeader>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="bg-[#2D2926] p-8 text-white">
-          <Eyebrow light>Private Access</Eyebrow>
-          <p className="mt-5 text-lg leading-8 text-white/78">
-            Log in with your BUDS membership email and password to access private team resources. E-board members can use the e-board option to open the workspace.
-          </p>
+        <Card className="!bg-[#2D2926] p-8 text-white">
+          <div className="border-t-4 border-[#CC0000] pt-6">
+            <Eyebrow light>Private Access</Eyebrow>
+            <h2 className="mt-5 text-4xl font-black leading-tight text-white">Log in with your membership ID.</h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-white/78">
+              Use the email and password connected to your BUDS account. Members can access private team resources, and e-board members can open the workspace from the e-board login option.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-3 border border-white/20 bg-white/5 p-5 text-sm font-bold text-white/80">
+            <p>Accepted members use the password they chose on the join form.</p>
+            <p>Use a BU email unless you have an approved administrator account.</p>
+          </div>
         </Card>
 
         <Card className="p-8">
