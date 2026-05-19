@@ -19,6 +19,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 const LOGIN_STORAGE_KEY = "buds-auth";
 const EBOARD_NOTES_STORAGE_KEY = "buds-eboard-notes";
@@ -250,6 +251,91 @@ function saveStoredBudget(budget) {
   window.localStorage.setItem(EBOARD_BUDGET_STORAGE_KEY, JSON.stringify(budget));
 }
 
+function normalizeSupabaseBudgetRow(row) {
+  return {
+    id: row.id,
+    category: row.category,
+    allocated: Number(row.allocated) || 0,
+    spent: Number(row.spent) || 0,
+    status: row.status,
+  };
+}
+
+async function loadDatabaseState() {
+  if (!isSupabaseConfigured) return null;
+
+  const [
+    agendaResult,
+    notesResult,
+    budgetSettingsResult,
+    budgetRowsResult,
+  ] = await Promise.all([
+    supabase.from("eboard_agenda").select("id,text,owner,due").order("created_at", { ascending: true }),
+    supabase.from("eboard_notes").select("id,date,title,body").order("date", { ascending: false }),
+    supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
+    supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
+  ]);
+
+  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error) {
+    console.error("Supabase load failed", {
+      agendaError: agendaResult.error,
+      notesError: notesResult.error,
+      budgetSettingsError: budgetSettingsResult.error,
+      budgetRowsError: budgetRowsResult.error,
+    });
+    return null;
+  }
+
+  return {
+    agenda: agendaResult.data.length > 0 ? agendaResult.data : agendaItems,
+    notes: notesResult.data,
+    budget: {
+      total: Number(budgetSettingsResult.data?.total) || 5750,
+      rows: budgetRowsResult.data.length > 0
+        ? budgetRowsResult.data.map(normalizeSupabaseBudgetRow)
+        : initialBudgetRows,
+    },
+  };
+}
+
+async function upsertAgendaItem(item) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_agenda").upsert(item);
+  if (error) console.error("Supabase agenda upsert failed", error);
+}
+
+async function deleteAgendaItem(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_agenda").delete().eq("id", id);
+  if (error) console.error("Supabase agenda delete failed", error);
+}
+
+async function upsertBudgetSettings(total) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("eboard_budget_settings")
+    .upsert({ id: "default", total, updated_at: new Date().toISOString() });
+  if (error) console.error("Supabase budget settings upsert failed", error);
+}
+
+async function upsertBudgetRow(row) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_budget_rows").upsert(row);
+  if (error) console.error("Supabase budget row upsert failed", error);
+}
+
+async function deleteBudgetRow(id) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_budget_rows").delete().eq("id", id);
+  if (error) console.error("Supabase budget row delete failed", error);
+}
+
+async function insertNote(note) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("eboard_notes").insert(note);
+  if (error) console.error("Supabase note insert failed", error);
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -376,7 +462,7 @@ function AboutPage() {
   return (
     <Page>
       <div className="grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
-        <Card className="bg-[#CC0000] p-8 text-white md:p-10">
+        <Card className="bg-[#CC0000] p-8 text-black md:p-10">
           <Eyebrow light>About BUDS</Eyebrow>
           <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight md:text-5xl">
             A team built for argument, friendship, and institutional memory.
@@ -384,7 +470,7 @@ function AboutPage() {
         </Card>
         <Card className="p-8 md:p-10">
           <p className="text-lg leading-8 text-[#4d4743]">
-            Replace this with the president's official description. Keep it short, useful, and specific. Explain what APDA is, who can join, how practices work, what tournament weekends look like, and why BUDS is worth joining even if someone has never debated before.
+            The Boston University Debate Society is a member of the American Parliamentary Debate Association (also known as APDA). The current incarnation of the Boston University Debate Society was formed in 1999, and competes in parliamentary debate. Previously, Boston University teams competed in other varieties of collegiate debate.
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {["No experience required", "Weekly practices", "Tournament travel"].map((item) => (
@@ -545,7 +631,7 @@ function JoinPage() {
             <div className="border border-white/35 bg-white/10 p-6">
               <MapPin className="mb-5 text-white" />
               <p className="text-2xl font-black">Practice information</p>
-              <p className="mt-4 text-sm leading-6 text-white/85">Weekly practices: Mondays & Wednesdays 7-8 PM</p>
+              <p className="mt-4 text-sm leading-6 text-white/85">Weekly Practices: Mondays & Wednesdays 7-8 PM</p>
               <p className="mt-2 text-sm leading-6 text-white/85">Location: SAR 101</p>
               <p className="mt-2 text-sm leading-6 text-white/85">Open to all BU students, including complete beginners.</p>
             </div>
@@ -684,6 +770,28 @@ function PrivateHubPage({ auth, onLogout }) {
   const totalAllocated = budget.rows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
   const remainingBudget = (Number(budget.total) || 0) - totalSpent;
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateFromDatabase() {
+      const databaseState = await loadDatabaseState();
+      if (!databaseState || ignore) return;
+
+      setAgenda(databaseState.agenda);
+      setNotes(databaseState.notes);
+      setBudget(databaseState.budget);
+      saveStoredAgenda(databaseState.agenda);
+      saveStoredNotes(databaseState.notes);
+      saveStoredBudget(databaseState.budget);
+    }
+
+    hydrateFromDatabase();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   if (!auth) {
     return (
       <Page>
@@ -709,6 +817,7 @@ function PrivateHubPage({ auth, onLogout }) {
     const nextNotes = [nextNote, ...notes];
     setNotes(nextNotes);
     saveStoredNotes(nextNotes);
+    insertNote(nextNote);
     setSelectedNoteId(nextNote.id);
     setMeetingDate("");
     setMeetingTitle("");
@@ -720,18 +829,17 @@ function PrivateHubPage({ auth, onLogout }) {
     const text = newAgendaText.trim();
     if (!text) return;
 
-    const nextAgenda = [
-      ...agenda,
-      {
-        id: `agenda-${Date.now()}`,
-        text,
-        owner: newAgendaOwner.trim() || "Unassigned",
-        due: newAgendaDue || "Add date",
-      },
-    ];
+    const nextAgendaItem = {
+      id: `agenda-${Date.now()}`,
+      text,
+      owner: newAgendaOwner.trim() || "Unassigned",
+      due: newAgendaDue || "Add date",
+    };
+    const nextAgenda = [...agenda, nextAgendaItem];
 
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
+    upsertAgendaItem(nextAgendaItem);
     setNewAgendaText("");
     setNewAgendaOwner("");
     setNewAgendaDue("");
@@ -742,6 +850,7 @@ function PrivateHubPage({ auth, onLogout }) {
     setLastDeletedAgendaItem(item);
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
+    deleteAgendaItem(item.id);
     setAgendaCompleteFlash(true);
     window.setTimeout(() => setAgendaCompleteFlash(false), 1000);
   };
@@ -751,6 +860,7 @@ function PrivateHubPage({ auth, onLogout }) {
     const nextAgenda = [lastDeletedAgendaItem, ...agenda];
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
+    upsertAgendaItem(lastDeletedAgendaItem);
     setLastDeletedAgendaItem(null);
   };
 
@@ -759,8 +869,15 @@ function PrivateHubPage({ auth, onLogout }) {
     saveStoredBudget(nextBudget);
   };
 
+  const updateBudgetTotal = (total) => {
+    const nextBudget = { ...budget, total };
+    updateBudget(nextBudget);
+    upsertBudgetSettings(total);
+  };
+
   const updateBudgetRow = (id, field, value) => {
     if (field === "status" && value === "Denied") {
+      deleteBudgetRow(id);
       updateBudget({
         ...budget,
         rows: budget.rows.filter((row) => row.id !== id),
@@ -768,14 +885,17 @@ function PrivateHubPage({ auth, onLogout }) {
       return;
     }
 
-    updateBudget({
+    const nextBudget = {
       ...budget,
       rows: budget.rows.map((row) => (
         row.id === id
           ? { ...row, [field]: field === "allocated" || field === "spent" ? Number(value) : value }
           : row
       )),
-    });
+    };
+    updateBudget(nextBudget);
+    const updatedRow = nextBudget.rows.find((row) => row.id === id);
+    if (updatedRow) upsertBudgetRow(updatedRow);
   };
 
   const addBudgetRow = (event) => {
@@ -783,13 +903,15 @@ function PrivateHubPage({ auth, onLogout }) {
     const category = newBudgetCategory.trim();
     if (!category) return;
 
+    const nextRow = { id: `budget-${Date.now()}`, category, allocated: 0, spent: 0, status: "On Hold" };
     updateBudget({
       ...budget,
       rows: [
         ...budget.rows,
-        { id: `budget-${Date.now()}`, category, allocated: 0, spent: 0, status: "On Hold" },
+        nextRow,
       ],
     });
+    upsertBudgetRow(nextRow);
     setNewBudgetCategory("");
   };
 
@@ -851,10 +973,10 @@ function PrivateHubPage({ auth, onLogout }) {
         <div className="grid gap-3 xl:h-[calc(100vh-14.5rem)] xl:grid-cols-[0.92fr_1.28fr] xl:overflow-hidden">
           <div className="grid min-h-0 gap-3 xl:grid-rows-[1fr_0.9fr]">
             <Card className="relative flex min-h-0 flex-col p-4">
-              <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#2D2926] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}>
+              <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#2D2926] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
                 Checked off
               </div>
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <ClipboardList className="text-[#CC0000]" />
                   <h2 className="text-xl font-black text-[#2D2926]">Agenda + Accountability</h2>
@@ -869,7 +991,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 </button>
               </div>
 
-              <form onSubmit={handleAgendaSubmit} className="mb-3 grid gap-2">
+              <form onSubmit={handleAgendaSubmit} className="mb-4 grid gap-2">
                 <input
                   type="text"
                   value={newAgendaText}
@@ -924,28 +1046,28 @@ function PrivateHubPage({ auth, onLogout }) {
             </Card>
 
             <Card className="flex min-h-0 flex-col p-4">
-              <div className="mb-3 flex items-center gap-3">
+              <div className="mb-4 flex items-center gap-3">
                 <DollarSign className="text-[#CC0000]" />
                 <h2 className="text-xl font-black text-[#2D2926]">Budget Tracker</h2>
               </div>
-              <div className="mb-3 grid gap-2 sm:grid-cols-3">
-                <label className="grid gap-1 bg-[#2D2926] p-2 text-white">
+              <div className="mb-4 grid gap-3 sm:grid-cols-3">
+                <label className="grid gap-1 bg-[#2D2926] p-3 text-white">
                   <span className="text-xs font-black uppercase tracking-[0.08em] text-white/70">Total Budget</span>
                   <input
                     type="number"
                     min="0"
                     value={budget.total}
-                    onChange={(event) => updateBudget({ ...budget, total: Number(event.target.value) })}
-                    className="w-full bg-transparent text-xl font-black outline-none"
+                    onChange={(event) => updateBudgetTotal(Number(event.target.value))}
+                    className="w-full bg-transparent text-2xl font-black outline-none"
                   />
                 </label>
-                <div className="bg-[#f6f4f2] p-2">
+                <div className="bg-[#f6f4f2] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Spent</p>
-                  <p className="mt-1 text-xl font-black text-[#CC0000]">{formatCurrency(totalSpent)}</p>
+                  <p className="mt-1 text-2xl font-black text-[#CC0000]">{formatCurrency(totalSpent)}</p>
                 </div>
-                <div className="bg-[#f6f4f2] p-2">
+                <div className="bg-[#f6f4f2] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Remaining</p>
-                  <p className="mt-1 text-xl font-black text-[#2D2926]">{formatCurrency(remainingBudget)}</p>
+                  <p className="mt-1 text-2xl font-black text-[#2D2926]">{formatCurrency(remainingBudget)}</p>
                 </div>
               </div>
 
@@ -1024,12 +1146,12 @@ function PrivateHubPage({ auth, onLogout }) {
 
           <div className="grid min-h-0 content-start">
             <Card className="flex min-h-0 flex-col p-4 xl:h-full">
-              <div className="mb-3 flex items-center gap-3">
+              <div className="mb-5 flex items-center gap-3">
                 <FileText className="text-[#CC0000]" />
                 <h2 className="text-xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
               </div>
-              <form onSubmit={handleNoteSubmit} className="grid gap-3">
-                <div className="grid gap-3 md:grid-cols-[0.6fr_1fr]">
+              <form onSubmit={handleNoteSubmit} className="grid gap-4">
+                <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
                   <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                     Meeting Date
                     <input
@@ -1037,7 +1159,7 @@ function PrivateHubPage({ auth, onLogout }) {
                       value={meetingDate}
                       onChange={(event) => setMeetingDate(event.target.value)}
                       required
-                      className="border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                     />
                   </label>
                   <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -1048,7 +1170,7 @@ function PrivateHubPage({ auth, onLogout }) {
                       onChange={(event) => setMeetingTitle(event.target.value)}
                       required
                       placeholder="Budget approvals and novice outreach"
-                      className="border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                     />
                   </label>
                 </div>
@@ -1062,7 +1184,7 @@ function PrivateHubPage({ auth, onLogout }) {
                     className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
                   />
                 </label>
-                <button type="submit" className="w-fit bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+                <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
                   Save Notes
                 </button>
               </form>
@@ -1073,7 +1195,7 @@ function PrivateHubPage({ auth, onLogout }) {
                   <select
                     value={selectedNote?.id ?? ""}
                     onChange={(event) => setSelectedNoteId(event.target.value)}
-                    className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                    className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                   >
                     {sortedNotes.length === 0 && <option>No saved notes yet</option>}
                     {sortedNotes.map((note) => (
