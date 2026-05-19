@@ -1965,6 +1965,8 @@ function PrivateHubPage({ auth, onLogout }) {
   const updateBudgetRow = (id, field, value) => {
     if (!canEdit) return;
     if (field === "status" && value === "Denied") {
+      const row = budget.rows.find((budgetRow) => budgetRow.id === id);
+      if (!window.confirm(`Are you sure? Denying ${row?.category || "this budget item"} will delete it from the budget tracker.`)) return;
       deleteBudgetRow(id);
       updateBudget({
         ...budget,
@@ -2027,6 +2029,8 @@ function PrivateHubPage({ auth, onLogout }) {
 
   const removeBudgetRevenueRow = (id) => {
     if (!canEdit) return;
+    const row = (budget.revenueRows || []).find((revenueRow) => revenueRow.id === id);
+    if (!window.confirm(`Are you sure? Delete ${row?.category || "this revenue item"} from the budget tracker?`)) return;
     const nextBudget = {
       ...budget,
       revenueRows: (budget.revenueRows || []).filter((row) => row.id !== id),
