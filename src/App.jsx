@@ -898,41 +898,44 @@ function JoinPage({ auth }) {
                 No membership requests yet.
               </div>
             )}
-            {requests.map((request) => (
-              <div key={request.id} className="grid gap-4 border border-[#ded8d2] bg-white p-5 lg:grid-cols-[1fr_0.95fr]">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-xl font-black text-[#2D2926]">{request.name}</h3>
-                    <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f6f4f2] text-[#6d6560]"}`}>
-                      {MEMBERSHIP_REQUEST_STATUSES.includes(request.status) ? request.status : "Pending"}
-                    </span>
+            {requests.map((request) => {
+              const hasDecision = request.status === "Accepted" || request.status === "Denied";
+              return (
+                <div key={request.id} className={`grid gap-4 border p-5 lg:grid-cols-[1fr_0.95fr] ${hasDecision ? "border-[#c9c2bc] bg-[#ece8e4] opacity-85" : "border-[#ded8d2] bg-white"}`}>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-xl font-black text-[#2D2926]">{request.name}</h3>
+                      <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f6f4f2] text-[#6d6560]"}`}>
+                        {MEMBERSHIP_REQUEST_STATUSES.includes(request.status) ? request.status : "Pending"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-semibold text-[#6d6560]">{request.email}</p>
+                    <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message || "No optional note added."}</p>
+                    {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-[#6d6560]">{request.email}</p>
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message || "No optional note added."}</p>
-                  {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
-                </div>
-                <div className="grid gap-3">
-                  <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                    Decision reason
-                    <textarea
-                      value={reviewReasons[request.id] ?? ""}
-                      onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
-                      rows={4}
-                      placeholder="Defaults to Welcome to BUDS! when accepting"
-                      className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                    />
-                  </label>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <button type="button" onClick={() => reviewMembershipRequest(request.id, "Accepted")} className="flex-1 bg-[#2D2926] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
-                      Accept
-                    </button>
-                    <button type="button" onClick={() => reviewMembershipRequest(request.id, "Denied")} className="flex-1 bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
-                      Deny
-                    </button>
+                  <div className="grid gap-3">
+                    <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      Decision reason
+                      <textarea
+                        value={reviewReasons[request.id] ?? ""}
+                        onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
+                        rows={4}
+                        placeholder="Defaults to Welcome to BUDS! when accepting"
+                        className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                      />
+                    </label>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button type="button" onClick={() => reviewMembershipRequest(request.id, "Accepted")} className="flex-1 bg-[#2D2926] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
+                        Accept
+                      </button>
+                      <button type="button" onClick={() => reviewMembershipRequest(request.id, "Denied")} className="flex-1 bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
+                        Deny
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}
