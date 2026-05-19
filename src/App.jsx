@@ -2726,9 +2726,11 @@ export default function App() {
       <header className="sticky top-0 z-50 border-b border-[#c9c7c3] bg-[#e1dfdc]/95 shadow-[0_16px_42px_rgba(45,41,38,0.08)] backdrop-blur-xl">
         <nav className="mx-auto flex max-w-[98rem] items-center justify-between gap-5 px-5 py-3 md:px-8">
           <SiteLink href="/" className="group flex min-w-0 items-center gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-sm bg-[#CC0000] text-base font-black text-white transition group-hover:bg-[#A00000]">
-              BU
-            </div>
+            <img
+              src="/buds-logo.png"
+              alt="BU Debate Society logo"
+              className="h-14 w-14 shrink-0 rounded-sm object-cover shadow-sm transition group-hover:brightness-95"
+            />
             <div className="min-w-0 border-l border-[#ded8d2] pl-3">
               <p className="text-base font-black uppercase leading-none tracking-[0.18em] text-[#2D2926]">BUDS</p>
               <p className="mt-1 hidden truncate text-sm font-medium text-[#6d6560] sm:block">Boston University Debate Society</p>
