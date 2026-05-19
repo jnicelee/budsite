@@ -1572,13 +1572,7 @@ function LoginPage({ onLogin }) {
         <Card className="bg-[#2D2926] p-8 text-white">
           <Eyebrow light>Private Access</Eyebrow>
           <p className="mt-5 text-lg leading-8 text-white/78">
-            Accepted members can log in with the password they chose on the join form. E-board accounts can be promoted from the administrator Members tab.
-          </p>
-          <p className="mt-4 text-sm leading-6 text-white/70">
-            Administrator login: <span className="font-black text-white">{MASTER_EBOARD_EMAIL}</span> with password <span className="font-black text-white">{MASTER_EBOARD_PASSWORD}</span>. Legacy shared passwords are still available for setup: <span className="font-black text-white">{MEMBER_PASSWORD}</span> and <span className="font-black text-white">{EBOARD_PASSWORD}</span>.
-          </p>
-          <p className="mt-4 text-sm leading-6 text-white/60">
-            Real privacy should be connected to a backend auth service before storing actual team documents, budgets, or notes.
+            Log in with your BUDS membership email and password to access private team resources. E-board members can use the e-board option to open the workspace.
           </p>
         </Card>
 
