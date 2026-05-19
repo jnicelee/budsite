@@ -25,6 +25,7 @@ const LOGIN_STORAGE_KEY = "buds-auth";
 const EBOARD_NOTES_STORAGE_KEY = "buds-eboard-notes";
 const EBOARD_AGENDA_STORAGE_KEY = "buds-eboard-agenda";
 const EBOARD_BUDGET_STORAGE_KEY = "buds-eboard-budget";
+const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
 const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
 const MEMBER_PASSWORD = "buds-members";
 const EBOARD_PASSWORD = "buds-eboard";
@@ -65,14 +66,14 @@ const noviceResources = [
 ];
 
 const privateLinks = [
-  { label: "Master Document", description: "Team-wide reference document for cases, logistics, expectations, and shared resources." },
-  { label: "Tournament Sign Up Sheet", description: "Add tournament availability, partner preferences, travel needs, and judging notes." },
-  { label: "Practice Sign Up Sheet", description: "Track attendance, speaking drills, practice rounds, and novice pairing requests." },
-  { label: "Matter File", description: "Central research bank for examples, mechanisms, weighing blocks, and recurring case areas." },
-  { label: "Round Recordings", description: "Private video library for practice rounds, tournament rounds, and feedback review." },
-  { label: "Judge Feedback Archive", description: "Collect ballots, oral feedback, and coaching notes by tournament and team." },
-  { label: "Case Bank", description: "Shared shells, extensions, opposition prep, and practice cases for members." },
-  { label: "Travel Logistics", description: "Hotels, rides, reimbursement forms, packing notes, and tournament weekend details." },
+  { id: "link-master-document", label: "Master Document", description: "Team-wide reference document for cases, logistics, expectations, and shared resources.", url: "#" },
+  { id: "link-tournament-signup", label: "Tournament Sign Up Sheet", description: "Add tournament availability, partner preferences, travel needs, and judging notes.", url: "#" },
+  { id: "link-practice-signup", label: "Practice Sign Up Sheet", description: "Track attendance, speaking drills, practice rounds, and novice pairing requests.", url: "#" },
+  { id: "link-matter-file", label: "Matter File", description: "Central research bank for examples, mechanisms, weighing blocks, and recurring case areas.", url: "#" },
+  { id: "link-round-recordings", label: "Round Recordings", description: "Private video library for practice rounds, tournament rounds, and feedback review.", url: "#" },
+  { id: "link-judge-feedback", label: "Judge Feedback Archive", description: "Collect ballots, oral feedback, and coaching notes by tournament and team.", url: "#" },
+  { id: "link-casebook", label: "Casebook", description: "Shared shells, extensions, opposition prep, and practice cases for members.", url: "#" },
+  { id: "link-travel-logistics", label: "Travel Logistics", description: "Hotels, rides, reimbursement forms, packing notes, and tournament weekend details.", url: "#" },
 ];
 
 const agendaItems = [
@@ -252,6 +253,19 @@ function saveStoredBudget(budget) {
   window.localStorage.setItem(EBOARD_BUDGET_STORAGE_KEY, JSON.stringify(budget));
 }
 
+function getStoredPrivateLinks() {
+  try {
+    const stored = window.localStorage.getItem(PRIVATE_LINKS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : privateLinks;
+  } catch {
+    return privateLinks;
+  }
+}
+
+function saveStoredPrivateLinks(links) {
+  window.localStorage.setItem(PRIVATE_LINKS_STORAGE_KEY, JSON.stringify(links));
+}
+
 function normalizeSupabaseBudgetRow(row) {
   return {
     id: row.id,
@@ -270,19 +284,22 @@ async function loadDatabaseState() {
     notesResult,
     budgetSettingsResult,
     budgetRowsResult,
+    privateLinksResult,
   ] = await Promise.all([
     supabase.from("eboard_agenda").select("id,text,owner,due").order("created_at", { ascending: true }),
     supabase.from("eboard_notes").select("id,date,title,body").order("date", { ascending: false }),
     supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
     supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
+    supabase.from("private_links").select("id,label,description,url").order("created_at", { ascending: true }),
   ]);
 
-  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error) {
+  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || privateLinksResult.error) {
     console.error("Supabase load failed", {
       agendaError: agendaResult.error,
       notesError: notesResult.error,
       budgetSettingsError: budgetSettingsResult.error,
       budgetRowsError: budgetRowsResult.error,
+      privateLinksError: privateLinksResult.error,
     });
     return null;
   }
@@ -296,6 +313,7 @@ async function loadDatabaseState() {
         ? budgetRowsResult.data.map(normalizeSupabaseBudgetRow)
         : initialBudgetRows,
     },
+    privateLinks: privateLinksResult.data.length > 0 ? privateLinksResult.data : privateLinks,
   };
 }
 
@@ -335,6 +353,12 @@ async function insertNote(note) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from("eboard_notes").insert(note);
   if (error) console.error("Supabase note insert failed", error);
+}
+
+async function upsertPrivateLink(link) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from("private_links").upsert(link);
+  if (error) console.error("Supabase private link upsert failed", error);
 }
 
 function formatCurrency(value) {
@@ -762,6 +786,7 @@ function PrivateHubPage({ auth, onLogout }) {
   const [agendaCompleteFlash, setAgendaCompleteFlash] = useState(false);
   const [budget, setBudget] = useState(() => getStoredBudget());
   const [newBudgetCategory, setNewBudgetCategory] = useState("");
+  const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
 
   const isEboard = auth?.role === "eboard";
   const visibleTab = isEboard ? activeTab : "member";
@@ -781,9 +806,11 @@ function PrivateHubPage({ auth, onLogout }) {
       setAgenda(databaseState.agenda);
       setNotes(databaseState.notes);
       setBudget(databaseState.budget);
+      setMemberLinks(databaseState.privateLinks);
       saveStoredAgenda(databaseState.agenda);
       saveStoredNotes(databaseState.notes);
       saveStoredBudget(databaseState.budget);
+      saveStoredPrivateLinks(databaseState.privateLinks);
     }
 
     hydrateFromDatabase();
@@ -916,6 +943,16 @@ function PrivateHubPage({ auth, onLogout }) {
     setNewBudgetCategory("");
   };
 
+  const updateMemberLink = (id, field, value) => {
+    const nextLinks = memberLinks.map((link) => (
+      link.id === id ? { ...link, [field]: value } : link
+    ));
+    setMemberLinks(nextLinks);
+    saveStoredPrivateLinks(nextLinks);
+    const updatedLink = nextLinks.find((link) => link.id === id);
+    if (updatedLink) upsertPrivateLink(updatedLink);
+  };
+
   return (
     <Page className={isEboard ? "max-w-[98rem] py-4 md:py-5" : ""}>
       <div className="mb-3 flex flex-col gap-3 border-b-4 border-[#CC0000] bg-white p-3 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:flex-row md:items-center md:justify-between">
@@ -961,15 +998,41 @@ function PrivateHubPage({ auth, onLogout }) {
             Replace each placeholder with the private documents, sheets, and files your team already uses.
           </PageHeader>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {privateLinks.map((link) => (
-              <a key={link.label} href="#" className="group border border-[#ded8d2] bg-white p-6 shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1">
+            {memberLinks.map((link) => (
+              <div key={link.id} className="group border border-[#ded8d2] bg-white p-6 shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1">
                 <FileText className="mb-5 text-[#CC0000]" />
-                <h2 className="text-xl font-black leading-tight text-[#2D2926]">{link.label}</h2>
-                <p className="mt-3 text-sm leading-6 text-[#5b5450]">{link.description}</p>
-                <span className="mt-5 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]">
-                  Add URL <ChevronRight className="transition group-hover:translate-x-1" size={16} />
-                </span>
-              </a>
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
+                  Category
+                  <input
+                    type="text"
+                    value={link.label}
+                    onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
+                    className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-base font-black normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                  />
+                </label>
+                <label className="mt-3 grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
+                  Description
+                  <textarea
+                    value={link.description}
+                    onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
+                    rows={3}
+                    className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#5b5450] outline-none focus:border-[#CC0000]"
+                  />
+                </label>
+                <label className="mt-3 grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
+                  URL
+                  <input
+                    type="url"
+                    value={link.url}
+                    onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                    placeholder="https://..."
+                    className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                  />
+                </label>
+                <a href={link.url || "#"} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                  Open link <ChevronRight className="transition group-hover:translate-x-1" size={16} />
+                </a>
+              </div>
             ))}
           </div>
         </div>
