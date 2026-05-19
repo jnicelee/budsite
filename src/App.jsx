@@ -1349,8 +1349,9 @@ function PrivateHubPage({ auth, onLogout }) {
   const visibleTab = isEboard ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
-  const totalSpent = budget.rows.reduce((sum, row) => sum + (Number(row.spent) || 0), 0);
-  const totalAllocated = budget.rows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
+  const approvedBudgetRows = budget.rows.filter((row) => row.status === "Approved");
+  const totalSpent = approvedBudgetRows.reduce((sum, row) => sum + (Number(row.spent) || 0), 0);
+  const totalAllocated = approvedBudgetRows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
   const totalRevenue = budget.revenueRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const effectiveBudget = (Number(budget.total) || 0) + totalRevenue;
   const remainingBudget = effectiveBudget - totalSpent;
