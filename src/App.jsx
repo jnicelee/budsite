@@ -1030,43 +1030,47 @@ function PrivateHubPage({ auth, onLogout }) {
                   <h2 className="text-xl font-black text-[#2D2926]">{group.section}</h2>
                   <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{group.links.length} links</span>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                   {group.links.map((link) => (
-                    <div key={link.id} className="group flex min-h-[21rem] flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1">
-                      <div className="mb-4 flex items-start justify-between gap-3">
-                        <FileText className="shrink-0 text-[#CC0000]" />
-                        <a href={link.url || "#"} target="_blank" rel="noreferrer" aria-label={`Open ${link.label}`} className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f6f4f2] text-[#2D2926] transition group-hover:border-[#CC0000] group-hover:text-[#CC0000]">
-                          <ExternalLink size={16} />
-                        </a>
+                    <div key={link.id} className="group flex min-h-[25rem] flex-col border border-[#ded8d2] bg-white p-7 shadow-[0_20px_55px_rgba(45,41,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,41,38,0.12)]">
+                      <div className="mb-10">
+                        <span className="inline-flex bg-[#CC0000] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
+                          {group.section === "Debater Resources" ? "Resource" : "Team Link"}
+                        </span>
                       </div>
-                      <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
-                        Link Name
+                      <label className="grid gap-2">
+                        <span className="sr-only">Link Name</span>
                         <input
                           type="text"
                           value={link.label}
                           onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
-                          className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-base font-black normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          className="w-full border-0 bg-transparent p-0 text-3xl font-black tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
                         />
                       </label>
-                      <label className="mt-3 grid flex-1 gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
-                        Description
+                      <label className="mt-6 grid flex-1 gap-2">
+                        <span className="sr-only">Description</span>
                         <textarea
                           value={link.description}
                           onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                          rows={4}
-                          className="h-full min-h-24 resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#5b5450] outline-none focus:border-[#CC0000]"
+                          rows={5}
+                          className="h-full min-h-32 resize-none border-0 bg-transparent p-0 text-lg font-medium leading-8 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
                         />
                       </label>
-                      <label className="mt-3 grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">
-                        URL
-                        <input
-                          type="url"
-                          value={link.url}
-                          onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
-                          placeholder="https://..."
-                          className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                        />
-                      </label>
+                      <div className="mt-7 grid gap-4">
+                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-base font-black uppercase tracking-[0.18em] text-[#CC0000]">
+                          Open link <ChevronRight className="transition group-hover:translate-x-1" size={20} />
+                        </a>
+                        <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
+                          Edit URL
+                          <input
+                            type="url"
+                            value={link.url}
+                            onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                            placeholder="https://..."
+                            className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                      </div>
                     </div>
                   ))}
                 </div>
