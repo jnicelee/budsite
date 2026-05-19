@@ -971,6 +971,7 @@ function MeetingsPage({ auth }) {
       .reverse()
       .map((post, index) => [post.id, String(index + 1).padStart(2, "0")])
   );
+  const latestMeetingLabel = sortedPosts[0]?.date ? formatMeetingDate(sortedPosts[0].date) : "None yet";
 
   useEffect(() => {
     let ignore = false;
@@ -1026,16 +1027,16 @@ function MeetingsPage({ auth }) {
               <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published posts</p>
             </div>
             <div className="border-b border-[#ded8d2] p-5">
-              <p className="text-4xl font-black leading-none text-[#2D2926]">Live</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">From secretary notes</p>
+              <p className="text-2xl font-black leading-tight text-[#2D2926]">{latestMeetingLabel}</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Latest update</p>
             </div>
             <div className="border-r border-[#ded8d2] p-5">
-              <p className="text-4xl font-black leading-none text-[#2D2926]">Date</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Ordered archive</p>
+              <p className="text-4xl font-black leading-none text-[#2D2926]">New</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Newest notes first</p>
             </div>
             <div className="p-5">
               <p className="text-4xl font-black leading-none text-[#2D2926]">EBD</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Delete access</p>
+              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">E-board managed</p>
             </div>
           </div>
           <p className="text-sm font-semibold leading-6 text-[#5b5450]">
