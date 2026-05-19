@@ -1072,8 +1072,10 @@ function NoviceHubPage() {
       </div>
       <Card className="mt-6 flex flex-col gap-5 bg-[#2D2926] p-8 text-white md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="mb-2 flex items-center gap-2 font-black text-white"><Lock size={16} /> Optional Private Hub</div>
-          <p className="max-w-3xl text-sm leading-6 text-white/70">Use this for member-only case files, strategy guides, practice recordings, and judge feedback. Add authentication later with Firebase, Supabase, Clerk, or Vercel password protection.</p>
+          <div className="mb-2 flex items-center gap-2 font-black text-white"><Lock size={16} /> Learn by Watching Rounds</div>
+          <p className="max-w-3xl text-sm leading-6 text-white/70">
+            The best way to learn APDA is to stay for a practice round, or "pround," after practice. Demonstration rounds, walkthroughs, and examples are also shown regularly during meetings so new debaters can see how cases, rebuttals, and weighing work in real time.
+          </p>
         </div>
         <button className="bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">Members Only</button>
       </Card>
