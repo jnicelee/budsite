@@ -350,7 +350,7 @@ async function loadDatabaseState() {
     budgetRowsResult,
     privateLinksResult,
   ] = await Promise.all([
-    supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: true }),
+    supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: false }),
     supabase.from("eboard_notes").select("id,date,title,body").order("date", { ascending: false }),
     supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
     supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
@@ -1406,7 +1406,7 @@ function PrivateHubPage({ auth, onLogout }) {
       due: newAgendaDue || "Add date",
       completed_at: null,
     };
-    const nextAgenda = [...agenda, nextAgendaItem];
+    const nextAgenda = [nextAgendaItem, ...agenda];
 
     setAgenda(nextAgenda);
     saveStoredAgenda(nextAgenda);
