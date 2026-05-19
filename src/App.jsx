@@ -848,21 +848,23 @@ function AboutPage() {
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
-        <Card className="p-7 md:p-8">
-          <Eyebrow>History</Eyebrow>
-          <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">A BU team with memory and momentum.</h2>
-          <div className="mt-6 grid gap-4">
-            {aboutTimeline.map((item) => (
-              <div key={item.year} className="grid grid-cols-[5.5rem_1fr] gap-4 border-t border-[#ded8d2] pt-4">
-                <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{item.year}</p>
-                <div>
-                  <h3 className="text-lg font-black text-[#2D2926]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
+        <SiteLink href="/history" className="group block">
+          <Card className="p-7 transition hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] md:p-8">
+            <Eyebrow>History</Eyebrow>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926] transition group-hover:text-[#CC0000]">A BU team with memory and momentum.</h2>
+            <div className="mt-6 grid gap-4">
+              {aboutTimeline.map((item) => (
+                <div key={item.year} className="grid grid-cols-[5.5rem_1fr] gap-4 border-t border-[#ded8d2] pt-4">
+                  <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{item.year}</p>
+                  <div>
+                    <h3 className="text-lg font-black text-[#2D2926]">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </SiteLink>
 
         <section>
           <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
