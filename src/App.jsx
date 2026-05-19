@@ -1134,13 +1134,27 @@ function ContactPage() {
             <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/85">
               BUDS is open to BU students of every experience level. Reach out, stop by practice, or request membership through the join form when you are ready.
             </p>
+            <div className="mt-8 grid gap-3 border border-white/20 bg-white/5 p-5 text-sm font-bold text-white/90">
+              <a href="mailto:boston.university.debate@gmail.com" className="break-words hover:text-white">
+                Email: boston.university.debate@gmail.com
+              </a>
+              <a href="https://www.instagram.com/budebatesociety" target="_blank" rel="noreferrer" className="hover:text-white">
+                Instagram: @budebatesociety
+              </a>
+              <a href="https://www.linkedin.com/company/budebatesociety/posts/?feedView=all" target="_blank" rel="noreferrer" className="break-words hover:text-white">
+                LinkedIn: linkedin.com/company/budebatesociety
+              </a>
+            </div>
           </div>
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
             <a href="mailto:boston.university.debate@gmail.com" className="inline-flex items-center justify-center gap-2 bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                 Email the team <Mail size={16} />
             </a>
-            <a href="https://www.instagram.com/budebatesociety?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
+            <a href="https://www.instagram.com/budebatesociety" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
                 Instagram <ExternalLink size={16} />
+            </a>
+            <a href="https://www.linkedin.com/company/budebatesociety/posts/?feedView=all" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 border border-white/35 px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-white/10">
+                LinkedIn <ExternalLink size={16} />
             </a>
             <PrimaryButton href="/join" className="sm:col-span-2">
                 Request to join <ArrowRight size={16} />
