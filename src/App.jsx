@@ -687,19 +687,19 @@ function Eyebrow({ children, light = false }) {
 
 function PageHeader({ eyebrow, title, children }) {
   return (
-    <div className="mb-10 max-w-3xl">
+    <div className="mb-7 max-w-3xl sm:mb-10">
       <Eyebrow>{eyebrow}</Eyebrow>
-      <h1 className="mt-4 text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-6xl">
+      <h1 className="mt-4 text-3xl font-black leading-[1.04] tracking-tight text-[#2D2926] sm:text-4xl md:text-6xl">
         {title}
       </h1>
-      {children && <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5b5450]">{children}</p>}
+      {children && <p className="mt-5 max-w-2xl text-base leading-7 text-[#5b5450] sm:text-lg sm:leading-8">{children}</p>}
     </div>
   );
 }
 
 function Card({ children, className = "" }) {
   return (
-    <div className={`border border-[#ded8d2] bg-white p-6 shadow-[0_16px_45px_rgba(45,41,38,0.08)] ${className}`}>
+    <div className={`min-w-0 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-6 ${className}`}>
       {children}
     </div>
   );
@@ -729,7 +729,7 @@ function SecondaryButton({ href, children, className = "" }) {
 
 function Page({ children, className = "" }) {
   return (
-    <section className={`mx-auto min-h-[calc(100vh-4.75rem)] w-full max-w-[98rem] px-5 py-10 md:px-8 md:py-16 ${className}`}>
+    <section className={`mx-auto min-h-[calc(100vh-4.75rem)] w-full max-w-[98rem] px-4 py-8 sm:px-5 sm:py-10 md:px-8 md:py-16 ${className}`}>
       {children}
     </section>
   );
@@ -757,7 +757,7 @@ function PhotoCarousel() {
 
   return (
     <div className="overflow-hidden border border-[#ded8d2] bg-white shadow-[0_20px_55px_rgba(45,41,38,0.1)]">
-      <div className="relative aspect-[16/9] min-h-[20rem] bg-[#2D2926] lg:aspect-[21/8]">
+      <div className="relative aspect-[4/5] min-h-[16rem] bg-[#2D2926] sm:aspect-[16/9] sm:min-h-[20rem] lg:aspect-[21/8]">
         <AnimatePresence mode="wait">
           <motion.img
             key={activeSlide.src}
@@ -772,7 +772,7 @@ function PhotoCarousel() {
         </AnimatePresence>
         <div className="absolute inset-x-0 bottom-0 bg-[#2D2926]/92 p-5 text-white md:p-6">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FF0000]">{activeSlide.kicker}</p>
-          <p className="mt-2 max-w-4xl text-base font-bold leading-7 text-white md:text-lg">{activeSlide.caption}</p>
+          <p className="mt-2 max-w-4xl text-sm font-bold leading-6 text-white sm:text-base sm:leading-7 md:text-lg">{activeSlide.caption}</p>
         </div>
         <div className="absolute right-4 top-4 flex gap-2">
           <button
@@ -813,15 +813,15 @@ function PhotoCarousel() {
 }
 function HomePage() {
   return (
-    <section className="mx-auto grid w-full max-w-[98rem] items-start gap-10 px-5 py-7 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr]">
+    <section className="mx-auto grid w-full max-w-[98rem] items-start gap-7 px-4 py-6 sm:px-5 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-10">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
         <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#2D2926]">
           <Trophy size={16} className="text-[#CC0000]" /> Ranked #4 nationally in 2026
         </div>
-        <h1 className="max-w-4xl text-5xl font-black leading-[0.94] tracking-tight text-[#2D2926] md:text-6xl xl:text-[4.35rem]">
+        <h1 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-tight text-[#2D2926] sm:text-5xl md:text-6xl xl:text-[4.35rem]">
           Nationally ranked debate, open to anyone at BU.
         </h1>
-        <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5b5450]">
+        <p className="mt-5 max-w-2xl text-base leading-7 text-[#5b5450] sm:text-lg sm:leading-8">
           BUDS competes in APDA, the American Parliamentary Debate Association. No tryouts, no dues, no experience required, just weekly chances to travel, argue, learn, and represent Boston University.
         </p>
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -844,10 +844,10 @@ function HomePage() {
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="grid gap-5">
         <div className="overflow-hidden border border-[#1f1b19] bg-[#2D2926] text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)]">
           <div className="grid gap-0 md:grid-cols-[0.95fr_1.05fr]">
-            <div className="flex min-h-64 flex-col justify-between bg-[#CC0000] p-7 text-white md:min-h-[29rem] md:p-8">
+            <div className="flex min-h-56 flex-col justify-between bg-[#CC0000] p-5 text-white sm:p-7 md:min-h-[29rem] md:p-8">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-white/80">2026 national rank</p>
-                <p className="mt-5 text-[7rem] font-black leading-none tracking-tight md:text-[7.5rem]">#4</p>
+                <p className="mt-5 text-[4.5rem] font-black leading-none tracking-tight sm:text-[6rem] md:text-[7.5rem]">#4</p>
               </div>
               <p className="max-w-xs text-base font-bold leading-7 text-white/90">
                 A top national team that still starts with an open door.
@@ -947,11 +947,11 @@ function AboutPage() {
   return (
     <Page>
       <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
-        <section className="relative overflow-hidden border border-[#ded8d2] bg-[#CC0000] p-7 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
+        <section className="relative min-w-0 overflow-hidden border border-[#ded8d2] bg-[#CC0000] p-5 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] sm:p-7 md:p-10">
           <div className="absolute right-6 top-6 flex h-24 w-24 items-center justify-center border-2 border-white/30 text-3xl font-black tracking-tight text-white md:h-32 md:w-32 md:text-5xl">
             BU
           </div>
-          <div className="max-w-2xl pr-24 md:pr-36">
+          <div className="max-w-2xl sm:pr-24 md:pr-36">
             <Eyebrow light>About BUDS</Eyebrow>
             <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
               Debate hard. Learn fast. Find your people.
@@ -978,7 +978,7 @@ function AboutPage() {
               </div>
               <div>
                 <Eyebrow>What We Do</Eyebrow>
-                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">APDA Parliamentary Debate, Built for BU Students.</h2>
+                <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926] sm:text-3xl">APDA Parliamentary Debate, Built for BU Students.</h2>
                 <p className="mt-4 text-base leading-7 text-[#5b5450]">
                   BUDS competes in the American Parliamentary Debate Association, a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity. Members practice weekly, travel to tournaments, write cases, judge rounds, and help each other improve.
                 </p>
@@ -1000,12 +1000,12 @@ function AboutPage() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
         <SiteLink href="/history" className="group block">
-          <Card className="p-7 transition hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] md:p-8">
+          <Card className="p-5 transition hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] sm:p-7 md:p-8">
             <Eyebrow>History</Eyebrow>
             <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926] transition group-hover:text-[#CC0000]">A BU team with memory and momentum.</h2>
             <div className="mt-6 grid gap-4">
               {aboutTimeline.map((item) => (
-                <div key={item.year} className="grid grid-cols-[5.5rem_1fr] gap-4 border-t border-[#ded8d2] pt-4">
+                <div key={item.year} className="grid gap-3 border-t border-[#ded8d2] pt-4 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
                   <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{item.year}</p>
                   <div>
                     <h3 className="text-lg font-black text-[#2D2926]">{item.title}</h3>
@@ -1070,7 +1070,7 @@ function NoviceHubPage() {
           </Card>
         ))}
       </div>
-      <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-8 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] md:grid-cols-[1fr_auto] md:items-center">
+      <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
           <p className="max-w-4xl text-xl font-black leading-tight text-white md:text-2xl">
@@ -1151,7 +1151,7 @@ function MeetingsPage({ auth }) {
   return (
     <Page>
       <div className="mb-8 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-        <div className="border border-[#2D2926] bg-[#2D2926] p-8 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
+        <div className="border border-[#2D2926] bg-[#2D2926] p-6 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
           <Eyebrow light>Meetings</Eyebrow>
           <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
             Meeting Notes, Organized Like a Team Record.
@@ -1161,8 +1161,8 @@ function MeetingsPage({ auth }) {
             <span className="block">Organized newest first, so decisions and updates stay easy to browse.</span>
           </p>
         </div>
-        <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-8 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:p-10">
-          <div className="grid grid-cols-2 border border-[#ded8d2]">
+        <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-8 md:p-10">
+          <div className="grid border border-[#ded8d2] sm:grid-cols-2">
             <div className="border-b border-r border-[#ded8d2] p-5">
               <p className="text-4xl font-black leading-none text-[#CC0000]">{sortedPosts.length}</p>
               <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published Posts</p>
@@ -1197,7 +1197,7 @@ function MeetingsPage({ auth }) {
           </Card>
         )}
         {sortedPosts.map((post, index) => (
-          <article key={post.id} className="group grid gap-0 border border-[#ded8d2] bg-white shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] lg:grid-cols-[8rem_1fr]">
+          <article key={post.id} className="group grid gap-0 border border-[#ded8d2] bg-white shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] sm:grid-cols-[7rem_1fr] lg:grid-cols-[8rem_1fr]">
             <div className="flex items-center justify-between border-b border-[#ded8d2] bg-[#CC0000] p-5 text-white lg:block lg:border-b-0 lg:border-r">
               <p className="text-sm font-black uppercase tracking-[0.18em] text-white/70">No.</p>
               <p className="mt-0 text-5xl font-black leading-none lg:mt-3">{meetingNumberById.get(post.id) || String(index + 1).padStart(2, "0")}</p>
@@ -1249,7 +1249,7 @@ function HistoryPage() {
         <Card>
           <div className="mb-5 flex items-center gap-3">
             <Medal className="text-[#CC0000]" />
-            <h2 className="text-3xl font-black text-[#2D2926]">Accomplishments</h2>
+            <h2 className="min-w-0 break-words text-2xl font-black text-[#2D2926] sm:text-3xl">Accomplishments</h2>
           </div>
           <div className="grid gap-3">
             {accomplishments.map((item) => (
@@ -1304,23 +1304,23 @@ function EBoardPage() {
 function ContactPage() {
   return (
     <Page>
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="flex min-h-[34rem] flex-col justify-between border border-[#1f1b19] bg-[#2D2926] p-8 text-left text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)] md:p-10">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="flex min-h-[28rem] w-full min-w-0 max-w-full flex-col justify-between overflow-hidden border border-[#1f1b19] bg-[#2D2926] p-5 text-left text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)] sm:min-h-[34rem] sm:p-6 md:p-10">
           <div>
             <span className="inline-flex bg-[#CC0000] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
               Contact
             </span>
-            <h1 className="mt-8 max-w-xl text-4xl font-black leading-tight tracking-tight text-white md:text-5xl">
+            <h1 className="mt-8 max-w-xl text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">
               Come to practice. Watch a round. Ask a question.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/85">
+            <p className="mt-6 max-w-2xl text-base font-medium leading-7 text-white/85 sm:text-lg sm:leading-8">
               BUDS is open to BU students of every experience level. Reach out, stop by practice, or request membership through the join form when you are ready.
             </p>
-            <div className="mt-8 grid gap-3 border border-white/20 bg-white/5 p-5 text-sm font-bold text-white/90">
+            <div className="mt-8 grid min-w-0 gap-3 border border-white/20 bg-white/5 p-4 text-sm font-bold text-white/90 sm:p-5">
               <a href="mailto:boston.university.debate@gmail.com" className="break-words hover:text-white">
                 Email: boston.university.debate@gmail.com
               </a>
-              <a href="https://www.instagram.com/budebatesociety" target="_blank" rel="noreferrer" className="hover:text-white">
+              <a href="https://www.instagram.com/budebatesociety" target="_blank" rel="noreferrer" className="break-words hover:text-white">
                 Instagram: @budebatesociety
               </a>
               <a href="https://www.linkedin.com/company/budebatesociety/posts/?feedView=all" target="_blank" rel="noreferrer" className="break-words hover:text-white">
@@ -1343,7 +1343,7 @@ function ContactPage() {
           </div>
         </div>
 
-        <div className="border border-[#ded8d2] bg-white p-8 shadow-[0_20px_55px_rgba(45,41,38,0.08)] md:p-10">
+        <div className="border border-[#ded8d2] bg-white p-5 shadow-[0_20px_55px_rgba(45,41,38,0.08)] sm:p-8 md:p-10">
           <div className="border-t-8 border-t-[#CC0000] bg-[#f6f4f2] p-7">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#CC0000] text-white">
@@ -1351,7 +1351,7 @@ function ContactPage() {
               </div>
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">Practice Information</p>
-                <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926]">
+                <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926] sm:text-3xl">
                   Mondays & Wednesdays
                   <span className="block">@ 7-8 PM</span>
                 </h2>
@@ -1488,20 +1488,20 @@ function JoinPage({ auth }) {
 
   return (
     <Page>
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="flex min-h-[34rem] flex-col justify-between border border-[#9a0000] bg-[#CC0000] p-8 text-left text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)] md:p-10">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="flex min-h-[28rem] flex-col justify-between border border-[#9a0000] bg-[#CC0000] p-6 text-left text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)] sm:min-h-[34rem] md:p-10">
           <div>
             <span className="inline-flex bg-[#2D2926] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
               Join BUDS
             </span>
-            <h1 className="mt-8 max-w-xl text-4xl font-black leading-tight tracking-tight text-white md:text-5xl">
+            <h1 className="mt-8 max-w-xl text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">
               Request membership in the Boston University Debate Society.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-white/90">
+            <p className="mt-6 max-w-2xl text-base font-medium leading-7 text-white/90 sm:text-lg sm:leading-8">
               Send a quick request with your BU email. Administrators can review new members, accept or deny requests, and leave a decision reason.
             </p>
           </div>
-          <div className="mt-10 grid gap-4 border border-white/40 bg-white p-6 text-[#2D2926]">
+          <div className="mt-10 grid gap-4 border border-white/40 bg-white p-4 text-[#2D2926] sm:p-6">
             <div className="flex items-start gap-3">
               <MapPin className="mt-1 shrink-0 text-[#CC0000]" />
               <div>
@@ -1717,11 +1717,11 @@ function LoginPage({ onLogin }) {
       <PageHeader eyebrow="Private Login" title="Choose Your BUDS Access Level.">
         Members unlock private team resources. E-board unlocks the same member hub plus the e-board workspace.
       </PageHeader>
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="!bg-[#2D2926] p-8 text-white">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <Card className="!bg-[#2D2926] p-5 text-white sm:p-8">
           <div className="border-t-4 border-[#CC0000] pt-6">
             <Eyebrow light>Private Access</Eyebrow>
-            <h2 className="mt-5 text-4xl font-black leading-tight text-white">Log in with your membership ID.</h2>
+            <h2 className="mt-5 text-3xl font-black leading-tight text-white sm:text-4xl">Log in with your membership ID.</h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-white/78">
               Use the email and password connected to your BUDS account. Members can access private team resources, and e-board members can open the workspace from the e-board login option.
             </p>
@@ -1732,7 +1732,7 @@ function LoginPage({ onLogin }) {
           </div>
         </Card>
 
-        <Card className="p-8">
+        <Card className="p-5 sm:p-8">
           <div className="mb-6 grid grid-cols-2 border border-[#ded8d2] bg-[#f6f4f2] p-1">
             {[
               { id: "member", label: "Member Login" },
@@ -2116,7 +2116,7 @@ function PrivateHubPage({ auth, onLogout }) {
             {isEboard ? "E-Board Workspace" : "Member Resources"}
           </h1>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="text-xs font-semibold text-[#6d6560]">{auth.email}</p>
+            <p className="break-all text-xs font-semibold text-[#6d6560]">{auth.email}</p>
             {isAdmin && (
               <span className="bg-[#2D2926] px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-white">
                 Administrator
@@ -2179,7 +2179,7 @@ function PrivateHubPage({ auth, onLogout }) {
                 </div>
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                   {group.links.map((link) => (
-                    <div key={link.id} className="group flex min-h-[25rem] flex-col border border-[#ded8d2] bg-white p-7 shadow-[0_20px_55px_rgba(45,41,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,41,38,0.12)]">
+                    <div key={link.id} className="group flex min-h-[20rem] flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_20px_55px_rgba(45,41,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,41,38,0.12)] sm:min-h-[25rem] sm:p-7">
                       <div className="mb-10">
                         <span className="inline-flex bg-[#CC0000] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
                           {group.section === "Debater Resources" ? "Resource" : "Team Link"}
@@ -2208,14 +2208,14 @@ function PrivateHubPage({ auth, onLogout }) {
                         </>
                       ) : (
                         <>
-                          <h3 className="break-words text-3xl font-black leading-tight tracking-normal text-[#2D2926]">
+                          <h3 className="break-words text-2xl font-black leading-tight tracking-normal text-[#2D2926] sm:text-3xl">
                             <MemberLinkTitle link={link} />
                           </h3>
-                          <p className="mt-6 flex-1 text-lg font-medium leading-8 text-[#5b5450]">{link.description}</p>
+                          <p className="mt-5 flex-1 text-base font-medium leading-7 text-[#5b5450] sm:mt-6 sm:text-lg sm:leading-8">{link.description}</p>
                         </>
                       )}
                       <div className="mt-7 grid gap-4">
-                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-base font-black uppercase tracking-[0.18em] text-[#CC0000]">
+                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-sm font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-base sm:tracking-[0.18em]">
                           Open link <ChevronRight className="transition group-hover:translate-x-1" size={20} />
                         </a>
                         {canEdit && (
@@ -2330,7 +2330,7 @@ function PrivateHubPage({ auth, onLogout }) {
       {visibleTab === "eboard" && isEboard && (
         <div className="grid gap-5">
           <div className="grid gap-5 xl:grid-cols-2">
-            <Card className="relative flex min-h-[34rem] flex-col p-5">
+            <Card className="relative flex min-h-[28rem] flex-col p-4 sm:min-h-[34rem] sm:p-5">
               <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
                 Checked off
               </div>
@@ -2426,7 +2426,7 @@ function PrivateHubPage({ auth, onLogout }) {
               </div>
             </Card>
 
-            <Card className="flex min-h-[34rem] flex-col p-5">
+            <Card className="flex min-h-[28rem] flex-col p-4 sm:min-h-[34rem] sm:p-5">
               <div className="mb-4 flex items-center gap-3">
                 <DollarSign className="text-[#CC0000]" />
                 <h2 className="text-xl font-black text-[#2D2926]">Budget Tracker</h2>
@@ -2512,7 +2512,7 @@ function PrivateHubPage({ auth, onLogout }) {
                   </tbody>
                 </table>
               </div>
-              <form onSubmit={addBudgetRow} className="mt-3 flex gap-2">
+              <form onSubmit={addBudgetRow} className="mt-3 grid gap-2 sm:flex">
                 <input
                   type="text"
                   value={newBudgetCategory}
@@ -2584,7 +2584,7 @@ function PrivateHubPage({ auth, onLogout }) {
           </div>
 
           <div className="grid">
-            <Card className="flex min-h-0 flex-col p-5">
+            <Card className="flex min-h-0 flex-col p-4 sm:p-5">
               <div className="mb-5 flex items-center gap-3">
                 <FileText className="text-[#CC0000]" />
                 <h2 className="text-xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
