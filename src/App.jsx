@@ -988,9 +988,11 @@ function AboutPage() {
             </div>
           </Card>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="!bg-[#2D2926] p-6 text-white">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-white/60">Best For</p>
-              <p className="mt-4 text-2xl font-black leading-tight">Curious people who like ideas, performance, politics, philosophy, law, comedy, or competition.</p>
+            <Card className="!bg-[#2D2926] p-6 text-white sm:col-span-2 sm:p-8">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-white/65 sm:text-base">Best For</p>
+              <p className="mt-7 max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+                Curious people who like ideas like feminism, politics, philosophy, law, comedy, or economics.
+              </p>
             </Card>
             <Card className="p-6">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-[#CC0000]">Start Here</p>
