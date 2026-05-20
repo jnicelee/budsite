@@ -63,7 +63,7 @@ create table if not exists member_accounts (
   name text not null,
   email text not null unique,
   password text not null,
-  role text not null default 'member' check (role in ('member', 'eboard')),
+  role text not null default 'member' check (role in ('member', 'eboard', 'admin')),
   status text not null default 'active' check (status in ('active', 'revoked')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

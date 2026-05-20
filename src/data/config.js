@@ -9,8 +9,7 @@ export const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
 export const COMPLETED_AGENDA_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 export const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
 export const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
-export const MEMBER_ACCOUNT_ROLES = ["member", "eboard"];
+export const MEMBER_ACCOUNT_ROLES = ["member", "eboard", "admin"];
 
-export const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
 export const ADMIN_ROLE = "admin";
 export const MEMBER_MANAGER_EMAILS = ["joshml@bu.edu", "njsaxena@bu.edu"];

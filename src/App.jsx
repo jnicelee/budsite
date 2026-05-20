@@ -33,7 +33,6 @@ import {
 import {
   ADMIN_ROLE,
   BUDGET_STATUSES,
-  MASTER_EBOARD_EMAIL,
   MEMBER_ACCOUNT_ROLES,
   MEMBER_MANAGER_EMAILS,
   MEMBERSHIP_REQUEST_STATUSES,
@@ -387,7 +386,7 @@ function CalendarPage({ calendarEmbedUrl }) {
 
 function MeetingsPage({ auth }) {
   const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
-  const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE || auth?.email === MASTER_EBOARD_EMAIL;
+  const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE;
   const sortedPosts = sortMeetingPosts(meetingPosts);
   const meetingNumberById = new Map(
     [...sortedPosts]
@@ -672,7 +671,7 @@ function JoinPage({ auth }) {
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitMessageType, setSubmitMessageType] = useState("success");
   const [reviewReasons, setReviewReasons] = useState({});
-  const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
+  const isAdmin = auth?.role === ADMIN_ROLE;
 
   useEffect(() => {
     let ignore = false;
@@ -955,8 +954,7 @@ function LoginPage({ onLogin }) {
         return;
       }
 
-      const role = existingAccount.email === MASTER_EBOARD_EMAIL ? ADMIN_ROLE : existingAccount.role;
-      const auth = { role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
+      const auth = { role: existingAccount.role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
       saveStoredAuth(auth);
       onLogin(auth);
       navigateTo("/hub");
@@ -965,8 +963,7 @@ function LoginPage({ onLogin }) {
 
     const account = await findMemberAccount(normalizedEmail, password);
     if (account) {
-      const role = account.email === MASTER_EBOARD_EMAIL ? ADMIN_ROLE : account.role;
-      const auth = { role, email: account.email, name: account.name, accountId: account.id };
+      const auth = { role: account.role, email: account.email, name: account.name, accountId: account.id };
       saveStoredAuth(auth);
       onLogin(auth);
       navigateTo("/hub");
@@ -1050,7 +1047,7 @@ function PrivateHubPage({ auth, onLogout }) {
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
 
-  const isAdmin = auth?.email === MASTER_EBOARD_EMAIL || auth?.role === ADMIN_ROLE;
+  const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEdit = isAdmin;
