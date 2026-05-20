@@ -948,9 +948,11 @@ function AboutPage() {
     <Page>
       <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
         <section className="relative min-w-0 overflow-hidden border border-[#ded8d2] bg-[#CC0000] p-5 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] sm:p-7 md:p-10">
-          <div className="absolute right-6 top-6 flex h-24 w-24 items-center justify-center border-2 border-white/30 text-3xl font-black tracking-tight text-white md:h-32 md:w-32 md:text-5xl">
-            BU
-          </div>
+          <img
+            src="/about-buds-logo.png"
+            alt="BUDS logo"
+            className="absolute right-5 top-5 h-24 w-24 border-2 border-white/30 object-cover shadow-[0_12px_34px_rgba(45,41,38,0.18)] sm:right-6 sm:top-6 md:h-32 md:w-32"
+          />
           <div className="max-w-2xl sm:pr-24 md:pr-36">
             <Eyebrow light>About BUDS</Eyebrow>
             <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
