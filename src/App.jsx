@@ -1062,6 +1062,7 @@ function PrivateHubPage({ auth, onLogout }) {
   const totalRevenue = budget.revenueRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const effectiveBudget = (Number(budget.total) || 0) + totalRevenue;
   const remainingBudget = effectiveBudget - totalSpent;
+  const displayName = auth?.name?.trim() || auth?.email?.split("@")[0] || "member";
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
     links: memberLinks.filter((link) => link.section === section),
@@ -1352,7 +1353,7 @@ function PrivateHubPage({ auth, onLogout }) {
         <div>
           <Eyebrow>Private Hub</Eyebrow>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-[#2D2926] md:text-3xl">
-            {isEboard ? "E-Board Workspace" : "Member Resources"}
+            {isEboard ? "E-Board Workspace" : `Welcome, ${displayName}`}
           </h1>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="break-all text-xs font-semibold text-[#6d6560]">{auth.email}</p>
