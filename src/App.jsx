@@ -951,7 +951,7 @@ function AboutPage() {
           <img
             src="/about-buds-logo.png"
             alt="BUDS logo"
-            className="absolute right-5 top-5 h-24 w-24 border-2 border-white/30 object-cover shadow-[0_12px_34px_rgba(45,41,38,0.18)] sm:right-6 sm:top-6 md:h-32 md:w-32"
+            className="absolute right-5 top-5 hidden h-24 w-24 border-2 border-white/30 object-cover shadow-[0_12px_34px_rgba(45,41,38,0.18)] sm:right-6 sm:top-6 sm:block md:h-32 md:w-32"
           />
           <div className="max-w-2xl sm:pr-24 md:pr-36">
             <Eyebrow light>About BUDS</Eyebrow>
