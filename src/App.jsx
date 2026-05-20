@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  ChevronLeft,
   ChevronRight,
   ClipboardList,
   DollarSign,
@@ -20,797 +19,79 @@ import {
   X,
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
+import { PhotoCarousel } from "./components/PhotoCarousel";
+import {
+  Card,
+  Eyebrow,
+  MemberLinkTitle,
+  Page,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  SiteLink,
+} from "./components/ui";
+import {
+  ADMIN_ROLE,
+  BUDGET_STATUSES,
+  MASTER_EBOARD_EMAIL,
+  MEMBER_ACCOUNT_ROLES,
+  MEMBER_MANAGER_EMAILS,
+  MEMBERSHIP_REQUEST_STATUSES,
+} from "./data/config";
+import {
+  accomplishments,
+  alumni,
+  board,
+  navItems,
+  noviceResources,
+  privateLinkSections,
+  timeline,
+} from "./data/content";
+import { formatCurrency, formatMeetingDate, getMemberLinkTitleValue, sortMeetingPosts } from "./lib/formatters";
+import { navigateTo } from "./lib/navigation";
+import {
+  deleteAgendaItem,
+  deleteBudgetRevenueRow,
+  deleteBudgetRow,
+  deleteMemberAccount,
+  deleteMembershipRequest,
+  deleteNote,
+  findMemberAccount,
+  findMemberAccountByEmail,
+  insertMembershipRequest,
+  insertNote,
+  loadDatabaseState,
+  loadMemberAccounts,
+  loadMembershipRequests,
+  revokeMemberAccount,
+  unrevokeMemberAccount,
+  updateMemberAccountRole,
+  updateMembershipRequestStatus,
+  upsertAgendaItem,
+  upsertBudgetRevenueRow,
+  upsertBudgetRow,
+  upsertBudgetSettings,
+  upsertMemberAccount,
+  upsertPrivateLink,
+} from "./lib/supabaseData";
+import {
+  clearStoredAuth,
+  getStoredAgenda,
+  getStoredAuth,
+  getStoredBudget,
+  getStoredMemberAccounts,
+  getStoredMembershipRequests,
+  getStoredNotes,
+  getStoredPrivateLinks,
+  saveStoredAgenda,
+  saveStoredAuth,
+  saveStoredBudget,
+  saveStoredMemberAccounts,
+  saveStoredMembershipRequests,
+  saveStoredNotes,
+  saveStoredPrivateLinks,
+} from "./lib/storage";
 
-const LOGIN_STORAGE_KEY = "buds-auth";
-const EBOARD_NOTES_STORAGE_KEY = "buds-eboard-notes";
-const EBOARD_AGENDA_STORAGE_KEY = "buds-eboard-agenda";
-const EBOARD_BUDGET_STORAGE_KEY = "buds-eboard-budget";
-const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
-const MEMBERSHIP_REQUESTS_STORAGE_KEY = "buds-membership-requests";
-const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
-const COMPLETED_AGENDA_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
-const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
-const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
-const MEMBER_ACCOUNT_ROLES = ["member", "eboard"];
-const MEMBER_PASSWORD = "buds-members";
-const EBOARD_PASSWORD = "buds-eboard";
-const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
-const SECONDARY_EBOARD_EMAIL = "iankim6488@gmail.com";
-const MASTER_EBOARD_PASSWORD = "computa";
-const ADMIN_ROLE = "admin";
-const MEMBER_MANAGER_EMAILS = ["joshml@bu.edu", "njsaxena@bu.edu"];
-
-const navItems = [
-  { label: "About", href: "/about" },
-  { label: "Novice Hub", href: "/novice-hub" },
-  { label: "Calendar", href: "/calendar" },
-  { label: "Meetings", href: "/meetings" },
-  { label: "History", href: "/history" },
-  { label: "E-Board", href: "/eboard" },
-  { label: "Contact", href: "/contact" },
-];
-
-const homeCarouselSlides = [
-  {
-    src: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1200&q=80",
-    alt: "Students walking together on a college campus",
-    kicker: "Team Life",
-    caption: "Temporary photo: BU students finding their people between classes and practice.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80",
-    alt: "Students seated in a classroom discussion",
-    kicker: "Practice",
-    caption: "Temporary photo: weekly drills, practice rounds, and fast feedback.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80",
-    alt: "A group working around a table with notebooks and laptops",
-    kicker: "Prep",
-    caption: "Temporary photo: teammates building cases, blocks, and tournament plans.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=1200&q=80",
-    alt: "Students gathered together in conversation",
-    kicker: "Community",
-    caption: "Temporary photo: debate friends, tournament weekends, and a team that travels together.",
-  },
-];
-const noviceResources = [
-  {
-    title: "APDA Online Website",
-    description: "League hub for resources, club standings, the APDA forum, and other debate information.",
-    tag: "Resource",
-    url: "https://apda.online/",
-  },
-  {
-    title: "APDA Novice Guide to Debate",
-    description: "Beginner-friendly guide made by APDA debaters that explains the basics of parliamentary debate for newcomers.",
-    tag: "Resource",
-    url: "https://docs.google.com/document/d/17ST1qeuoEmJB6zcFU80zfD6pmmSQVjwoERZu8btnOlM/edit?usp=sharing",
-  },
-  {
-    title: "APDA Dictionary",
-    description: "Reference for common APDA terms and lingo used in rounds, tournaments, and team discussions.",
-    tag: "Resource",
-    url: "https://docs.google.com/document/d/1M2odwpanTZe5w7Q4WCOCuBzlKkg2Re4-R48iIB3JT3g/edit?usp=sharing",
-  },
-  {
-    title: "APDA Master Guide",
-    description: "More exhaustive APDA knowledge base with links, advice, notes, and advanced resources.",
-    tag: "Resource",
-    url: "https://docs.google.com/document/d/1hO5OMV78lV0K4KjhqEFq3SqCRDGGdWmQT3DwS9ltZvA/edit?usp=sharing",
-  },
-];
-
-const privateLinks = [
-  { id: "link-buds-drive", section: "BUDS Team Specific Links", order: 1, label: "BUDS Drive", description: "Google Drive that contains the casebook, resources, equity forms, meeting notes, and other shared team materials.", url: "http://tinyurl.com/budsdrive" },
-  { id: "link-equity-complaint", section: "BUDS Team Specific Links", order: 2, label: "Equity Complaint Form", description: "Form to express concerns about inequity among debaters or within the team environment.", url: "https://tinyurl.com/budsequity" },
-  { id: "link-tournament-signups", section: "BUDS Team Specific Links", order: 3, label: "Tournament Sign-Ups", description: "List of tournaments BUDS plans to attend, where members can sign up as competitors, judges, or mark that they are looking for a partner.", url: "https://docs.google.com/spreadsheets/d/1HUdRoHPHAwAfzchtA406yVSuRHhgjy-MGMmQbiouGnk/edit?usp=sharing" },
-  { id: "link-events-calendar", section: "BUDS Team Specific Links", order: 4, label: "Events Google Calendar", description: "Add this calendar to see upcoming BUDS events, practices, and tournaments in Google Calendar.", url: "https://calendar.google.com/calendar/u/0?cid=Y18yYmU4Mjk3YTk1NjE3MjRmMjIzNDc5MmU5Y2Q2OGVkOWYyZmM1ZDZjNmJlOTEwMDU2YjVhNzI1OGQ1MDk4Y2Y3QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20" },
-  { id: "link-big-little", section: "BUDS Team Specific Links", order: 5, label: "Big-Little Form", description: "Form for new members to rank preferences for bigs in the BUDS mentor pairing system.", url: "https://forms.gle/KXnfMfoggy6Mv4A1A" },
-  { id: "link-prep-out", section: "BUDS Team Specific Links", order: 6, label: "Prep-Out Form", description: "Request prep-outs for cases you have hit so the team can build stronger shared responses.", url: "http://tinyurl.com/budsprepouts" },
-  { id: "link-birthday", section: "BUDS Team Specific Links", order: 7, label: "Birthday Form", description: "Share your birthday so BUDS can add it to the calendar, say happy birthday, and make tournament registration easier.", url: "https://forms.gle/7zdPNeiaw4XfMmoy7" },
-  { id: "link-feedback", section: "BUDS Team Specific Links", order: 8, label: "Feedback Form", description: "Propose ideas or give feedback about lectures, events, tournaments, and the club in general.", url: "https://forms.gle/ZiTMaAG1YNthi4Rh7" },
-  { id: "link-apda-website", section: "Debater Resources", order: 9, label: "APDA Website", description: "League hub for resources, club standings, the APDA forum, and other debate information.", url: "https://apda.online/" },
-  { id: "link-apda-novice-guide", section: "Debater Resources", order: 10, label: "APDA Novice Guide to Debate", description: "Beginner-friendly guide made by APDA debaters that explains the basics of parliamentary debate for newcomers.", url: "https://docs.google.com/document/d/17ST1qeuoEmJB6zcFU80zfD6pmmSQVjwoERZu8btnOlM/edit?usp=sharing" },
-  { id: "link-apda-dictionary", section: "Debater Resources", order: 11, label: "APDA Dictionary", description: "Reference for common APDA terms and lingo used in rounds, tournaments, and team discussions.", url: "https://docs.google.com/document/d/1M2odwpanTZe5w7Q4WCOCuBzlKkg2Re4-R48iIB3JT3g/edit?usp=sharing" },
-  { id: "link-apda-master-guide", section: "Debater Resources", order: 12, label: "APDA Master Guide", description: "More exhaustive APDA knowledge base with links, advice, notes, and advanced resources.", url: "https://docs.google.com/document/d/1hO5OMV78lV0K4KjhqEFq3SqCRDGGdWmQT3DwS9ltZvA/edit?usp=sharing" },
-];
-
-const privateLinkDefaultsById = Object.fromEntries(privateLinks.map((link) => [link.id, link]));
-const privateLinkSections = ["BUDS Team Specific Links", "Debater Resources"];
-
-const agendaItems = [
-  { id: "agenda-1", text: "Tournament registration and travel", owner: "President", due: "Add date" },
-  { id: "agenda-2", text: "Novice curriculum updates", owner: "Co-Vice Presidents", due: "Add date" },
-  { id: "agenda-3", text: "Practice attendance and pairings", owner: "Secretary", due: "Add date" },
-  { id: "agenda-4", text: "Funding, reimbursements, and budget approvals", owner: "Treasurer", due: "Add date" },
-  { id: "agenda-5", text: "Outreach, alumni, and recruitment", owner: "Membership Coordinator", due: "Add date" },
-];
-
-const initialBudgetRows = [
-  { id: "budget-1", category: "Tournament fees", allocated: 1500, spent: 0, status: "On Hold" },
-  { id: "budget-2", category: "Travel", allocated: 3000, spent: 0, status: "On Hold" },
-  { id: "budget-3", category: "Team events", allocated: 500, spent: 0, status: "On Hold" },
-  { id: "budget-4", category: "Merch and supplies", allocated: 750, spent: 0, status: "On Hold" },
-];
-
-const initialBudgetRevenueRows = [];
-
-const accomplishments = [
-  "Tournament wins and finals appearances",
-  "Speaker awards and novice breaks",
-  "Team awards and season milestones",
-  "Alumni judging, coaching, and mentorship",
-];
-
-const timeline = [
-  {
-    year: "Founded",
-    title: "A Home for Parliamentary Debate at BU",
-    copy: "Add the founding year, early leadership, and the story of how BUDS became a competitive APDA team.",
-  },
-  {
-    year: "Growth",
-    title: "Practices, tournaments, and institutional memory",
-    copy: "Use this section to track team traditions, regular meetings, major tournaments, and shifts in team culture.",
-  },
-  {
-    year: "Today",
-    title: "A competitive and welcoming debate community",
-    copy: "Feature current priorities, novice development, team goals, and the strongest recent accomplishments.",
-  },
-];
-
-const board = [
-  {
-    name: "Josh Lyons",
-    role: "President",
-    bio: "Calls, presides over, and adjourns BUDS meetings while guiding voting procedures for the team. He also serves as BUDS's liaison to APDA, registers tournament teams, allocates the free seed, and represents BU at APDA meetings.",
-  },
-  {
-    name: "Janice Lee",
-    role: "Co-Vice President",
-    bio: "Helps lead BUDS when the President is unavailable and serves as a primary contact between team members and e-board. She also supports novice training by helping craft instructional meetings, presentations, drills, and exercises.",
-  },
-  {
-    name: "Cassie Fitts",
-    role: "Co-Vice President",
-    bio: "Shares responsibility for stepping in when the President cannot attend and keeping communication clear between members and e-board. She helps lead novice education, including training presentations, practice exercises, and instructional team meetings.",
-  },
-  {
-    name: "Nikhil Saxena",
-    role: "Treasurer",
-    bio: "Manages financial matters for BUDS and keeps the team organized around budgets, paperwork, and funding. As treasurer, he authorizes Student Activities paperwork and acts as the signatory for organization funds.",
-  },
-  {
-    name: "Lucia Bronfman",
-    role: "Secretary",
-    bio: "Keeps members informed about meetings, events, and general team information while managing publicity and organizational correspondence. She also tracks membership status, maintains contact information, and preserves team records as BUDS historian.",
-  },
-  {
-    name: "Flo Arnado",
-    role: "Membership Coordinator",
-    bio: "Focuses on growing and retaining team membership throughout the school year. She maintains BUDS social media, organizes team social events, and oversees the mentor and mentee program.",
-  },
-  {
-    name: "John Yule",
-    role: "Equity Officer",
-    bio: "Upholds BUDS equity procedures and helps communicate policies to the team in line with BU and APDA best practices. He serves as a resource for equity concerns, supports complaint processes, and helps coordinate inclusive team norms and bonding.",
-  },
-  {
-    name: "Vishaal Arunprasad",
-    role: "Special Events Coordinator",
-    bio: "Helps plan and facilitate BUDS tournaments by coordinating logistics such as judges, housing, meals, tab materials, awards, registration, and invitations. He works with team members on tournament themes and helps protect tab integrity while serving as a contact for attending teams.",
-  },
-  {
-    name: "Ezzah Tariq",
-    role: "Special Events Coordinator",
-    bio: "Helps plan and facilitate BUDS tournaments, including tournament logistics, hospitality, registration, tab policy, trophies, and communications with attending teams. She supports theme planning, complaint handling, and the behind-the-scenes work needed for a smooth tournament weekend.",
-  },
-];
-
-const alumni = [
-  {
-    name: "Alumni Spotlight",
-    detail: "Add a short profile on a former BUDS member, including their favorite memory and post-grad path.",
-  },
-  {
-    name: "Mentor Network",
-    detail: "Create a directory of alumni who are open to judging, coaching, career chats, or tournament support.",
-  },
-];
-
-function navigateTo(href) {
-  if (window.location.pathname === href) return;
-  window.history.pushState({}, "", href);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
-function SiteLink({ href, children, className = "", onClick }) {
-  return (
-    <a
-      href={href}
-      className={className}
-      onClick={(event) => {
-        event.preventDefault();
-        navigateTo(href);
-        onClick?.();
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
-function getStoredAuth() {
-  try {
-    const stored = window.localStorage.getItem(LOGIN_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveStoredAuth(auth) {
-  window.localStorage.setItem(LOGIN_STORAGE_KEY, JSON.stringify(auth));
-}
-
-function clearStoredAuth() {
-  window.localStorage.removeItem(LOGIN_STORAGE_KEY);
-}
-
-function getStoredNotes() {
-  try {
-    const stored = window.localStorage.getItem(EBOARD_NOTES_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredNotes(notes) {
-  window.localStorage.setItem(EBOARD_NOTES_STORAGE_KEY, JSON.stringify(notes));
-}
-
-function getStoredAgenda() {
-  try {
-    const stored = window.localStorage.getItem(EBOARD_AGENDA_STORAGE_KEY);
-    return normalizeAgendaItems(stored ? JSON.parse(stored) : agendaItems);
-  } catch {
-    return normalizeAgendaItems(agendaItems);
-  }
-}
-
-function saveStoredAgenda(items) {
-  window.localStorage.setItem(EBOARD_AGENDA_STORAGE_KEY, JSON.stringify(normalizeAgendaItems(items)));
-}
-
-function isExpiredCompletedAgendaItem(item) {
-  if (!item.completed_at) return false;
-  const completedAt = Date.parse(item.completed_at);
-  return Number.isFinite(completedAt) && Date.now() - completedAt > COMPLETED_AGENDA_RETENTION_MS;
-}
-
-function normalizeAgendaItems(items) {
-  return items
-    .map((item) => ({ ...item, completed_at: item.completed_at ?? null }))
-    .filter((item) => !isExpiredCompletedAgendaItem(item));
-}
-
-function getStoredBudget() {
-  try {
-    const stored = window.localStorage.getItem(EBOARD_BUDGET_STORAGE_KEY);
-    return normalizeBudget(stored ? JSON.parse(stored) : { total: 5750, rows: initialBudgetRows, revenueRows: initialBudgetRevenueRows });
-  } catch {
-    return normalizeBudget({ total: 5750, rows: initialBudgetRows, revenueRows: initialBudgetRevenueRows });
-  }
-}
-
-function saveStoredBudget(budget) {
-  window.localStorage.setItem(EBOARD_BUDGET_STORAGE_KEY, JSON.stringify(normalizeBudget(budget)));
-}
-
-function normalizeBudget(budget) {
-  return {
-    total: Number(budget.total) || 5750,
-    rows: budget.rows || initialBudgetRows,
-    revenueRows: budget.revenueRows || initialBudgetRevenueRows,
-  };
-}
-
-function getStoredPrivateLinks() {
-  try {
-    const stored = window.localStorage.getItem(PRIVATE_LINKS_STORAGE_KEY);
-    return stored ? enrichPrivateLinks(JSON.parse(stored)) : privateLinks;
-  } catch {
-    return privateLinks;
-  }
-}
-
-function saveStoredPrivateLinks(links) {
-  window.localStorage.setItem(PRIVATE_LINKS_STORAGE_KEY, JSON.stringify(links));
-}
-
-function getStoredMembershipRequests() {
-  try {
-    const stored = window.localStorage.getItem(MEMBERSHIP_REQUESTS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredMembershipRequests(requests) {
-  window.localStorage.setItem(MEMBERSHIP_REQUESTS_STORAGE_KEY, JSON.stringify(requests));
-}
-
-function getStoredMemberAccounts() {
-  try {
-    const stored = window.localStorage.getItem(MEMBER_ACCOUNTS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredMemberAccounts(accounts) {
-  window.localStorage.setItem(MEMBER_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
-}
-
-function enrichPrivateLinks(links) {
-  return links
-    .map((link, index) => {
-      const defaults = privateLinkDefaultsById[link.id];
-      return {
-        ...defaults,
-        ...link,
-        section: link.section || defaults?.section || "Team Links",
-        order: link.order || defaults?.order || index + 100,
-      };
-    })
-    .sort((a, b) => a.order - b.order);
-}
-
-function normalizeSupabaseBudgetRow(row) {
-  return {
-    id: row.id,
-    category: row.category,
-    allocated: Number(row.allocated) || 0,
-    spent: Number(row.spent) || 0,
-    status: row.status,
-  };
-}
-
-function normalizeSupabaseRevenueRow(row) {
-  return {
-    id: row.id,
-    category: row.category,
-    amount: Number(row.amount) || 0,
-  };
-}
-
-async function loadDatabaseState() {
-  if (!isSupabaseConfigured) return null;
-
-  const [
-    agendaResult,
-    notesResult,
-    budgetSettingsResult,
-    budgetRowsResult,
-    budgetRevenueResult,
-    privateLinksResult,
-  ] = await Promise.all([
-    supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: false }),
-    supabase.from("eboard_notes").select("id,date,title,body,created_at").order("date", { ascending: false }).order("created_at", { ascending: false }),
-    supabase.from("eboard_budget_settings").select("total").eq("id", "default").maybeSingle(),
-    supabase.from("eboard_budget_rows").select("id,category,allocated,spent,status").order("created_at", { ascending: true }),
-    supabase.from("eboard_budget_revenue").select("id,category,amount").order("created_at", { ascending: true }),
-    supabase.from("private_links").select("id,label,description,url").order("created_at", { ascending: true }),
-  ]);
-
-  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error) {
-    console.error("Supabase load failed", {
-      agendaError: agendaResult.error,
-      notesError: notesResult.error,
-      budgetSettingsError: budgetSettingsResult.error,
-      budgetRowsError: budgetRowsResult.error,
-      budgetRevenueError: budgetRevenueResult.error,
-      privateLinksError: privateLinksResult.error,
-    });
-    return null;
-  }
-
-  const expiredAgendaItems = agendaResult.data.filter(isExpiredCompletedAgendaItem);
-  if (expiredAgendaItems.length > 0) {
-    await Promise.all(expiredAgendaItems.map((item) => deleteAgendaItem(item.id)));
-  }
-
-  return {
-    agenda: agendaResult.data.length > 0 ? normalizeAgendaItems(agendaResult.data) : normalizeAgendaItems(agendaItems),
-    notes: notesResult.data,
-    budget: {
-      total: Number(budgetSettingsResult.data?.total) || 5750,
-      rows: budgetRowsResult.data.length > 0
-        ? budgetRowsResult.data.map(normalizeSupabaseBudgetRow)
-        : initialBudgetRows,
-      revenueRows: budgetRevenueResult.data.length > 0
-        ? budgetRevenueResult.data.map(normalizeSupabaseRevenueRow)
-        : initialBudgetRevenueRows,
-    },
-    privateLinks: privateLinksResult.data.length > 0 ? enrichPrivateLinks(privateLinksResult.data) : privateLinks,
-  };
-}
-
-async function upsertAgendaItem(item) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_agenda").upsert(item);
-  if (error) console.error("Supabase agenda upsert failed", error);
-}
-
-async function deleteAgendaItem(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_agenda").delete().eq("id", id);
-  if (error) console.error("Supabase agenda delete failed", error);
-}
-
-async function upsertBudgetSettings(total) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase
-    .from("eboard_budget_settings")
-    .upsert({ id: "default", total, updated_at: new Date().toISOString() });
-  if (error) console.error("Supabase budget settings upsert failed", error);
-}
-
-async function upsertBudgetRow(row) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_budget_rows").upsert(row);
-  if (error) console.error("Supabase budget row upsert failed", error);
-}
-
-async function deleteBudgetRow(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_budget_rows").delete().eq("id", id);
-  if (error) console.error("Supabase budget row delete failed", error);
-}
-
-async function upsertBudgetRevenueRow(row) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_budget_revenue").upsert(row);
-  if (error) console.error("Supabase budget revenue upsert failed", error);
-}
-
-async function deleteBudgetRevenueRow(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_budget_revenue").delete().eq("id", id);
-  if (error) console.error("Supabase budget revenue delete failed", error);
-}
-
-async function insertNote(note) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_notes").insert(note);
-  if (error) console.error("Supabase note insert failed", error);
-}
-
-async function deleteNote(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("eboard_notes").delete().eq("id", id);
-  if (error) console.error("Supabase note delete failed", error);
-}
-
-async function upsertPrivateLink(link) {
-  if (!isSupabaseConfigured) return;
-  const { id, label, description, url } = link;
-  const { error } = await supabase.from("private_links").upsert({ id, label, description, url });
-  if (error) console.error("Supabase private link upsert failed", error);
-}
-
-async function loadMembershipRequests() {
-  if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase
-    .from("membership_requests")
-    .select("id,name,email,password,message,status,reason,created_at,reviewed_at")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("Supabase membership requests load failed", error);
-    return null;
-  }
-  return data;
-}
-
-async function insertMembershipRequest(request) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("membership_requests").insert(request);
-  if (error) console.error("Supabase membership request insert failed", error);
-}
-
-async function updateMembershipRequestStatus(id, status, reason) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase
-    .from("membership_requests")
-    .update({ status, reason, reviewed_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) console.error("Supabase membership request review failed", error);
-}
-
-async function deleteMembershipRequest(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("membership_requests").delete().eq("id", id);
-  if (error) console.error("Supabase membership request delete failed", error);
-}
-
-async function loadMemberAccounts() {
-  if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase
-    .from("member_accounts")
-    .select("id,name,email,password,role,status,created_at,updated_at")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("Supabase member accounts load failed", error);
-    return null;
-  }
-  return data;
-}
-
-async function findMemberAccount(email, password) {
-  if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase
-    .from("member_accounts")
-    .select("id,name,email,role,status")
-    .eq("email", email)
-    .eq("password", password)
-    .eq("status", "active")
-    .maybeSingle();
-  if (error) {
-    console.error("Supabase member login failed", error);
-    return null;
-  }
-  return data;
-}
-
-async function findMemberAccountByEmail(email) {
-  if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase
-    .from("member_accounts")
-    .select("id,name,email,password,role,status")
-    .eq("email", email)
-    .maybeSingle();
-  if (error) {
-    console.error("Supabase member account lookup failed", error);
-    return null;
-  }
-  return data;
-}
-
-async function upsertMemberAccount(account) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase.from("member_accounts").upsert(account);
-  if (error) console.error("Supabase member account upsert failed", error);
-}
-
-async function updateMemberAccountRole(id, role) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase
-    .from("member_accounts")
-    .update({ role, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) console.error("Supabase member role update failed", error);
-}
-
-async function revokeMemberAccount(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase
-    .from("member_accounts")
-    .update({ status: "revoked", updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) console.error("Supabase member revoke failed", error);
-}
-
-async function unrevokeMemberAccount(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase
-    .from("member_accounts")
-    .update({ status: "active", updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) console.error("Supabase member unrevoke failed", error);
-}
-
-async function deleteMemberAccount(id) {
-  if (!isSupabaseConfigured) return;
-  const { error } = await supabase
-    .from("member_accounts")
-    .delete()
-    .eq("id", id);
-  if (error) console.error("Supabase member delete failed", error);
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
-}
-
-function formatMeetingDate(value) {
-  if (!value) return "Date pending";
-  const date = new Date(`${value}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
-
-function getMeetingSortTime(post) {
-  const meetingTime = Date.parse(`${post.date || ""}T12:00:00`);
-  if (Number.isFinite(meetingTime)) return meetingTime;
-  const createdTime = Date.parse(post.created_at || "");
-  return Number.isFinite(createdTime) ? createdTime : 0;
-}
-
-function sortMeetingPosts(posts) {
-  return [...posts].sort((a, b) => {
-    const dateCompare = getMeetingSortTime(b) - getMeetingSortTime(a);
-    if (dateCompare !== 0) return dateCompare;
-    const createdCompare = (b.created_at || "").localeCompare(a.created_at || "");
-    return createdCompare || (b.id || "").localeCompare(a.id || "");
-  });
-}
-
-function getMemberLinkTitleValue(link) {
-  return link.id === "link-tournament-signups" ? "Tournament\nSign-Ups" : link.label;
-}
-
-function MemberLinkTitle({ link }) {
-  if (link.id === "link-tournament-signups") {
-    return (
-      <>
-        Tournament
-        <span className="block whitespace-nowrap">Sign-Ups</span>
-      </>
-    );
-  }
-
-  return link.label;
-}
-
-function Eyebrow({ children, light = false }) {
-  return (
-    <p className={`text-xs font-black uppercase tracking-[0.22em] ${light ? "text-white/75" : "text-[#CC0000]"}`}>
-      {children}
-    </p>
-  );
-}
-
-function PageHeader({ eyebrow, title, children }) {
-  return (
-    <div className="mb-7 max-w-3xl sm:mb-10">
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h1 className="mt-4 text-3xl font-black leading-[1.04] tracking-tight text-[#2D2926] sm:text-4xl md:text-6xl">
-        {title}
-      </h1>
-      {children && <p className="mt-5 max-w-2xl text-base leading-7 text-[#5b5450] sm:text-lg sm:leading-8">{children}</p>}
-    </div>
-  );
-}
-
-function Card({ children, className = "" }) {
-  return (
-    <div className={`min-w-0 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-6 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-function PrimaryButton({ href, children, className = "" }) {
-  return (
-    <SiteLink
-      href={href}
-      className={`inline-flex items-center justify-center gap-2 bg-[#CC0000] px-5 py-3 text-sm font-extrabold uppercase tracking-[0.08em] text-white transition hover:bg-[#A00000] ${className}`}
-    >
-      {children}
-    </SiteLink>
-  );
-}
-
-function SecondaryButton({ href, children, className = "" }) {
-  return (
-    <SiteLink
-      href={href}
-      className={`inline-flex items-center justify-center gap-2 border border-[#2D2926]/20 bg-white px-5 py-3 text-sm font-extrabold uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#2D2926] ${className}`}
-    >
-      {children}
-    </SiteLink>
-  );
-}
-
-function Page({ children, className = "" }) {
-  return (
-    <section className={`mx-auto min-h-[calc(100vh-4.75rem)] w-full max-w-[98rem] px-4 py-8 sm:px-5 sm:py-10 md:px-8 md:py-16 ${className}`}>
-      {children}
-    </section>
-  );
-}
-
-function PhotoCarousel() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const activeSlide = homeCarouselSlides[activeIndex];
-
-  const goToPrevious = () => {
-    setActiveIndex((currentIndex) => (currentIndex - 1 + homeCarouselSlides.length) % homeCarouselSlides.length);
-  };
-
-  const goToNext = () => {
-    setActiveIndex((currentIndex) => (currentIndex + 1) % homeCarouselSlides.length);
-  };
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveIndex((currentIndex) => (currentIndex + 1) % homeCarouselSlides.length);
-    }, 6500);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="overflow-hidden border border-[#ded8d2] bg-white shadow-[0_20px_55px_rgba(45,41,38,0.1)]">
-      <div className="relative aspect-[4/5] min-h-[16rem] bg-[#2D2926] sm:aspect-[16/9] sm:min-h-[20rem] lg:aspect-[21/8]">
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={activeSlide.src}
-            src={activeSlide.src}
-            alt={activeSlide.alt}
-            className="absolute inset-0 h-full w-full object-cover"
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.99 }}
-            transition={{ duration: 0.45 }}
-          />
-        </AnimatePresence>
-        <div className="absolute inset-x-0 bottom-0 bg-[#2D2926]/92 p-5 text-white md:p-6">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FF0000]">{activeSlide.kicker}</p>
-          <p className="mt-2 max-w-4xl text-sm font-bold leading-6 text-white sm:text-base sm:leading-7 md:text-lg">{activeSlide.caption}</p>
-        </div>
-        <div className="absolute right-4 top-4 flex gap-2">
-          <button
-            type="button"
-            onClick={goToPrevious}
-            className="grid h-11 w-11 place-items-center border border-white/60 bg-[#2D2926]/82 text-white transition hover:bg-[#CC0000]"
-            aria-label="Previous photo"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            type="button"
-            onClick={goToNext}
-            className="grid h-11 w-11 place-items-center border border-white/60 bg-[#2D2926]/82 text-white transition hover:bg-[#CC0000]"
-            aria-label="Next photo"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-4 px-5 py-4">
-        <Eyebrow>Photo Carousel</Eyebrow>
-        <div className="flex gap-2">
-          {homeCarouselSlides.map((slide, index) => (
-            <button
-              key={slide.caption}
-              type="button"
-              onClick={() => setActiveIndex(index)}
-              className={`h-2.5 w-8 border border-[#CC0000] transition ${index === activeIndex ? "bg-[#CC0000]" : "bg-white"}`}
-              aria-label={`Show ${slide.kicker} photo`}
-              aria-current={index === activeIndex}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 function HomePage() {
   return (
     <section className="mx-auto grid w-full max-w-[98rem] items-start gap-7 px-4 py-6 sm:px-5 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-10">
@@ -858,7 +139,7 @@ function HomePage() {
                 <Eyebrow light>Format</Eyebrow>
                 <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA Parliamentary Debate</h2>
                 <p className="mt-4 text-sm leading-6 text-white/72">
-                  Two-person teams, limited prep, persuasion under pressure, and tournaments across the collegiate circuit.
+                  Two-person teams, limited prep, persuasion under pressure, and tournaments across the collegiate debate circuit.
                 </p>
               </div>
               <div className="grid grid-cols-2 border border-white/15">
@@ -882,7 +163,6 @@ function HomePage() {
             </div>
           </div>
         </div>
-
       </motion.div>
 
       <motion.div
@@ -980,7 +260,7 @@ function AboutPage() {
               </div>
               <div>
                 <Eyebrow>What We Do</Eyebrow>
-                <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926] sm:text-3xl">APDA Parliamentary Debate, Built for BU Students.</h2>
+              <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926] sm:text-3xl">APDA Parliamentary Debate, Built for BU Students.</h2>
                 <p className="mt-4 text-base leading-7 text-[#5b5450]">
                   BUDS competes in the American Parliamentary Debate Association, a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity. Members practice weekly, travel to tournaments, write cases, judge rounds, and help each other improve.
                 </p>
@@ -1160,7 +440,7 @@ function MeetingsPage({ auth }) {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">
             <span className="block">Don't worry! Secretary records the meetings in case you miss one.</span>
-            <span className="block">Organized newest first, so decisions and updates stay easy to browse.</span>
+            <span className="block">Organized newest first, so announcements and lecture updates stay easy to browse.</span>
           </p>
         </div>
         <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-8 md:p-10">
@@ -1289,7 +569,7 @@ function EBoardPage() {
       </PageHeader>
       <div className="grid gap-5 md:grid-cols-3">
         {board.map((member) => (
-          <Card key={member.role}>
+          <Card key={`${member.name}-${member.role}`}>
             <div className="mb-6 flex h-36 items-end bg-[#2D2926] p-5">
               <div className="h-16 w-16 border-4 border-white bg-[#CC0000]" />
             </div>
@@ -1364,12 +644,12 @@ function ContactPage() {
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="border border-[#ded8d2] bg-white p-5">
-              <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Best First Step</p>
-              <p className="mt-3 text-sm leading-6 text-[#5b5450]">Visit a practice and introduce yourself to an e-board member.</p>
+                <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Best First Step</p>
+              <p className="mt-3 text-sm leading-6 text-[#5b5450]">Visit a practice and introduce yourself to one of the E-Board members!</p>
             </div>
             <div className="border border-[#ded8d2] bg-white p-5">
-              <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Ready to Join?</p>
-              <p className="mt-3 text-sm leading-6 text-[#5b5450]">Use the membership request form so admins can add you to the team flow.</p>
+                <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">Ready to Join?</p>
+              <p className="mt-3 text-sm leading-6 text-[#5b5450]">Use the membership request form below so admins can add you to the team's flow.</p>
             </div>
           </div>
           <div className="mt-8">
@@ -1490,7 +770,7 @@ function JoinPage({ auth }) {
 
   return (
     <Page>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="flex min-h-[28rem] flex-col justify-between border border-[#9a0000] bg-[#CC0000] p-6 text-left text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)] sm:min-h-[34rem] md:p-10">
           <div>
             <span className="inline-flex bg-[#2D2926] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
@@ -1529,17 +809,6 @@ function JoinPage({ auth }) {
               />
             </label>
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-              BU Email
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="name@bu.edu"
-                required
-                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               Choose Password
               <input
                 type="password"
@@ -1550,6 +819,17 @@ function JoinPage({ auth }) {
                 className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
               />
               <span className="text-xs font-bold normal-case tracking-normal text-[#8f8781]">At least 6 characters. This is what you will use to log in if accepted.</span>
+            </label>
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              BU Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="name@bu.edu"
+                required
+                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
             </label>
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               <span>
@@ -1649,7 +929,6 @@ function JoinPage({ auth }) {
 }
 
 function LoginPage({ onLogin }) {
-  const [loginType, setLoginType] = useState("member");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -1658,60 +937,43 @@ function LoginPage({ onLogin }) {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
-    const isAdminLogin = normalizedEmail === MASTER_EBOARD_EMAIL && password === MASTER_EBOARD_PASSWORD;
-    const isSecondaryEboardLogin = normalizedEmail === SECONDARY_EBOARD_EMAIL && password === MASTER_EBOARD_PASSWORD;
-    const isSpecialLogin = isAdminLogin || isSecondaryEboardLogin;
-    const hasValidRolePassword = password === (loginType === "eboard" ? EBOARD_PASSWORD : MEMBER_PASSWORD);
 
-    if (normalizedEmail === MASTER_EBOARD_EMAIL && !isAdminLogin) {
-      setError("The administrator account must use the administrator password.");
+    if (!isBuEmail) {
+      setError("Please use a BU email address ending in @bu.edu.");
       return;
     }
 
-    if (!isAdminLogin && !isSecondaryEboardLogin) {
-      const existingAccount = await findMemberAccountByEmail(normalizedEmail);
-      if (existingAccount) {
-        if (existingAccount.status === "revoked") {
-          setError("This membership has been revoked. Contact BUDS if this is a mistake.");
-          return;
-        }
-
-        if (existingAccount.password !== password) {
-          setError("Incorrect account password.");
-          return;
-        }
-
-        const auth = { role: existingAccount.role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
-        saveStoredAuth(auth);
-        onLogin(auth);
-        navigateTo("/hub");
+    const existingAccount = await findMemberAccountByEmail(normalizedEmail);
+    if (existingAccount) {
+      if (existingAccount.status === "revoked") {
+        setError("This membership has been revoked. Contact BUDS if this is a mistake.");
         return;
       }
 
-      const account = await findMemberAccount(normalizedEmail, password);
-      if (account) {
-        const auth = { role: account.role, email: account.email, name: account.name, accountId: account.id };
-        saveStoredAuth(auth);
-        onLogin(auth);
-        navigateTo("/hub");
+      if (existingAccount.password !== password) {
+        setError("Incorrect account password.");
         return;
       }
-    }
 
-    if (!isBuEmail && !isSpecialLogin) {
-      setError("Please use a BU email address ending in bu.edu.");
+      const role = existingAccount.email === MASTER_EBOARD_EMAIL ? ADMIN_ROLE : existingAccount.role;
+      const auth = { role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
+      saveStoredAuth(auth);
+      onLogin(auth);
+      navigateTo("/hub");
       return;
     }
 
-    if (!isSpecialLogin && !hasValidRolePassword) {
-      setError(`Incorrect ${loginType === "eboard" ? "e-board" : "member"} password.`);
+    const account = await findMemberAccount(normalizedEmail, password);
+    if (account) {
+      const role = account.email === MASTER_EBOARD_EMAIL ? ADMIN_ROLE : account.role;
+      const auth = { role, email: account.email, name: account.name, accountId: account.id };
+      saveStoredAuth(auth);
+      onLogin(auth);
+      navigateTo("/hub");
       return;
     }
 
-    const auth = { role: isAdminLogin ? ADMIN_ROLE : isSecondaryEboardLogin ? "eboard" : loginType, email: normalizedEmail };
-    saveStoredAuth(auth);
-    onLogin(auth);
-    navigateTo("/hub");
+    setError("No accepted BUDS account was found for that email and password.");
   };
 
   return (
@@ -1719,7 +981,7 @@ function LoginPage({ onLogin }) {
       <PageHeader eyebrow="Private Login" title="Choose Your BUDS Access Level.">
         Members unlock private team resources. E-board unlocks the same member hub plus the e-board workspace.
       </PageHeader>
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="!bg-[#2D2926] p-5 text-white sm:p-8">
           <div className="border-t-4 border-[#CC0000] pt-6">
             <Eyebrow light>Private Access</Eyebrow>
@@ -1735,28 +997,6 @@ function LoginPage({ onLogin }) {
         </Card>
 
         <Card className="p-5 sm:p-8">
-          <div className="mb-6 grid grid-cols-2 border border-[#ded8d2] bg-[#f6f4f2] p-1">
-            {[
-              { id: "member", label: "Member Login" },
-              { id: "eboard", label: "E-Board Login" },
-            ].map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => {
-                  setLoginType(option.id);
-                  setError("");
-                  setPassword("");
-                }}
-                className={`px-4 py-3 text-sm font-black uppercase tracking-[0.08em] ${
-                  loginType === option.id ? "bg-[#CC0000] text-white" : "text-[#2D2926]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
           <form onSubmit={handleSubmit} className="grid gap-5">
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               BU Email

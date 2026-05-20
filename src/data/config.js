@@ -1,0 +1,16 @@
+export const LOGIN_STORAGE_KEY = "buds-auth";
+export const EBOARD_NOTES_STORAGE_KEY = "buds-eboard-notes";
+export const EBOARD_AGENDA_STORAGE_KEY = "buds-eboard-agenda";
+export const EBOARD_BUDGET_STORAGE_KEY = "buds-eboard-budget";
+export const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
+export const MEMBERSHIP_REQUESTS_STORAGE_KEY = "buds-membership-requests";
+export const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
+
+export const COMPLETED_AGENDA_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+export const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];
+export const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
+export const MEMBER_ACCOUNT_ROLES = ["member", "eboard"];
+
+export const MASTER_EBOARD_EMAIL = "yeon1@bu.edu";
+export const ADMIN_ROLE = "admin";
+export const MEMBER_MANAGER_EMAILS = ["joshml@bu.edu", "njsaxena@bu.edu"];
