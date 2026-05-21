@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -167,6 +167,36 @@ function HomePage() {
         <PhotoCarousel />
       </motion.div>
     </section>
+  );
+}
+
+function ConfirmationModal({ confirmation, onCancel, onConfirm }) {
+  if (!confirmation) return null;
+
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md border border-[#ded8d2] bg-white p-6 shadow-[0_28px_80px_rgba(45,41,38,0.24)]">
+        <Eyebrow>Are you sure?</Eyebrow>
+        <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{confirmation.title}</h2>
+        <p className="mt-3 text-sm font-semibold leading-6 text-[#5b5450]">{confirmation.body}</p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white"
+          >
+            {confirmation.actionLabel || "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -378,7 +408,7 @@ function CalendarPage({ calendarEmbedUrl }) {
   );
 }
 
-function MeetingsPage({ auth }) {
+function MeetingsPage({ auth, onRequestConfirmation }) {
   const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
   const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE;
   const sortedPosts = sortMeetingPosts(meetingPosts);
@@ -486,7 +516,11 @@ function MeetingsPage({ auth }) {
                 {canDeletePosts && (
                   <button
                     type="button"
-                    onClick={() => removeMeetingPost(post.id)}
+                    onClick={() => onRequestConfirmation({
+                      title: `Delete ${post.title || "this meeting post"}?`,
+                      body: "This meeting post will be removed from the public meeting archive.",
+                      onConfirm: () => removeMeetingPost(post.id),
+                    })}
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f6f4f2] text-[#6d6560] opacity-100 transition hover:border-[#CC0000] hover:text-[#CC0000] md:opacity-0 md:group-hover:opacity-100"
                     aria-label={`Delete ${post.title || "meeting post"}`}
                   >
@@ -796,7 +830,7 @@ function ContactPage() {
   );
 }
 
-function JoinPage({ auth }) {
+function JoinPage({ auth, onRequestConfirmation }) {
   const [requests, setRequests] = useState(() => getStoredMembershipRequests());
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -1014,7 +1048,11 @@ function JoinPage({ auth }) {
                 <div key={request.id} className={`relative grid gap-4 border p-5 pr-14 lg:grid-cols-[1fr_0.95fr] ${hasDecision ? "border-[#a9a29c] bg-[#d4d0cc] opacity-90" : "border-[#ded8d2] bg-white"}`}>
                   <button
                     type="button"
-                    onClick={() => removeMembershipRequest(request.id)}
+                    onClick={() => onRequestConfirmation({
+                      title: `Delete request from ${request.name}?`,
+                      body: "This membership request will be permanently removed from the review queue.",
+                      onConfirm: () => removeMembershipRequest(request.id),
+                    })}
                     aria-label={`Delete request from ${request.name}`}
                     className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center border border-[#bdb6b0] bg-white/80 text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
                   >
@@ -1161,7 +1199,7 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
@@ -1186,7 +1224,6 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
   const [newTrophyResult, setNewTrophyResult] = useState({ date: "", tournament: "", highlights: "" });
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
@@ -1348,11 +1385,17 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
 
   const removeAgendaItem = (item) => {
     if (!canEdit) return;
-    const nextAgenda = agenda.filter((agendaItem) => agendaItem.id !== item.id);
-    setLastDeletedAgendaItem(item);
-    setAgenda(nextAgenda);
-    saveStoredAgenda(nextAgenda);
-    deleteAgendaItem(item.id);
+    requestDeleteConfirmation({
+      title: `Delete ${item.text}?`,
+      body: "This agenda item will be removed from the workspace.",
+      onConfirm: () => {
+        const nextAgenda = agenda.filter((agendaItem) => agendaItem.id !== item.id);
+        setLastDeletedAgendaItem(item);
+        setAgenda(nextAgenda);
+        saveStoredAgenda(nextAgenda);
+        deleteAgendaItem(item.id);
+      },
+    });
   };
 
   const updateBudget = (nextBudget) => {
@@ -1371,11 +1414,17 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
     if (!canEdit) return;
     if (field === "status" && value === "Denied") {
       const row = budget.rows.find((budgetRow) => budgetRow.id === id);
-      if (!window.confirm(`Are you sure? Denying ${row?.category || "this budget item"} will delete it from the budget tracker.`)) return;
-      deleteBudgetRow(id);
-      updateBudget({
-        ...budget,
-        rows: budget.rows.filter((row) => row.id !== id),
+      requestDeleteConfirmation({
+        title: `Deny and delete ${row?.category || "this budget item"}?`,
+        body: "Denied budget items are removed from the budget tracker.",
+        actionLabel: "Deny",
+        onConfirm: () => {
+          deleteBudgetRow(id);
+          updateBudget({
+            ...budget,
+            rows: budget.rows.filter((budgetRow) => budgetRow.id !== id),
+          });
+        },
       });
       return;
     }
@@ -1435,13 +1484,18 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
   const removeBudgetRevenueRow = (id) => {
     if (!canEdit) return;
     const row = (budget.revenueRows || []).find((revenueRow) => revenueRow.id === id);
-    if (!window.confirm(`Are you sure? Delete ${row?.category || "this revenue item"} from the budget tracker?`)) return;
-    const nextBudget = {
-      ...budget,
-      revenueRows: (budget.revenueRows || []).filter((row) => row.id !== id),
-    };
-    updateBudget(nextBudget);
-    deleteBudgetRevenueRow(id);
+    requestDeleteConfirmation({
+      title: `Delete ${row?.category || "this revenue item"}?`,
+      body: "This revenue entry will be removed from the budget tracker.",
+      onConfirm: () => {
+        const nextBudget = {
+          ...budget,
+          revenueRows: (budget.revenueRows || []).filter((revenueRow) => revenueRow.id !== id),
+        };
+        updateBudget(nextBudget);
+        deleteBudgetRevenueRow(id);
+      },
+    });
   };
 
   const updateMemberLink = (id, field, value) => {
@@ -1455,13 +1509,8 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
     if (updatedLink) upsertPrivateLink(updatedLink);
   };
 
-  const requestDeleteConfirmation = ({ title, body, onConfirm }) => {
-    setDeleteConfirmation({ title, body, onConfirm });
-  };
-
-  const confirmDelete = () => {
-    deleteConfirmation?.onConfirm?.();
-    setDeleteConfirmation(null);
+  const requestDeleteConfirmation = ({ title, body, actionLabel, onConfirm }) => {
+    onRequestConfirmation({ title, body, actionLabel, onConfirm });
   };
 
   const persistTrophiesContent = (updater) => {
@@ -1621,12 +1670,20 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
 
   const revokeMember = (id) => {
     if (!canManageMembers) return;
-    const nextAccounts = memberAccounts.map((account) => (
-      account.id === id ? { ...account, status: "revoked", updated_at: new Date().toISOString() } : account
-    ));
-    setMemberAccounts(nextAccounts);
-    saveStoredMemberAccounts(nextAccounts);
-    revokeMemberAccount(id);
+    const account = memberAccounts.find((memberAccount) => memberAccount.id === id);
+    requestDeleteConfirmation({
+      title: `Revoke ${account?.name || account?.email || "this member"}?`,
+      body: "This member will lose access until someone unrevokes their account.",
+      actionLabel: "Revoke",
+      onConfirm: () => {
+        const nextAccounts = memberAccounts.map((memberAccount) => (
+          memberAccount.id === id ? { ...memberAccount, status: "revoked", updated_at: new Date().toISOString() } : memberAccount
+        ));
+        setMemberAccounts(nextAccounts);
+        saveStoredMemberAccounts(nextAccounts);
+        revokeMemberAccount(id);
+      },
+    });
   };
 
   const unrevokeMember = (id) => {
@@ -1641,11 +1698,16 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
 
   const deleteMember = (account) => {
     if (!canManageMembers) return;
-    if (!window.confirm(`Are you sure? Delete ${account.name || account.email} from the members list?`)) return;
-    const nextAccounts = memberAccounts.filter((memberAccount) => memberAccount.id !== account.id);
-    setMemberAccounts(nextAccounts);
-    saveStoredMemberAccounts(nextAccounts);
-    deleteMemberAccount(account.id);
+    requestDeleteConfirmation({
+      title: `Delete ${account.name || account.email}?`,
+      body: "This member account will be removed from the members list.",
+      onConfirm: () => {
+        const nextAccounts = memberAccounts.filter((memberAccount) => memberAccount.id !== account.id);
+        setMemberAccounts(nextAccounts);
+        saveStoredMemberAccounts(nextAccounts);
+        deleteMemberAccount(account.id);
+      },
+    });
   };
 
   return (
@@ -1870,32 +1932,6 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
 
       {visibleTab === "eboard" && isEboard && (
         <div className="grid gap-5">
-          {deleteConfirmation && (
-            <div className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm">
-              <div className="w-full max-w-md border border-[#ded8d2] bg-white p-6 shadow-[0_28px_80px_rgba(45,41,38,0.24)]">
-                <Eyebrow>Are you sure?</Eyebrow>
-                <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{deleteConfirmation.title}</h2>
-                <p className="mt-3 text-sm font-semibold leading-6 text-[#5b5450]">{deleteConfirmation.body}</p>
-                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setDeleteConfirmation(null)}
-                    className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={confirmDelete}
-                    className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="grid gap-5 xl:grid-cols-2">
             <Card className="relative flex min-h-[28rem] flex-col p-4 sm:min-h-[34rem] sm:p-5">
               <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
@@ -2406,6 +2442,7 @@ export default function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [trophiesContent, setTrophiesContent] = useState(() => getStoredTrophiesContent());
+  const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
     return "https://calendar.google.com/calendar/embed?src=c_2be8297a9561724f2234792e9cd68ed9f2fc5d6c6be910056b5a728d5098cf7%40group.calendar.google.com&ctz=America%2FNew_York";
@@ -2438,11 +2475,20 @@ export default function App() {
     };
   }, []);
 
-  const updateTrophiesContent = (nextContent) => {
+  const updateTrophiesContent = useCallback((nextContent) => {
     setTrophiesContent(nextContent);
     saveStoredTrophiesContent(nextContent);
     upsertTrophiesContent(nextContent);
-  };
+  }, []);
+
+  const requestConfirmation = useCallback(({ title, body, actionLabel = "Delete", onConfirm }) => {
+    setConfirmation({ title, body, actionLabel, onConfirm });
+  }, []);
+
+  const confirmAction = useCallback(() => {
+    confirmation?.onConfirm?.();
+    setConfirmation(null);
+  }, [confirmation]);
 
   const page = useMemo(() => {
     switch (path) {
@@ -2455,7 +2501,7 @@ export default function App() {
       case "/calendar":
         return <CalendarPage calendarEmbedUrl={calendarEmbedUrl} />;
       case "/meetings":
-        return <MeetingsPage auth={auth} />;
+        return <MeetingsPage auth={auth} onRequestConfirmation={requestConfirmation} />;
       case "/history":
         return <HistoryPage />;
       case "/trophies":
@@ -2465,11 +2511,11 @@ export default function App() {
       case "/contact":
         return <ContactPage />;
       case "/join":
-        return <JoinPage auth={auth} />;
+        return <JoinPage auth={auth} onRequestConfirmation={requestConfirmation} />;
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} onTrophiesContentChange={updateTrophiesContent} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} onTrophiesContentChange={updateTrophiesContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");
@@ -2477,7 +2523,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, path, trophiesContent]);
+  }, [auth, calendarEmbedUrl, path, requestConfirmation, trophiesContent, updateTrophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
@@ -2576,6 +2622,12 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        confirmation={confirmation}
+        onCancel={() => setConfirmation(null)}
+        onConfirm={confirmAction}
+      />
 
       <AnimatePresence mode="wait">
         <motion.div
