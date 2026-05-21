@@ -2270,30 +2270,39 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
           </div>
 
           <Card className="p-4 sm:p-5">
-            <button
-              type="button"
-              onClick={() => setTrophyEditorOpen((current) => !current)}
-              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
-              aria-expanded={trophyEditorOpen}
-            >
-              <div>
+            <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
+              <button
+                type="button"
+                onClick={() => setTrophyEditorOpen((current) => !current)}
+                className="min-w-0 flex-1 text-left"
+                aria-expanded={trophyEditorOpen}
+              >
                 <Eyebrow>Trophies Page Editor</Eyebrow>
                 <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Add and Update Public Achievements</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5b5450]">
                   Changes save to the public Trophies page. Use one highlight per line for tournament entries.
                 </p>
+              </button>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <a
+                  href="/trophies"
+                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                >
+                  Preview <ExternalLink size={14} />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setTrophyEditorOpen((current) => !current)}
+                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                  aria-expanded={trophyEditorOpen}
+                >
+                  {trophyEditorOpen ? "Close Editor" : "Open Editor"} <ChevronDown size={16} className={`transition ${trophyEditorOpen ? "rotate-180" : ""}`} />
+                </button>
               </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
-                {trophyEditorOpen ? "Close Editor" : "Open Editor"} <ChevronDown size={16} className={`transition ${trophyEditorOpen ? "rotate-180" : ""}`} />
-              </span>
-            </button>
+            </div>
 
             {trophyEditorOpen && (
               <div className="mt-5">
-                <PrimaryButton href="/trophies" className="mb-5 px-4 py-2 text-xs">
-                  Preview <ExternalLink size={14} />
-                </PrimaryButton>
-
             <div className="columns-1 gap-5 xl:columns-2">
               <details className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3" open>
                 <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Top Stats</summary>
