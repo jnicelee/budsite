@@ -1096,18 +1096,23 @@ function TrophiesPage({ trophiesContent }) {
             Each card reflects the current 2025-26 Boston University roster. Members with no listed award row are still recorded here as current roster members.
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="columns-1 gap-4 md:columns-2 xl:columns-3">
           {trophiesContent.members.map((member) => (
-            <Card key={member.id || member.name} className="p-5">
+            <Card key={member.id || member.name} className="mb-4 break-inside-avoid p-5">
               <p className="text-xl font-black leading-tight text-[#2D2926]">{member.name}</p>
               <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">{member.meta}</p>
-              <ul className="mt-4 grid gap-2">
-                {member.achievements.map((achievement) => (
-                  <li key={achievement} className="border-t border-[#ded8d2] pt-2 text-sm font-semibold leading-6 text-[#5b5450]">
-                    {achievement}
-                  </li>
-                ))}
-              </ul>
+              <SmoothDetails
+                title={`${member.achievements.length} ${member.achievements.length === 1 ? "Achievement" : "Achievements"}`}
+                className="mt-4 border-t border-[#ded8d2] pt-3"
+              >
+                <ul className="grid gap-2">
+                  {member.achievements.map((achievement) => (
+                    <li key={achievement} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2 text-sm font-semibold leading-6 text-[#5b5450]">
+                      {achievement}
+                    </li>
+                  ))}
+                </ul>
+              </SmoothDetails>
             </Card>
           ))}
         </div>
