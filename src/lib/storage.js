@@ -184,7 +184,8 @@ export function normalizeTrophiesContent(content = defaultTrophiesContent) {
 function normalizeResultSeasons(source) {
   const legacyResults = normalizeResults(source.results || []);
   const defaultSeasons = defaultTrophiesContent.resultSeasons || [];
-  const rawSeasons = Array.isArray(source.resultSeasons) && source.resultSeasons.length > 0
+  const hasExplicitSeasons = Array.isArray(source.resultSeasons);
+  const rawSeasons = hasExplicitSeasons
     ? source.resultSeasons
     : defaultSeasons;
   const seasonMap = new Map();
@@ -207,15 +208,17 @@ function normalizeResultSeasons(source) {
     });
   }
 
-  defaultSeasons.forEach((season) => {
-    if (!seasonMap.has(season.id)) {
-      seasonMap.set(season.id, {
-        id: season.id,
-        label: season.label,
-        results: normalizeResults(season.results || []),
-      });
-    }
-  });
+  if (!hasExplicitSeasons) {
+    defaultSeasons.forEach((season) => {
+      if (!seasonMap.has(season.id)) {
+        seasonMap.set(season.id, {
+          id: season.id,
+          label: season.label,
+          results: normalizeResults(season.results || []),
+        });
+      }
+    });
+  }
 
   return [...seasonMap.values()].sort((a, b) => b.id.localeCompare(a.id));
 }

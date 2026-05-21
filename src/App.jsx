@@ -1690,6 +1690,22 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
     setNewTrophySeason("");
   };
 
+  const removeTrophyResultSeason = () => {
+    if (!selectedTrophySeasonIdValue || !selectedTrophySeason) return;
+    requestDeleteConfirmation({
+      title: `Delete ${selectedTrophySeason.label}?`,
+      body: "This season and every tournament result inside it will be removed from the public Trophies page.",
+      onConfirm: () => {
+        const remainingSeasons = trophyResultSeasons.filter((season) => season.id !== selectedTrophySeasonIdValue);
+        persistTrophiesContent((content) => ({
+          ...content,
+          resultSeasons: content.resultSeasons.filter((season) => season.id !== selectedTrophySeasonIdValue),
+        }));
+        setSelectedTrophySeasonId(remainingSeasons[0]?.id || "");
+      },
+    });
+  };
+
   const addTrophyMemberAchievement = (event) => {
     event.preventDefault();
     const name = newTrophyMember.name.trim();
@@ -2607,18 +2623,28 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                   Add Season
                 </button>
               </form>
-              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                Season
-                <select
-                  value={selectedTrophySeasonIdValue}
-                  onChange={(event) => setSelectedTrophySeasonId(event.target.value)}
-                  className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-bold normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                  Season
+                  <select
+                    value={selectedTrophySeasonIdValue}
+                    onChange={(event) => setSelectedTrophySeasonId(event.target.value)}
+                    className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-bold normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                  >
+                    {trophyResultSeasons.map((season) => (
+                      <option key={season.id} value={season.id}>{season.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={removeTrophyResultSeason}
+                  disabled={!selectedTrophySeasonIdValue}
+                  className="self-end border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] transition hover:border-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {trophyResultSeasons.map((season) => (
-                    <option key={season.id} value={season.id}>{season.label}</option>
-                  ))}
-                </select>
-              </label>
+                  Delete Season
+                </button>
+              </div>
               <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
