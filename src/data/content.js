@@ -368,6 +368,15 @@ export const currentMemberAchievements = [
   { name: "Zimo-Tracy Ge", meta: "2nd year, Varsity", achievements: ["No 2025-26 APDA awards listed yet."] },
 ];
 
+export const defaultTrophiesContent = {
+  sourceUrl: apdaSourceUrl,
+  stats: apdaHistoryStats,
+  milestones: timeline,
+  accomplishments,
+  results: apdaChronologicalResults,
+  members: currentMemberAchievements,
+};
+
 export const board = [
   {
     name: "Josh Lyons",

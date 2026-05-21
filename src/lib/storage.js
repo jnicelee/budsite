@@ -7,9 +7,11 @@ import {
   MEMBER_ACCOUNTS_STORAGE_KEY,
   MEMBERSHIP_REQUESTS_STORAGE_KEY,
   PRIVATE_LINKS_STORAGE_KEY,
+  TROPHIES_CONTENT_STORAGE_KEY,
 } from "../data/config";
 import {
   agendaItems,
+  defaultTrophiesContent,
   initialBudgetRevenueRows,
   initialBudgetRows,
   privateLinkDefaultsById,
@@ -129,6 +131,69 @@ export function getStoredMemberAccounts() {
 
 export function saveStoredMemberAccounts(accounts) {
   window.localStorage.setItem(MEMBER_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
+}
+
+export function getStoredTrophiesContent() {
+  try {
+    const stored = window.localStorage.getItem(TROPHIES_CONTENT_STORAGE_KEY);
+    return normalizeTrophiesContent(stored ? JSON.parse(stored) : defaultTrophiesContent);
+  } catch {
+    return normalizeTrophiesContent(defaultTrophiesContent);
+  }
+}
+
+export function saveStoredTrophiesContent(content) {
+  window.localStorage.setItem(TROPHIES_CONTENT_STORAGE_KEY, JSON.stringify(normalizeTrophiesContent(content)));
+}
+
+export function normalizeTrophiesContent(content = defaultTrophiesContent) {
+  const source = { ...defaultTrophiesContent, ...content };
+  return {
+    sourceUrl: source.sourceUrl || defaultTrophiesContent.sourceUrl,
+    stats: normalizeTrophyItems(source.stats, (item, index) => ({
+      id: item.id || `stat-${index}-${slugify(item.label || item.value || "item")}`,
+      value: item.value || "",
+      label: item.label || "",
+      detail: item.detail || "",
+    })),
+    milestones: normalizeTrophyItems(source.milestones, (item, index) => ({
+      id: item.id || `milestone-${index}-${slugify(item.year || item.title || "item")}`,
+      year: item.year || "",
+      title: item.title || "",
+      copy: item.copy || "",
+    })),
+    accomplishments: (source.accomplishments || []).map((item, index) => {
+      const text = typeof item === "string" ? item : item.text;
+      return {
+        id: typeof item === "object" && item?.id ? item.id : `accomplishment-${index}-${slugify(text || "item")}`,
+        text: text || "",
+      };
+    }),
+    results: normalizeTrophyItems(source.results, (item, index) => ({
+      id: item.id || `result-${index}-${slugify(`${item.date || ""}-${item.tournament || "item"}`)}`,
+      date: item.date || "",
+      tournament: item.tournament || "",
+      highlights: Array.isArray(item.highlights) ? item.highlights.filter(Boolean) : [],
+    })),
+    members: normalizeTrophyItems(source.members, (item, index) => ({
+      id: item.id || `member-${index}-${slugify(item.name || "item")}`,
+      name: item.name || "",
+      meta: item.meta || "",
+      achievements: Array.isArray(item.achievements) ? item.achievements.filter(Boolean) : [],
+    })),
+  };
+}
+
+function normalizeTrophyItems(items, normalizeItem) {
+  return (items || []).map(normalizeItem).filter((item) => item.id);
+}
+
+function slugify(value) {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "item";
 }
 
 export function enrichPrivateLinks(links) {

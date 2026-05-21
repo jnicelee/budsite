@@ -38,16 +38,11 @@ import {
   MEMBERSHIP_REQUEST_STATUSES,
 } from "./data/config";
 import {
-  accomplishments,
-  apdaChronologicalResults,
-  apdaHistoryStats,
   apdaSourceUrl,
   board,
-  currentMemberAchievements,
   navItems,
   noviceResources,
   privateLinkSections,
-  timeline,
 } from "./data/content";
 import { formatCurrency, formatMeetingDate, getMemberLinkTitleValue, sortMeetingPosts } from "./lib/formatters";
 import { navigateTo } from "./lib/navigation";
@@ -65,6 +60,7 @@ import {
   loadDatabaseState,
   loadMemberAccounts,
   loadMembershipRequests,
+  loadTrophiesContent,
   revokeMemberAccount,
   unrevokeMemberAccount,
   updateMemberAccountRole,
@@ -75,6 +71,7 @@ import {
   upsertBudgetSettings,
   upsertMemberAccount,
   upsertPrivateLink,
+  upsertTrophiesContent,
 } from "./lib/supabaseData";
 import {
   clearStoredAuth,
@@ -85,6 +82,7 @@ import {
   getStoredMembershipRequests,
   getStoredNotes,
   getStoredPrivateLinks,
+  getStoredTrophiesContent,
   saveStoredAgenda,
   saveStoredAuth,
   saveStoredBudget,
@@ -92,6 +90,7 @@ import {
   saveStoredMembershipRequests,
   saveStoredNotes,
   saveStoredPrivateLinks,
+  saveStoredTrophiesContent,
 } from "./lib/storage";
 
 function HomePage() {
@@ -588,7 +587,7 @@ function HistoryPage() {
   );
 }
 
-function TrophiesPage() {
+function TrophiesPage({ trophiesContent }) {
   return (
     <Page>
       <PageHeader eyebrow="Trophies" title="BU Debate Results, in APDA Order.">
@@ -596,7 +595,7 @@ function TrophiesPage() {
       </PageHeader>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {apdaHistoryStats.map((stat) => (
+        {trophiesContent.stats.map((stat) => (
           <Card key={stat.label} className="p-5">
             <p className="text-4xl font-black leading-none text-[#CC0000]">{stat.value}</p>
             <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#2D2926]">{stat.label}</p>
@@ -606,8 +605,8 @@ function TrophiesPage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-3">
-        {timeline.map((item) => (
-          <Card key={item.year} className="border-t-8 border-t-[#CC0000]">
+        {trophiesContent.milestones.map((item) => (
+          <Card key={item.id || item.year} className="border-t-8 border-t-[#CC0000]">
             <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
             <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
             <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
@@ -622,15 +621,15 @@ function TrophiesPage() {
             <h2 className="min-w-0 break-words text-2xl font-black text-[#2D2926] sm:text-3xl">Accomplishments</h2>
           </div>
           <div className="grid gap-3">
-            {accomplishments.map((item) => (
-              <div key={item} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+            {trophiesContent.accomplishments.map((item) => (
+              <div key={item.id || item.text} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
                 <span className="mt-2 h-2 w-2 shrink-0 bg-[#CC0000]" aria-hidden="true" />
-                <span className="font-bold text-[#2D2926]">{item}</span>
+                <span className="font-bold text-[#2D2926]">{item.text}</span>
               </div>
             ))}
           </div>
           <a
-            href={apdaSourceUrl}
+            href={trophiesContent.sourceUrl || apdaSourceUrl}
             target="_blank"
             rel="noreferrer"
             className="mt-5 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]"
@@ -645,8 +644,8 @@ function TrophiesPage() {
             <h2 className="text-3xl font-black text-[#2D2926]">2025-26 Results Timeline</h2>
           </div>
           <div className="grid gap-4">
-            {[...apdaChronologicalResults].reverse().map((result) => (
-              <div key={`${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
+            {[...trophiesContent.results].reverse().map((result) => (
+              <div key={result.id || `${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                   <h3 className="text-xl font-black text-[#2D2926]">{result.tournament}</h3>
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">{result.date}</p>
@@ -675,8 +674,8 @@ function TrophiesPage() {
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {currentMemberAchievements.map((member) => (
-            <Card key={member.name} className="p-5">
+          {trophiesContent.members.map((member) => (
+            <Card key={member.id || member.name} className="p-5">
               <p className="text-xl font-black leading-tight text-[#2D2926]">{member.name}</p>
               <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">{member.meta}</p>
               <ul className="mt-4 grid gap-2">
@@ -1161,7 +1160,7 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function PrivateHubPage({ auth, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
@@ -1180,11 +1179,17 @@ function PrivateHubPage({ auth, onLogout }) {
   const [newRevenueAmount, setNewRevenueAmount] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
+  const [newTrophyStat, setNewTrophyStat] = useState({ value: "", label: "", detail: "" });
+  const [newTrophyAccomplishment, setNewTrophyAccomplishment] = useState("");
+  const [newTrophyMilestone, setNewTrophyMilestone] = useState({ year: "", title: "", copy: "" });
+  const [newTrophyResult, setNewTrophyResult] = useState({ date: "", tournament: "", highlights: "" });
+  const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
 
   const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEdit = isAdmin;
+  const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = canUsePrivateTabs ? activeTab : "member";
@@ -1445,6 +1450,151 @@ function PrivateHubPage({ auth, onLogout }) {
     saveStoredPrivateLinks(nextLinks);
     const updatedLink = nextLinks.find((link) => link.id === id);
     if (updatedLink) upsertPrivateLink(updatedLink);
+  };
+
+  const persistTrophiesContent = (updater) => {
+    if (!canEditTrophies) return;
+    const nextContent = typeof updater === "function" ? updater(trophiesContent) : updater;
+    onTrophiesContentChange(nextContent);
+  };
+
+  const updateTrophyItem = (section, id, field, value) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      [section]: content[section].map((item) => (
+        item.id === id ? { ...item, [field]: value } : item
+      )),
+    }));
+  };
+
+  const removeTrophyItem = (section, id) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      [section]: content[section].filter((item) => item.id !== id),
+    }));
+  };
+
+  const addTrophyStat = (event) => {
+    event.preventDefault();
+    if (!newTrophyStat.value.trim() || !newTrophyStat.label.trim()) return;
+    const nextStat = {
+      id: `stat-${Date.now()}`,
+      value: newTrophyStat.value.trim(),
+      label: newTrophyStat.label.trim(),
+      detail: newTrophyStat.detail.trim(),
+    };
+    persistTrophiesContent((content) => ({ ...content, stats: [...content.stats, nextStat] }));
+    setNewTrophyStat({ value: "", label: "", detail: "" });
+  };
+
+  const addTrophyAccomplishment = (event) => {
+    event.preventDefault();
+    const text = newTrophyAccomplishment.trim();
+    if (!text) return;
+    persistTrophiesContent((content) => ({
+      ...content,
+      accomplishments: [...content.accomplishments, { id: `accomplishment-${Date.now()}`, text }],
+    }));
+    setNewTrophyAccomplishment("");
+  };
+
+  const addTrophyMilestone = (event) => {
+    event.preventDefault();
+    if (!newTrophyMilestone.year.trim() || !newTrophyMilestone.title.trim()) return;
+    const nextMilestone = {
+      id: `milestone-${Date.now()}`,
+      year: newTrophyMilestone.year.trim(),
+      title: newTrophyMilestone.title.trim(),
+      copy: newTrophyMilestone.copy.trim(),
+    };
+    persistTrophiesContent((content) => ({ ...content, milestones: [...content.milestones, nextMilestone] }));
+    setNewTrophyMilestone({ year: "", title: "", copy: "" });
+  };
+
+  const addTrophyResult = (event) => {
+    event.preventDefault();
+    const highlights = newTrophyResult.highlights.split("\n").map((item) => item.trim()).filter(Boolean);
+    if (!newTrophyResult.date || !newTrophyResult.tournament.trim() || highlights.length === 0) return;
+    const nextResult = {
+      id: `result-${Date.now()}`,
+      date: newTrophyResult.date,
+      tournament: newTrophyResult.tournament.trim(),
+      highlights,
+    };
+    persistTrophiesContent((content) => ({ ...content, results: [...content.results, nextResult] }));
+    setNewTrophyResult({ date: "", tournament: "", highlights: "" });
+  };
+
+  const addTrophyMemberAchievement = (event) => {
+    event.preventDefault();
+    const name = newTrophyMember.name.trim();
+    const achievement = newTrophyMember.achievement.trim();
+    if (!name || !achievement) return;
+    persistTrophiesContent((content) => {
+      const existingMember = content.members.find((member) => member.name.toLowerCase() === name.toLowerCase());
+      if (existingMember) {
+        return {
+          ...content,
+          members: content.members.map((member) => (
+            member.id === existingMember.id
+              ? { ...member, meta: newTrophyMember.meta.trim() || member.meta, achievements: [...member.achievements, achievement] }
+              : member
+          )),
+        };
+      }
+      return {
+        ...content,
+        members: [
+          ...content.members,
+          { id: `member-${Date.now()}`, name, meta: newTrophyMember.meta.trim() || "Current member", achievements: [achievement] },
+        ],
+      };
+    });
+    setNewTrophyMember({ name: "", meta: "", achievement: "" });
+  };
+
+  const updateTrophyResultHighlight = (resultId, highlightIndex, value) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      results: content.results.map((result) => (
+        result.id === resultId
+          ? { ...result, highlights: result.highlights.map((highlight, index) => (index === highlightIndex ? value : highlight)) }
+          : result
+      )),
+    }));
+  };
+
+  const removeTrophyResultHighlight = (resultId, highlightIndex) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      results: content.results.map((result) => (
+        result.id === resultId
+          ? { ...result, highlights: result.highlights.filter((_, index) => index !== highlightIndex) }
+          : result
+      )),
+    }));
+  };
+
+  const updateTrophyMemberAchievement = (memberId, achievementIndex, value) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      members: content.members.map((member) => (
+        member.id === memberId
+          ? { ...member, achievements: member.achievements.map((achievement, index) => (index === achievementIndex ? value : achievement)) }
+          : member
+      )),
+    }));
+  };
+
+  const removeTrophyMemberAchievement = (memberId, achievementIndex) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      members: content.members.map((member) => (
+        member.id === memberId
+          ? { ...member, achievements: member.achievements.filter((_, index) => index !== achievementIndex) }
+          : member
+      )),
+    }));
   };
 
   const updateMemberStatus = (id, role) => {
@@ -2033,6 +2183,143 @@ function PrivateHubPage({ auth, onLogout }) {
               </div>
             </Card>
           </div>
+
+          <Card className="p-4 sm:p-5">
+            <div className="mb-5 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <Eyebrow>Trophies Page Editor</Eyebrow>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Add and Update Public Achievements</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Changes save to the public Trophies page. Use one highlight per line for tournament entries.
+                </p>
+              </div>
+              <PrimaryButton href="/trophies" className="px-4 py-2 text-xs">
+                Preview <ExternalLink size={14} />
+              </PrimaryButton>
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-2">
+              <section className="grid gap-3">
+                <h3 className="text-lg font-black text-[#2D2926]">Top Stats</h3>
+                <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                  <div className="grid gap-2 sm:grid-cols-[0.45fr_0.8fr_1fr_auto]">
+                    <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <input value={newTrophyStat.detail} onChange={(event) => setNewTrophyStat((current) => ({ ...current, detail: event.target.value }))} placeholder="Detail" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                  </div>
+                </form>
+                <div className="grid gap-2">
+                  {trophiesContent.stats.map((stat) => (
+                    <div key={stat.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 sm:grid-cols-[0.35fr_0.75fr_1fr_auto]">
+                      <input value={stat.value} onChange={(event) => updateTrophyItem("stats", stat.id, "value", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                      <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
+                      <input value={stat.detail} onChange={(event) => updateTrophyItem("stats", stat.id, "detail", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                      <button type="button" onClick={() => removeTrophyItem("stats", stat.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${stat.label}`}><Trash2 size={16} /></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="grid gap-3">
+                <h3 className="text-lg font-black text-[#2D2926]">Accomplishments List</h3>
+                <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
+                  <input value={newTrophyAccomplishment} onChange={(event) => setNewTrophyAccomplishment(event.target.value)} placeholder="Add accomplishment line" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                  <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                </form>
+                <div className="grid gap-2">
+                  {trophiesContent.accomplishments.map((item) => (
+                    <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 sm:grid-cols-[1fr_auto]">
+                      <input value={item.text} onChange={(event) => updateTrophyItem("accomplishments", item.id, "text", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
+                      <button type="button" onClick={() => removeTrophyItem("accomplishments", item.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="grid gap-3">
+                <h3 className="text-lg font-black text-[#2D2926]">Milestone Cards</h3>
+                <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                  <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                    <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                  </div>
+                  <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                </form>
+                <div className="grid gap-2">
+                  {trophiesContent.milestones.map((item) => (
+                    <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
+                      <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                        <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                        <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
+                        <button type="button" onClick={() => removeTrophyItem("milestones", item.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
+                      </div>
+                      <textarea value={item.copy} onChange={(event) => updateTrophyItem("milestones", item.id, "copy", event.target.value)} rows={2} className="resize-none border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="grid gap-3">
+                <h3 className="text-lg font-black text-[#2D2926]">Current Member Achievements</h3>
+                <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                  <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
+                    <input value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} placeholder="Member name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <input value={newTrophyMember.meta} onChange={(event) => setNewTrophyMember((current) => ({ ...current, meta: event.target.value }))} placeholder="Meta, optional" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                  </div>
+                  <textarea value={newTrophyMember.achievement} onChange={(event) => setNewTrophyMember((current) => ({ ...current, achievement: event.target.value }))} placeholder="Achievement to add to this member" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                </form>
+                <div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
+                  {trophiesContent.members.map((member) => (
+                    <div key={member.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
+                      <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
+                        <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                        <input value={member.meta} onChange={(event) => updateTrophyItem("members", member.id, "meta", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                        <button type="button" onClick={() => removeTrophyItem("members", member.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
+                      </div>
+                      {member.achievements.map((achievement, index) => (
+                        <div key={`${member.id}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                          <input value={achievement} onChange={(event) => updateTrophyMemberAchievement(member.id, index, event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                          <button type="button" onClick={() => removeTrophyMemberAchievement(member.id, index)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove achievement for ${member.name}`}><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <section className="mt-5 grid gap-3">
+              <h3 className="text-lg font-black text-[#2D2926]">Tournament Results Timeline</h3>
+              <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                  <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                  <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                  <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                </div>
+                <textarea value={newTrophyResult.highlights} onChange={(event) => setNewTrophyResult((current) => ({ ...current, highlights: event.target.value }))} placeholder="One highlight per line" rows={4} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+              </form>
+              <div className="grid gap-2">
+                {[...trophiesContent.results].reverse().map((result) => (
+                  <div key={result.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
+                    <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                      <input type="date" value={result.date} onChange={(event) => updateTrophyItem("results", result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                      <input value={result.tournament} onChange={(event) => updateTrophyItem("results", result.id, "tournament", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                      <button type="button" onClick={() => removeTrophyItem("results", result.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
+                    </div>
+                    {result.highlights.map((highlight, index) => (
+                      <div key={`${result.id}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                        <input value={highlight} onChange={(event) => updateTrophyResultHighlight(result.id, index, event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                        <button type="button" onClick={() => removeTrophyResultHighlight(result.id, index)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove highlight from ${result.tournament}`}><Trash2 size={16} /></button>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </Card>
         </div>
       )}
     </Page>
@@ -2057,6 +2344,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [path, setPath] = useState(window.location.pathname);
   const [auth, setAuth] = useState(() => getStoredAuth());
+  const [trophiesContent, setTrophiesContent] = useState(() => getStoredTrophiesContent());
 
   const calendarEmbedUrl = useMemo(() => {
     return "https://calendar.google.com/calendar/embed?src=c_2be8297a9561724f2234792e9cd68ed9f2fc5d6c6be910056b5a728d5098cf7%40group.calendar.google.com&ctz=America%2FNew_York";
@@ -2071,6 +2359,29 @@ export default function App() {
     window.addEventListener("popstate", updatePath);
     return () => window.removeEventListener("popstate", updatePath);
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateTrophiesContent() {
+      const databaseContent = await loadTrophiesContent();
+      if (!databaseContent || ignore) return;
+      setTrophiesContent(databaseContent);
+      saveStoredTrophiesContent(databaseContent);
+    }
+
+    hydrateTrophiesContent();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const updateTrophiesContent = (nextContent) => {
+    setTrophiesContent(nextContent);
+    saveStoredTrophiesContent(nextContent);
+    upsertTrophiesContent(nextContent);
+  };
 
   const page = useMemo(() => {
     switch (path) {
@@ -2087,7 +2398,7 @@ export default function App() {
       case "/history":
         return <HistoryPage />;
       case "/trophies":
-        return <TrophiesPage />;
+        return <TrophiesPage trophiesContent={trophiesContent} />;
       case "/eboard":
         return <EBoardPage />;
       case "/contact":
@@ -2097,7 +2408,7 @@ export default function App() {
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} onTrophiesContentChange={updateTrophiesContent} onLogout={() => {
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");
@@ -2105,7 +2416,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, path]);
+  }, [auth, calendarEmbedUrl, path, trophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
