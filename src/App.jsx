@@ -2376,14 +2376,18 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
         >
       {visibleTab === "member" && (
         <div>
-          <div className="mb-5 flex flex-col gap-3 border-l-4 border-[#CC0000] bg-white px-5 py-5 shadow-[0_12px_35px_rgba(45,41,38,0.06)] lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Members Only</p>
-              <h1 className="mt-2 max-w-4xl text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-5xl">Private BUDS Links and Debate Resources.</h1>
+          <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">Members Only</p>
+                <h1 className="mt-2 max-w-5xl text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-5xl">
+                  Private BUDS links and debate resources.
+                </h1>
+              </div>
+              <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+                Team documents, forms, calendars, and APDA guides for the season.
+              </p>
             </div>
-            <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
-              Team documents, forms, calendars, and APDA guides.
-            </p>
           </div>
           <div className="grid gap-7">
             {memberLinksBySection.map((group) => (
