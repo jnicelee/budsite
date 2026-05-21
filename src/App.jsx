@@ -237,6 +237,15 @@ function sortResultSeasons(seasons = []) {
   return [...seasons].sort((a, b) => b.id.localeCompare(a.id));
 }
 
+function normalizeSeasonId(value) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/(20\d{2})\D*(\d{2,4})/);
+  if (!match) return trimmed;
+  const startYear = match[1];
+  const endYear = match[2].length === 2 ? `20${match[2]}` : match[2];
+  return `${startYear}-${endYear}`;
+}
+
 function AboutPage() {
   const aboutHighlights = [
     { value: "1999", label: "Modern BUDS era" },
@@ -1274,6 +1283,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const [newTrophyMilestone, setNewTrophyMilestone] = useState({ year: "", title: "", copy: "" });
   const [newTrophyResult, setNewTrophyResult] = useState({ date: "", tournament: "", highlights: "" });
   const [selectedTrophySeasonId, setSelectedTrophySeasonId] = useState("");
+  const [newTrophySeason, setNewTrophySeason] = useState("");
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
@@ -1655,6 +1665,29 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
       )),
     }));
     setNewTrophyResult({ date: "", tournament: "", highlights: "" });
+  };
+
+  const addTrophyResultSeason = (event) => {
+    event.preventDefault();
+    const seasonId = normalizeSeasonId(newTrophySeason);
+    if (!seasonId) return;
+    if (trophyResultSeasons.some((season) => season.id === seasonId)) {
+      setSelectedTrophySeasonId(seasonId);
+      setNewTrophySeason("");
+      return;
+    }
+
+    const nextSeason = {
+      id: seasonId,
+      label: `${seasonId} Results Timeline`,
+      results: [],
+    };
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: [...content.resultSeasons, nextSeason],
+    }));
+    setSelectedTrophySeasonId(seasonId);
+    setNewTrophySeason("");
   };
 
   const addTrophyMemberAchievement = (event) => {
@@ -2563,6 +2596,17 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
             </div>
 
             <SmoothDetails title="Tournament Results Timeline" className="mt-5 border border-[#ded8d2] bg-white p-3">
+              <form onSubmit={addTrophyResultSeason} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
+                <input
+                  value={newTrophySeason}
+                  onChange={(event) => setNewTrophySeason(event.target.value)}
+                  placeholder="Add season, e.g. 2027-2028"
+                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm outline-none focus:border-[#CC0000]"
+                />
+                <button type="submit" className="bg-[#2D2926] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">
+                  Add Season
+                </button>
+              </form>
               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                 Season
                 <select
