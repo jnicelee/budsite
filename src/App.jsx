@@ -50,6 +50,7 @@ import {
 import {
   apdaSourceUrl,
   board,
+  getPrivateLinkSection,
   navItems,
   noviceResources,
   privateLinkSections,
@@ -1678,7 +1679,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
         : "E-Board Workspace";
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
-    links: memberLinks.filter((link) => link.section === section),
+    links: memberLinks.filter((link) => getPrivateLinkSection(link) === section),
   })).filter((group) => group.links.length > 0);
 
   useEffect(() => {
@@ -2401,7 +2402,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
                     <div key={link.id} className="group flex min-h-[20rem] flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_20px_55px_rgba(45,41,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,41,38,0.12)] sm:min-h-[25rem] sm:p-7">
                       <div className="mb-10">
                         <span className="inline-flex bg-[#CC0000] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
-                          {group.section === "Debater Resources" ? "Resource" : "Team Link"}
+                          {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : "Team Link"}
                         </span>
                       </div>
                       {canEditMemberLinks ? (

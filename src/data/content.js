@@ -65,13 +65,13 @@ export const noviceResources = [
 
 export const privateLinks = [
   { id: "link-buds-drive", section: "BUDS Team Specific Links", order: 1, label: "BUDS Drive", description: "Google Drive that contains the casebook, resources, equity forms, meeting notes, and other shared team materials.", url: "http://tinyurl.com/budsdrive" },
-  { id: "link-equity-complaint", section: "BUDS Team Specific Links", order: 2, label: "Equity Complaint Form", description: "Form to express concerns about inequity among debaters or within the team environment.", url: "https://tinyurl.com/budsequity" },
-  { id: "link-tournament-signups", section: "BUDS Team Specific Links", order: 3, label: "Tournament Sign-Ups", description: "List of tournaments BUDS plans to attend, where members can sign up as competitors, judges, or mark that they are looking for a partner.", url: "https://docs.google.com/spreadsheets/d/1HUdRoHPHAwAfzchtA406yVSuRHhgjy-MGMmQbiouGnk/edit?usp=sharing" },
-  { id: "link-events-calendar", section: "BUDS Team Specific Links", order: 4, label: "Events Google Calendar", description: "Add this calendar to see upcoming BUDS events, practices, and tournaments in Google Calendar.", url: "https://calendar.google.com/calendar/u/0?cid=Y18yYmU4Mjk3YTk1NjE3MjRmMjIzNDc5MmU5Y2Q2OGVkOWYyZmM1ZDZjNmJlOTEwMDU2YjVhNzI1OGQ1MDk4Y2Y3QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20" },
-  { id: "link-big-little", section: "BUDS Team Specific Links", order: 5, label: "Big-Little Form", description: "Form for new members to rank preferences for bigs in the BUDS mentor pairing system.", url: "https://forms.gle/KXnfMfoggy6Mv4A1A" },
-  { id: "link-prep-out", section: "BUDS Team Specific Links", order: 6, label: "Prep-Out Form", description: "Request prep-outs for cases you have hit so the team can build stronger shared responses.", url: "http://tinyurl.com/budsprepouts" },
-  { id: "link-birthday", section: "BUDS Team Specific Links", order: 7, label: "Birthday Form", description: "Share your birthday so BUDS can add it to the calendar, say happy birthday, and make tournament registration easier.", url: "https://forms.gle/7zdPNeiaw4XfMmoy7" },
-  { id: "link-feedback", section: "BUDS Team Specific Links", order: 8, label: "Feedback Form", description: "Propose ideas or give feedback about lectures, events, tournaments, and the club in general.", url: "https://forms.gle/ZiTMaAG1YNthi4Rh7" },
+  { id: "link-tournament-signups", section: "BUDS Team Specific Links", order: 2, label: "Tournament Sign-Ups", description: "List of tournaments BUDS plans to attend, where members can sign up as competitors, judges, or mark that they are looking for a partner.", url: "https://docs.google.com/spreadsheets/d/1HUdRoHPHAwAfzchtA406yVSuRHhgjy-MGMmQbiouGnk/edit?usp=sharing" },
+  { id: "link-events-calendar", section: "BUDS Team Specific Links", order: 3, label: "Events Google Calendar", description: "Add this calendar to see upcoming BUDS events, practices, and tournaments in Google Calendar.", url: "https://calendar.google.com/calendar/u/0?cid=Y18yYmU4Mjk3YTk1NjE3MjRmMjIzNDc5MmU5Y2Q2OGVkOWYyZmM1ZDZjNmJlOTEwMDU2YjVhNzI1OGQ1MDk4Y2Y3QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20" },
+  { id: "link-equity-complaint", section: "Forms", order: 4, label: "Equity Complaint Form", description: "Form to express concerns about inequity among debaters or within the team environment.", url: "https://tinyurl.com/budsequity" },
+  { id: "link-big-little", section: "Forms", order: 5, label: "Big-Little Form", description: "Form for new members to rank preferences for bigs in the BUDS mentor pairing system.", url: "https://forms.gle/KXnfMfoggy6Mv4A1A" },
+  { id: "link-prep-out", section: "Forms", order: 6, label: "Prep-Out Form", description: "Request prep-outs for cases you have hit so the team can build stronger shared responses.", url: "http://tinyurl.com/budsprepouts" },
+  { id: "link-birthday", section: "Forms", order: 7, label: "Birthday Form", description: "Share your birthday so BUDS can add it to the calendar, say happy birthday, and make tournament registration easier.", url: "https://forms.gle/7zdPNeiaw4XfMmoy7" },
+  { id: "link-feedback", section: "Forms", order: 8, label: "Feedback Form", description: "Propose ideas or give feedback about lectures, events, tournaments, and the club in general.", url: "https://forms.gle/ZiTMaAG1YNthi4Rh7" },
   { id: "link-apda-website", section: "Debater Resources", order: 9, label: "APDA Website", description: "League hub for resources, club standings, the APDA forum, and other debate information.", url: "https://apda.online/" },
   { id: "link-apda-novice-guide", section: "Debater Resources", order: 10, label: "APDA Novice Guide to Debate", description: "Beginner-friendly guide made by APDA debaters that explains the basics of parliamentary debate for newcomers.", url: "https://docs.google.com/document/d/17ST1qeuoEmJB6zcFU80zfD6pmmSQVjwoERZu8btnOlM/edit?usp=sharing" },
   { id: "link-apda-dictionary", section: "Debater Resources", order: 11, label: "APDA Dictionary", description: "Reference for common APDA terms and lingo used in rounds, tournaments, and team discussions.", url: "https://docs.google.com/document/d/1M2odwpanTZe5w7Q4WCOCuBzlKkg2Re4-R48iIB3JT3g/edit?usp=sharing" },
@@ -79,7 +79,12 @@ export const privateLinks = [
 ];
 
 export const privateLinkDefaultsById = Object.fromEntries(privateLinks.map((link) => [link.id, link]));
-export const privateLinkSections = ["BUDS Team Specific Links", "Debater Resources"];
+export const privateFormLinkIds = ["link-equity-complaint", "link-big-little", "link-prep-out", "link-birthday", "link-feedback"];
+export const privateLinkSections = ["BUDS Team Specific Links", "Forms", "Debater Resources"];
+
+export function getPrivateLinkSection(link) {
+  return privateFormLinkIds.includes(link.id) ? "Forms" : link.section;
+}
 
 export const agendaItems = [
   { id: "agenda-1", text: "Tournament registration and travel", owner: "President", due: "Add date" },

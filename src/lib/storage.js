@@ -14,6 +14,7 @@ import {
   agendaItems,
   defaultTrophiesContent,
   defaultMeetingsContent,
+  getPrivateLinkSection,
   initialBudgetRevenueRows,
   initialBudgetRows,
   privateLinkDefaultsById,
@@ -275,7 +276,7 @@ export function enrichPrivateLinks(links) {
       return {
         ...defaults,
         ...link,
-        section: link.section || defaults?.section || "Team Links",
+        section: getPrivateLinkSection(link) || defaults?.section || "Team Links",
         order: link.order || defaults?.order || index + 100,
       };
     })
