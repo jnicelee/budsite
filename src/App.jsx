@@ -1625,6 +1625,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
   const [apdaUpdatePreview, setApdaUpdatePreview] = useState(null);
   const [apdaUpdateStatus, setApdaUpdateStatus] = useState({ state: "idle", message: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
+  const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
@@ -2847,38 +2848,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
                     </fieldset>
                   </form>
 
-                  <form onSubmit={handleAnnouncementSubmit} className="mt-4 grid gap-3 border-t border-[#ded8d2] pt-4">
-                    <div>
-                      <p className="text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]">Meetings Page Announcement</p>
-                      <p className="mt-1 text-xs font-semibold normal-case tracking-normal text-[#6d6560]">
-                        This appears in the small announcements block on the public Meetings page.
-                      </p>
-                    </div>
-                    <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
-                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                        Announcement Title
-                        <input
-                          type="text"
-                          value={meetingAnnouncement.announcementTitle}
-                          onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementTitle: event.target.value }))}
-                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                        Announcement Body
-                        <textarea
-                          value={meetingAnnouncement.announcementBody}
-                          onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementBody: event.target.value }))}
-                          rows={3}
-                          className="resize-none border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                        />
-                      </label>
-                      <button type="submit" className="w-fit bg-[#2D2926] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#CC0000]">
-                        Save Announcement
-                      </button>
-                    </fieldset>
-                  </form>
-
                   <div className="mt-4 min-h-0 flex-1 border-t border-[#ded8d2] pt-4">
                     <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                       Past E-Board Notes
@@ -2914,6 +2883,67 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
               </AnimatePresence>
             </Card>
           </div>
+
+          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setAnnouncementEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={announcementEditorOpen}
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <FileText className="text-[#CC0000]" />
+                  <Eyebrow>Budsite Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Meetings Page Announcement</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Edit the small public announcement block on the Meetings page.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {announcementEditorOpen ? "Close Announcement" : "Open Announcement"} <ChevronDown size={16} className={`transition ${announcementEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {announcementEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <form onSubmit={handleAnnouncementSubmit} className="mt-5 grid gap-3">
+                    <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        Announcement Title
+                        <input
+                          type="text"
+                          value={meetingAnnouncement.announcementTitle}
+                          onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementTitle: event.target.value }))}
+                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        Announcement Body
+                        <textarea
+                          value={meetingAnnouncement.announcementBody}
+                          onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementBody: event.target.value }))}
+                          rows={3}
+                          className="resize-none border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                      <button type="submit" className="w-fit bg-[#2D2926] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#CC0000]">
+                        Save Announcement
+                      </button>
+                    </fieldset>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
 
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
