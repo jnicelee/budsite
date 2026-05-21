@@ -1753,7 +1753,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
         <button
           type="button"
           onClick={() => setActiveTab("member")}
-          className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "member" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "member" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
         >
           Member Resources
         </button>
@@ -1762,14 +1762,14 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
             <button
               type="button"
               onClick={() => setActiveTab("eboard")}
-              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "eboard" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "eboard" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
             >
               E-Board Workspace
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("budsite")}
-              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "budsite" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "budsite" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
             >
               Budsite Editor
             </button>
@@ -1779,13 +1779,21 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
           <button
             type="button"
             onClick={() => setActiveTab("members")}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "members" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+            className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "members" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
           >
             Members
           </button>
         )}
       </div>
 
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={visibleTab}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        >
       {visibleTab === "member" && (
         <div>
           <PageHeader eyebrow="Members Only" title="Private BUDS Links and Debate Resources.">
@@ -2477,6 +2485,8 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
           </Card>
         </div>
       )}
+        </motion.div>
+      </AnimatePresence>
     </Page>
   );
 }
