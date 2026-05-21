@@ -645,7 +645,7 @@ function TrophiesPage() {
             <h2 className="text-3xl font-black text-[#2D2926]">2025-26 Results Timeline</h2>
           </div>
           <div className="grid gap-4">
-            {apdaChronologicalResults.map((result) => (
+            {[...apdaChronologicalResults].reverse().map((result) => (
               <div key={`${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                   <h3 className="text-xl font-black text-[#2D2926]">{result.tournament}</h3>
