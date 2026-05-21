@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
+  ChevronDown,
   ChevronRight,
   ClipboardList,
   DollarSign,
@@ -1184,6 +1185,8 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
   const [newTrophyMilestone, setNewTrophyMilestone] = useState({ year: "", title: "", copy: "" });
   const [newTrophyResult, setNewTrophyResult] = useState({ date: "", tournament: "", highlights: "" });
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
+  const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
@@ -1450,6 +1453,15 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
     saveStoredPrivateLinks(nextLinks);
     const updatedLink = nextLinks.find((link) => link.id === id);
     if (updatedLink) upsertPrivateLink(updatedLink);
+  };
+
+  const requestDeleteConfirmation = ({ title, body, onConfirm }) => {
+    setDeleteConfirmation({ title, body, onConfirm });
+  };
+
+  const confirmDelete = () => {
+    deleteConfirmation?.onConfirm?.();
+    setDeleteConfirmation(null);
   };
 
   const persistTrophiesContent = (updater) => {
@@ -1858,6 +1870,32 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
 
       {visibleTab === "eboard" && isEboard && (
         <div className="grid gap-5">
+          {deleteConfirmation && (
+            <div className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm">
+              <div className="w-full max-w-md border border-[#ded8d2] bg-white p-6 shadow-[0_28px_80px_rgba(45,41,38,0.24)]">
+                <Eyebrow>Are you sure?</Eyebrow>
+                <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{deleteConfirmation.title}</h2>
+                <p className="mt-3 text-sm font-semibold leading-6 text-[#5b5450]">{deleteConfirmation.body}</p>
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmation(null)}
+                    className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmDelete}
+                    className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-5 xl:grid-cols-2">
             <Card className="relative flex min-h-[28rem] flex-col p-4 sm:min-h-[34rem] sm:p-5">
               <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
@@ -2185,7 +2223,12 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
           </div>
 
           <Card className="p-4 sm:p-5">
-            <div className="mb-5 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
+            <button
+              type="button"
+              onClick={() => setTrophyEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={trophyEditorOpen}
+            >
               <div>
                 <Eyebrow>Trophies Page Editor</Eyebrow>
                 <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Add and Update Public Achievements</h2>
@@ -2193,16 +2236,23 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
                   Changes save to the public Trophies page. Use one highlight per line for tournament entries.
                 </p>
               </div>
-              <PrimaryButton href="/trophies" className="px-4 py-2 text-xs">
-                Preview <ExternalLink size={14} />
-              </PrimaryButton>
-            </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {trophyEditorOpen ? "Close Editor" : "Open Editor"} <ChevronDown size={16} className={`transition ${trophyEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            {trophyEditorOpen && (
+              <div className="mt-5">
+                <PrimaryButton href="/trophies" className="mb-5 px-4 py-2 text-xs">
+                  Preview <ExternalLink size={14} />
+                </PrimaryButton>
 
             <div className="grid gap-5 xl:grid-cols-2">
-              <section className="grid gap-3">
-                <h3 className="text-lg font-black text-[#2D2926]">Top Stats</h3>
+              <details className="border border-[#ded8d2] bg-white p-3" open>
+                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Top Stats</summary>
+                <div className="mt-3 grid gap-3">
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                  <div className="grid gap-2 sm:grid-cols-[0.45fr_0.8fr_1fr_auto]">
+                  <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
                     <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyStat.detail} onChange={(event) => setNewTrophyStat((current) => ({ ...current, detail: event.target.value }))} placeholder="Detail" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -2211,36 +2261,40 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
                 </form>
                 <div className="grid gap-2">
                   {trophiesContent.stats.map((stat) => (
-                    <div key={stat.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 sm:grid-cols-[0.35fr_0.75fr_1fr_auto]">
+                    <div key={stat.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[0.35fr_0.75fr_1fr_auto]">
                       <input value={stat.value} onChange={(event) => updateTrophyItem("stats", stat.id, "value", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
                       <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
                       <input value={stat.detail} onChange={(event) => updateTrophyItem("stats", stat.id, "detail", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => removeTrophyItem("stats", stat.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${stat.label}`}><Trash2 size={16} /></button>
+                      <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${stat.label}?`, body: "This stat will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("stats", stat.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${stat.label}`}><Trash2 size={16} /></button>
                     </div>
                   ))}
                 </div>
-              </section>
+                </div>
+              </details>
 
-              <section className="grid gap-3">
-                <h3 className="text-lg font-black text-[#2D2926]">Accomplishments List</h3>
-                <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
+              <details className="border border-[#ded8d2] bg-white p-3">
+                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Accomplishments List</summary>
+                <div className="mt-3 grid gap-3">
+                <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 2xl:grid-cols-[1fr_auto]">
                   <input value={newTrophyAccomplishment} onChange={(event) => setNewTrophyAccomplishment(event.target.value)} placeholder="Add accomplishment line" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                 </form>
                 <div className="grid gap-2">
                   {trophiesContent.accomplishments.map((item) => (
-                    <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 sm:grid-cols-[1fr_auto]">
+                    <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[1fr_auto]">
                       <input value={item.text} onChange={(event) => updateTrophyItem("accomplishments", item.id, "text", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => removeTrophyItem("accomplishments", item.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
+                      <button type="button" onClick={() => requestDeleteConfirmation({ title: "Delete this accomplishment?", body: item.text, onConfirm: () => removeTrophyItem("accomplishments", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
                     </div>
                   ))}
                 </div>
-              </section>
+                </div>
+              </details>
 
-              <section className="grid gap-3">
-                <h3 className="text-lg font-black text-[#2D2926]">Milestone Cards</h3>
+              <details className="border border-[#ded8d2] bg-white p-3">
+                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Milestone Cards</summary>
+                <div className="mt-3 grid gap-3">
                 <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                  <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                  <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                     <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
@@ -2250,21 +2304,23 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
                 <div className="grid gap-2">
                   {trophiesContent.milestones.map((item) => (
                     <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
-                      <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                      <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                         <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
                         <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
-                        <button type="button" onClick={() => removeTrophyItem("milestones", item.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
+                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
                       </div>
                       <textarea value={item.copy} onChange={(event) => updateTrophyItem("milestones", item.id, "copy", event.target.value)} rows={2} className="resize-none border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     </div>
                   ))}
                 </div>
-              </section>
+                </div>
+              </details>
 
-              <section className="grid gap-3">
-                <h3 className="text-lg font-black text-[#2D2926]">Current Member Achievements</h3>
+              <details className="border border-[#ded8d2] bg-white p-3">
+                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Current Member Achievements</summary>
+                <div className="mt-3 grid gap-3">
                 <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                  <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
+                  <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
                     <input value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} placeholder="Member name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyMember.meta} onChange={(event) => setNewTrophyMember((current) => ({ ...current, meta: event.target.value }))} placeholder="Meta, optional" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
@@ -2274,27 +2330,29 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
                 <div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
                   {trophiesContent.members.map((member) => (
                     <div key={member.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
-                      <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
+                      <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
                         <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
                         <input value={member.meta} onChange={(event) => updateTrophyItem("members", member.id, "meta", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                        <button type="button" onClick={() => removeTrophyItem("members", member.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
+                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${member.name}?`, body: "This member achievement card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("members", member.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
                       </div>
                       {member.achievements.map((achievement, index) => (
-                        <div key={`${member.id}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                        <div key={`${member.id}-${index}`} className="grid gap-2 2xl:grid-cols-[1fr_auto]">
                           <input value={achievement} onChange={(event) => updateTrophyMemberAchievement(member.id, index, event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                          <button type="button" onClick={() => removeTrophyMemberAchievement(member.id, index)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove achievement for ${member.name}`}><Trash2 size={16} /></button>
+                          <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete achievement for ${member.name}?`, body: achievement, onConfirm: () => removeTrophyMemberAchievement(member.id, index) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove achievement for ${member.name}`}><Trash2 size={16} /></button>
                         </div>
                       ))}
                     </div>
                   ))}
                 </div>
-              </section>
+                </div>
+              </details>
             </div>
 
-            <section className="mt-5 grid gap-3">
-              <h3 className="text-lg font-black text-[#2D2926]">Tournament Results Timeline</h3>
+            <details className="mt-5 border border-[#ded8d2] bg-white p-3">
+              <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Tournament Results Timeline</summary>
+              <div className="mt-3 grid gap-3">
               <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
@@ -2304,21 +2362,24 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onLogo
               <div className="grid gap-2">
                 {[...trophiesContent.results].reverse().map((result) => (
                   <div key={result.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
-                    <div className="grid gap-2 sm:grid-cols-[0.45fr_1fr_auto]">
+                    <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                       <input type="date" value={result.date} onChange={(event) => updateTrophyItem("results", result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                       <input value={result.tournament} onChange={(event) => updateTrophyItem("results", result.id, "tournament", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => removeTrophyItem("results", result.id)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
+                      <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("results", result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
                     </div>
                     {result.highlights.map((highlight, index) => (
-                      <div key={`${result.id}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                      <div key={`${result.id}-${index}`} className="grid gap-2 2xl:grid-cols-[1fr_auto]">
                         <input value={highlight} onChange={(event) => updateTrophyResultHighlight(result.id, index, event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                        <button type="button" onClick={() => removeTrophyResultHighlight(result.id, index)} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove highlight from ${result.tournament}`}><Trash2 size={16} /></button>
+                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete highlight from ${result.tournament}?`, body: highlight, onConfirm: () => removeTrophyResultHighlight(result.id, index) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove highlight from ${result.tournament}`}><Trash2 size={16} /></button>
                       </div>
                     ))}
                   </div>
                 ))}
               </div>
-            </section>
+              </div>
+            </details>
+              </div>
+            )}
           </Card>
         </div>
       )}
