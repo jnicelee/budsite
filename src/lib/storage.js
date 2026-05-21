@@ -7,11 +7,13 @@ import {
   MEMBER_ACCOUNTS_STORAGE_KEY,
   MEETINGS_CONTENT_STORAGE_KEY,
   MEMBERSHIP_REQUESTS_STORAGE_KEY,
+  NOVICE_CONTENT_STORAGE_KEY,
   PRIVATE_LINKS_STORAGE_KEY,
   TROPHIES_CONTENT_STORAGE_KEY,
 } from "../data/config";
 import {
   agendaItems,
+  defaultNoviceContent,
   defaultTrophiesContent,
   defaultMeetingsContent,
   getPrivateLinkSection,
@@ -162,12 +164,36 @@ export function saveStoredMeetingsContent(content) {
   window.localStorage.setItem(MEETINGS_CONTENT_STORAGE_KEY, JSON.stringify(normalizeMeetingsContent(content)));
 }
 
+export function getStoredNoviceContent() {
+  try {
+    const stored = window.localStorage.getItem(NOVICE_CONTENT_STORAGE_KEY);
+    return normalizeNoviceContent(stored ? JSON.parse(stored) : defaultNoviceContent);
+  } catch {
+    return normalizeNoviceContent(defaultNoviceContent);
+  }
+}
+
+export function saveStoredNoviceContent(content) {
+  window.localStorage.setItem(NOVICE_CONTENT_STORAGE_KEY, JSON.stringify(normalizeNoviceContent(content)));
+}
+
 export function normalizeMeetingsContent(content = defaultMeetingsContent) {
   const source = { ...defaultMeetingsContent, ...content };
   return {
     announcementTitle: source.announcementTitle || defaultMeetingsContent.announcementTitle,
     announcementBody: source.announcementBody || "",
     announcementUpdatedAt: source.announcementUpdatedAt || "",
+  };
+}
+
+export function normalizeNoviceContent(content = defaultNoviceContent) {
+  const source = { ...defaultNoviceContent, ...content };
+  return {
+    faqs: normalizeTrophyItems(source.faqs, (item, index) => ({
+      id: item.id || `faq-${index}-${slugify(item.question || "item")}`,
+      question: item.question || "",
+      answer: item.answer || "",
+    })),
   };
 }
 

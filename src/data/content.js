@@ -392,6 +392,36 @@ export const defaultMeetingsContent = {
   announcementUpdatedAt: "",
 };
 
+export const defaultNoviceContent = {
+  faqs: [
+    {
+      id: "faq-tight-call",
+      question: "What is a tight call?",
+      answer: "A tight call is an APDA theory argument that the government case is so one-sided that opposition does not have a real path to win. The novice guide recommends using it only when the case is genuinely unfair, not just because arguments are hard to find. Opposition should make the call very early, and government can answer by showing a clear path to victory for opposition.",
+    },
+    {
+      id: "faq-partner",
+      question: "How can I get a partner to start debating?",
+      answer: "Come to practice, tell an e-board member you want to debate, and add yourself to the tournament sign-up sheet. You can mark that you are looking for a partner, ask in team channels, or get paired with another novice or experienced member for your first tournament.",
+    },
+    {
+      id: "faq-first-tournament",
+      question: "What happens at my first tournament?",
+      answer: "Most APDA tournaments run Friday to Saturday with five in-rounds before any elimination rounds. Before each round, a draw tells you your side, opponent, judge, and room. Dress is casual, and after the round the judge gives a decision and feedback called an RFD.",
+    },
+    {
+      id: "faq-pocs-pois",
+      question: "What are POCs and POIs?",
+      answer: "Points of Clarification happen before the main speeches in APDA cases and help opposition understand the government case. Points of Information are short questions or comments offered during constructive speeches after the first minute and before the last minute.",
+    },
+    {
+      id: "faq-case-prep",
+      question: "How do I write a simple case?",
+      answer: "Pick a topic, phrase the case statement clearly, write a short background, and prepare two to four arguments for why the judge should vote for government. It also helps to brainstorm likely opposition arguments and responses before running the case.",
+    },
+  ],
+};
+
 export const board = [
   {
     name: "Josh Lyons",

@@ -76,6 +76,7 @@ import {
   loadDatabaseState,
   loadMemberAccounts,
   loadMembershipRequests,
+  loadNoviceContent,
   loadTrophiesContent,
   revokeMemberAccount,
   unrevokeMemberAccount,
@@ -88,6 +89,7 @@ import {
   upsertBudgetSettings,
   upsertMeetingsContent,
   upsertMemberAccount,
+  upsertNoviceContent,
   upsertPrivateLink,
   upsertTrophiesContent,
 } from "./lib/supabaseData";
@@ -99,6 +101,7 @@ import {
   getStoredMemberAccounts,
   getStoredMeetingsContent,
   getStoredMembershipRequests,
+  getStoredNoviceContent,
   getStoredNotes,
   getStoredPrivateLinks,
   getStoredTrophiesContent,
@@ -108,6 +111,7 @@ import {
   saveStoredMemberAccounts,
   saveStoredMeetingsContent,
   saveStoredMembershipRequests,
+  saveStoredNoviceContent,
   saveStoredNotes,
   saveStoredPrivateLinks,
   saveStoredTrophiesContent,
@@ -732,7 +736,7 @@ function AboutPage() {
   );
 }
 
-function NoviceHubPage() {
+function NoviceHubPage({ noviceContent }) {
   const apdaSpeechSteps = [
     {
       order: 1,
@@ -900,6 +904,29 @@ function NoviceHubPage() {
               After every speech, the judge compares which side gave the more convincing, better supported, and better weighed reasons.
             </p>
           </div>
+        </div>
+      </section>
+      <section className="mt-6">
+        <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow>Novice FAQ</Eyebrow>
+            <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Common First-Round Questions</h2>
+          </div>
+          <span className="self-start border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560] sm:self-center">
+            E-board editable
+          </span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {noviceContent.faqs.map((faq, index) => (
+            <SmoothDetails
+              key={faq.id}
+              title={faq.question}
+              defaultOpen={index === 0}
+              className="border border-[#ded8d2] bg-white p-4 shadow-[0_14px_38px_rgba(45,41,38,0.06)]"
+            >
+              <p className="text-sm font-semibold leading-6 text-[#5b5450]">{faq.answer}</p>
+            </SmoothDetails>
+          ))}
         </div>
       </section>
       <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
@@ -1762,7 +1789,7 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesContentChange, onMeetingsContentChange, onRequestConfirmation, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
@@ -1770,6 +1797,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingNotes, setMeetingNotes] = useState("");
   const [meetingAnnouncement, setMeetingAnnouncement] = useState(meetingsContent);
+  const [noviceFaqs, setNoviceFaqs] = useState(noviceContent.faqs);
+  const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
   const [newAgendaText, setNewAgendaText] = useState("");
@@ -1793,6 +1822,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
   const [apdaUpdateStatus, setApdaUpdateStatus] = useState({ state: "idle", message: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false);
+  const [noviceFaqEditorOpen, setNoviceFaqEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
@@ -1848,6 +1878,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
         setMeetingAnnouncement(databaseState.meetingsContent);
         onMeetingsContentChange(databaseState.meetingsContent);
       }
+      if (databaseState.noviceContent) {
+        setNoviceFaqs(databaseState.noviceContent.faqs);
+        onNoviceContentChange(databaseState.noviceContent);
+      }
       saveStoredAgenda(databaseState.agenda);
       saveStoredNotes(databaseState.notes);
       saveStoredBudget(databaseState.budget);
@@ -1859,7 +1893,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
     return () => {
       ignore = true;
     };
-  }, [onMeetingsContentChange]);
+  }, [onMeetingsContentChange, onNoviceContentChange]);
 
   useEffect(() => {
     let ignore = false;
@@ -1924,6 +1958,40 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
     };
     setMeetingAnnouncement(nextContent);
     onMeetingsContentChange(nextContent);
+  };
+
+  const persistNoviceFaqs = (nextFaqs) => {
+    if (!canWriteNotes) return;
+    const nextContent = { ...noviceContent, faqs: nextFaqs };
+    setNoviceFaqs(nextFaqs);
+    onNoviceContentChange(nextContent);
+  };
+
+  const handleNoviceFaqSubmit = (event) => {
+    event.preventDefault();
+    if (!canWriteNotes) return;
+    const question = newNoviceFaq.question.trim();
+    const answer = newNoviceFaq.answer.trim();
+    if (!question || !answer) return;
+    persistNoviceFaqs([
+      ...noviceFaqs,
+      { id: `faq-${Date.now()}`, question, answer },
+    ]);
+    setNewNoviceFaq({ question: "", answer: "" });
+  };
+
+  const updateNoviceFaq = (id, field, value) => {
+    persistNoviceFaqs(noviceFaqs.map((faq) => (
+      faq.id === id ? { ...faq, [field]: value } : faq
+    )));
+  };
+
+  const removeNoviceFaq = (faq) => {
+    requestDeleteConfirmation({
+      title: `Delete "${faq.question}"?`,
+      body: "This FAQ will be removed from the public Novice Hub.",
+      onConfirm: () => persistNoviceFaqs(noviceFaqs.filter((item) => item.id !== faq.id)),
+    });
   };
 
   const handleAgendaSubmit = (event) => {
@@ -3151,6 +3219,105 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
             </AnimatePresence>
           </Card>
 
+          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setNoviceFaqEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={noviceFaqEditorOpen}
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <CircleHelp className="text-[#CC0000]" />
+                  <Eyebrow>Budsite Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Novice Hub FAQ</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Add and edit basic debate questions shown publicly on the Novice Hub.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {noviceFaqEditorOpen ? "Close FAQ" : "Open FAQ"} <ChevronDown size={16} className={`transition ${noviceFaqEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {noviceFaqEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5 grid gap-4">
+                    <form onSubmit={handleNoviceFaqSubmit} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
+                      <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                        <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Question
+                          <input
+                            type="text"
+                            value={newNoviceFaq.question}
+                            onChange={(event) => setNewNoviceFaq((current) => ({ ...current, question: event.target.value }))}
+                            placeholder="What is a tight call?"
+                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                        <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Answer
+                          <textarea
+                            value={newNoviceFaq.answer}
+                            onChange={(event) => setNewNoviceFaq((current) => ({ ...current, answer: event.target.value }))}
+                            placeholder="Write the answer novices should see."
+                            rows={3}
+                            className="resize-none border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                        <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+                          Add FAQ
+                        </button>
+                      </fieldset>
+                    </form>
+
+                    <div className="grid gap-3">
+                      {noviceFaqs.map((faq) => (
+                        <div key={faq.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                          <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Question
+                              <input
+                                value={faq.question}
+                                onChange={(event) => updateNoviceFaq(faq.id, "question", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeNoviceFaq(faq)}
+                              className="grid h-10 w-10 place-items-center self-end border border-[#ded8d2] bg-white text-[#CC0000]"
+                              aria-label={`Remove ${faq.question}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Answer
+                            <textarea
+                              value={faq.answer}
+                              onChange={(event) => updateNoviceFaq(faq.id, "answer", event.target.value)}
+                              rows={3}
+                              className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
               <button
@@ -3512,6 +3679,7 @@ export default function App() {
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [trophiesContent, setTrophiesContent] = useState(() => getStoredTrophiesContent());
   const [meetingsContent, setMeetingsContent] = useState(() => getStoredMeetingsContent());
+  const [noviceContent, setNoviceContent] = useState(() => getStoredNoviceContent());
   const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
@@ -3532,9 +3700,10 @@ export default function App() {
     let ignore = false;
 
     async function hydrateSiteContent() {
-      const [databaseTrophiesContent, databaseMeetingsContent] = await Promise.all([
+      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent] = await Promise.all([
         loadTrophiesContent(),
         loadMeetingsContent(),
+        loadNoviceContent(),
       ]);
       if (ignore) return;
       if (databaseTrophiesContent) {
@@ -3544,6 +3713,10 @@ export default function App() {
       if (databaseMeetingsContent) {
         setMeetingsContent(databaseMeetingsContent);
         saveStoredMeetingsContent(databaseMeetingsContent);
+      }
+      if (databaseNoviceContent) {
+        setNoviceContent(databaseNoviceContent);
+        saveStoredNoviceContent(databaseNoviceContent);
       }
     }
 
@@ -3566,6 +3739,12 @@ export default function App() {
     upsertMeetingsContent(nextContent);
   }, []);
 
+  const updateNoviceContent = useCallback((nextContent) => {
+    setNoviceContent(nextContent);
+    saveStoredNoviceContent(nextContent);
+    upsertNoviceContent(nextContent);
+  }, []);
+
   const requestConfirmation = useCallback(({ title, body, actionLabel = "Delete", onConfirm }) => {
     setConfirmation({ title, body, actionLabel, onConfirm });
   }, []);
@@ -3582,7 +3761,7 @@ export default function App() {
       case "/about":
         return <AboutPage />;
       case "/novice-hub":
-        return <NoviceHubPage />;
+        return <NoviceHubPage noviceContent={noviceContent} />;
       case "/calendar":
         return <CalendarPage calendarEmbedUrl={calendarEmbedUrl} />;
       case "/meetings":
@@ -3600,7 +3779,7 @@ export default function App() {
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");
@@ -3608,7 +3787,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, meetingsContent, path, requestConfirmation, trophiesContent, updateMeetingsContent, updateTrophiesContent]);
+  }, [auth, calendarEmbedUrl, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
