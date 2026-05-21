@@ -148,13 +148,13 @@ function HomePage() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}>
-        <div className="overflow-hidden border border-[#2D2926]/90 bg-[#2D2926] text-white shadow-[0_18px_48px_rgba(45,41,38,0.12)]">
-          <div className="grid gap-0 sm:grid-cols-[0.82fr_1.18fr]">
-            <div className="flex min-h-48 flex-col justify-between bg-[#CC0000] p-6 text-white sm:min-h-[24rem] md:p-8">
+        <div className="min-h-[26rem] overflow-hidden border border-[#2D2926]/90 bg-[#2D2926] text-white shadow-[0_18px_48px_rgba(45,41,38,0.12)] sm:min-h-[31rem] lg:min-h-[33rem]">
+          <div className="grid h-full gap-0 sm:grid-cols-[0.82fr_1.18fr]">
+            <div className="flex min-h-48 flex-col justify-between bg-[#CC0000] p-6 text-white sm:min-h-[31rem] lg:min-h-[33rem] md:p-8">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-white/78">2026 national rank</p>
               <p className="text-[5rem] font-black leading-none tracking-tight sm:text-[6.5rem]">#4</p>
             </div>
-            <div className="grid content-center gap-7 p-6 md:p-8">
+            <div className="grid content-center gap-7 p-6 md:p-8 lg:p-10">
               <div>
                 <Eyebrow light>Format</Eyebrow>
                 <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA Parliamentary Debate</h2>
