@@ -2404,9 +2404,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
               >
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                   {group.links.map((link) => (
-                    <div key={link.id} className="group flex min-h-[20rem] flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_20px_55px_rgba(45,41,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,41,38,0.12)] sm:min-h-[25rem] sm:p-7">
-                      <div className="mb-10">
-                        <span className="inline-flex bg-[#CC0000] px-5 py-2 text-xs font-black uppercase tracking-[0.22em] text-white">
+                    <div key={link.id} className="group flex min-h-[16rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_16px_42px_rgba(45,41,38,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(45,41,38,0.11)] sm:min-h-[19rem] sm:p-5">
+                      <div className="mb-7">
+                        <span className="inline-flex bg-[#CC0000] px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
                           {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : "Team Link"}
                         </span>
                       </div>
@@ -2418,30 +2418,30 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
                               value={getMemberLinkTitleValue(link)}
                               onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
                               rows={2}
-                              className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-3xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
+                              className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
                             />
                           </label>
-                          <label className="mt-6 grid flex-1 gap-2">
+                          <label className="mt-4 grid flex-1 gap-2">
                             <span className="sr-only">Description</span>
                             <textarea
                               value={link.description}
                               onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                              rows={5}
-                              className="h-full min-h-32 resize-none border-0 bg-transparent p-0 text-lg font-medium leading-8 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
+                              rows={4}
+                              className="h-full min-h-24 resize-none border-0 bg-transparent p-0 text-base font-medium leading-7 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
                             />
                           </label>
                         </>
                       ) : (
                         <>
-                          <h3 className="break-words text-2xl font-black leading-tight tracking-normal text-[#2D2926] sm:text-3xl">
+                          <h3 className="break-words text-2xl font-black leading-tight tracking-normal text-[#2D2926]">
                             <MemberLinkTitle link={link} />
                           </h3>
-                          <p className="mt-5 flex-1 text-base font-medium leading-7 text-[#5b5450] sm:mt-6 sm:text-lg sm:leading-8">{link.description}</p>
+                          <p className="mt-4 flex-1 text-sm font-medium leading-6 text-[#5b5450] sm:text-base sm:leading-7">{link.description}</p>
                         </>
                       )}
-                      <div className="mt-7 grid gap-4">
-                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-sm font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-base sm:tracking-[0.18em]">
-                          Open link <ChevronRight className="transition group-hover:translate-x-1" size={20} />
+                      <div className="mt-5 grid gap-3">
+                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-sm sm:tracking-[0.14em]">
+                          Open link <ChevronRight className="transition group-hover:translate-x-1" size={18} />
                         </a>
                         {canEditMemberLinks && (
                           <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
