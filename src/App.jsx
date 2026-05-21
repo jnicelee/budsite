@@ -3029,7 +3029,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                       )}
                     </div>
             <div className="columns-1 gap-5 xl:columns-2">
-              <SmoothDetails title="Top Stats" defaultOpen className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <SmoothDetails title="Top Stats" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
                     <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
