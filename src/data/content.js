@@ -99,9 +99,9 @@ export const initialBudgetRows = [
 export const initialBudgetRevenueRows = [];
 
 export const accomplishments = [
-  "2025-26 COTY: #4 nationally, Semi-Finalist, 218.5 points",
-  "2024-25 COTY: #6 nationally, Quarter-Finalist, 156.5 points",
-  "2025-26 roster: 51 unique current members listed on APDA Results",
+  "2025-26 COTY: #4 nationally, 218.5 points",
+  "2024-25 COTY: #6 nationally, 156.5 points",
+  "100+ members on Terrier Central",
   "2025-26 COTY contributors: 11 BU debaters",
 ];
 
@@ -119,15 +119,15 @@ export const timeline = [
   {
     year: "2025-26",
     title: "The current team climbs to #4 nationally.",
-    copy: "The current APDA Results season lists Boston University as a COTY Semi-Finalist with 218.5 points.",
+    copy: "The current APDA Results season lists Boston University at #4 in COTY with 218.5 points.",
   },
 ];
 
 export const apdaHistoryStats = [
-  { value: "#4", label: "2025-26 COTY rank", detail: "Semi-Finalist, 218.5 points" },
-  { value: "51", label: "Current members", detail: "Unique 2025-26 BU roster names" },
+  { value: "#4", label: "2025-26 COTY rank", detail: "218.5 points" },
+  { value: "100+", label: "Current members", detail: "Members on Terrier Central" },
   { value: "11", label: "COTY contributors", detail: "Debaters with 2025-26 COTY points" },
-  { value: "#6", label: "2024-25 COTY rank", detail: "Quarter-Finalist, 156.5 points" },
+  { value: "#6", label: "2024-25 COTY rank", detail: "156.5 points" },
 ];
 
 export const apdaSourceUrl = "https://results.apda.online/core/schools/6?season=2025";
