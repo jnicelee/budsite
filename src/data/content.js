@@ -184,7 +184,7 @@ export const apdaChronologicalResults = [
     highlights: [
       "Boston University PC (Mimi Plawner and Oscar Cloutier Potter) places 2nd in Varsity Team.",
       "Boston University / Wellesley FC (Cassandra Fitts and Emma Chi) and Boston University LB (Janice Lee and Lucia Bronfman) reach Varsity Quarter-Finals.",
-      "Lucia Bronfman earns 3rd Novice Speaker; Cassandra Fitts and Oscar Cloutier Potter earn Varsity Speaker awards.",
+      "Lucia Bronfman earns 3rd Novice Speaker; Cassandra Fitts earns 8th Varsity Speaker; Oscar Cloutier Potter earns 10th Varsity Speaker.",
     ],
   },
   {
@@ -202,7 +202,7 @@ export const apdaChronologicalResults = [
     highlights: [
       "Boston University FP (Cassandra Fitts and Mimi Plawner) reaches Varsity Semi-Finals.",
       "Boston University LB (Janice Lee and Lucia Bronfman) wins Novice Team.",
-      "Lucia Bronfman, Janice Lee, Cassandra Fitts, Mimi Plawner, and Flo Arnado earn speaker awards.",
+      "Lucia Bronfman earns 2nd Novice Speaker and 5th Varsity Speaker; Janice Lee earns 3rd Novice Speaker and 7th Varsity Speaker; Cassandra Fitts earns 6th Varsity Speaker; Mimi Plawner earns 8th Varsity Speaker; Flo Arnado earns 10th Novice Speaker.",
     ],
   },
   {
@@ -251,7 +251,7 @@ export const apdaChronologicalResults = [
       "Boston University LB (Josh Lyons and Lucia Bronfman) wins Varsity Team.",
       "Boston University LS (Janice Lee and Yash Shetty) reaches Varsity Semi-Finals.",
       "Boston University CA (Oscar Cloutier Potter and Vishaal Arunprasad) reaches Varsity Quarter-Finals.",
-      "Yash Shetty, Oscar Cloutier Potter, Josh Lyons, and Lucia Bronfman earn speaker awards.",
+      "Yash Shetty earns 4th Varsity Speaker; Oscar Cloutier Potter earns 6th Varsity Speaker; Josh Lyons earns 10th Varsity Speaker; Lucia Bronfman earns 4th Novice Speaker.",
     ],
   },
   {
@@ -268,13 +268,13 @@ export const apdaChronologicalResults = [
     tournament: "Brown II",
     highlights: [
       "Boston University SL (Yash Shetty and Josh Lyons) reaches Varsity Quarter-Finals.",
-      "Lucia Bronfman and Vishaal Arunprasad earn Novice Speaker awards.",
+      "Lucia Bronfman earns 7th Novice Speaker; Vishaal Arunprasad earns 8th Novice Speaker.",
     ],
   },
   {
     date: "2026-03-13",
     tournament: "American II",
-    highlights: ["Lucia Bronfman and Janice Lee earn Novice Speaker awards."],
+    highlights: ["Lucia Bronfman earns 7th Novice Speaker; Janice Lee earns 8th Novice Speaker."],
   },
   {
     date: "2026-03-27",
@@ -282,7 +282,7 @@ export const apdaChronologicalResults = [
     highlights: [
       "Boston University HB (Allegra Hoddie and Lucia Bronfman) wins Novice Team.",
       "Boston University FS (Cassandra Fitts and Yash Shetty) reaches Varsity Quarter-Finals.",
-      "Lucia Bronfman and Campbell Haire earn Novice Speaker awards.",
+      "Lucia Bronfman earns 4th Novice Speaker; Campbell Haire earns 10th Novice Speaker.",
     ],
   },
   {
@@ -301,7 +301,7 @@ export const apdaChronologicalResults = [
     highlights: [
       "Boston University SL (Yash Shetty and Josh Lyons) reaches Varsity Semi-Finals.",
       "Boston University LB (Janice Lee and Lucia Bronfman) and Boston University HA (Max Hurowitz and Vishaal Arunprasad) reach Varsity Quarter-Finals.",
-      "Lucia Bronfman, Janice Lee, Oscar Cloutier Potter, and Josh Lyons earn speaker awards.",
+      "Lucia Bronfman earns 3rd Novice Speaker; Janice Lee earns 6th Novice Speaker; Oscar Cloutier Potter earns 4th Varsity Speaker; Josh Lyons earns 5th Varsity Speaker.",
     ],
   },
   {
@@ -338,7 +338,7 @@ export const currentMemberAchievements = [
   { name: "Josh Lyons", meta: "2nd year, Varsity", achievements: ["#8 TOTY with Yash Shetty", "#44 TOTY with Lucia Bronfman", "#19 SOTY", "Bates and Amherst ProAms: 1st Varsity Team"] },
   { name: "Kanchan Pothireddy", meta: "1st year, Novice", achievements: ["No 2025-26 APDA awards listed yet."] },
   { name: "Ling Lu", meta: "1st year, Varsity", achievements: ["No 2025-26 APDA awards listed yet."] },
-  { name: "Lucia Bronfman", meta: "1st year, Novice", achievements: ["#44, #77, and #92 TOTY entries", "Fordham, Wellesley, Northeastern: 1st Novice Team", "Brandeis II: 1st Varsity Team", "Multiple Novice and Varsity Speaker awards"] },
+  { name: "Lucia Bronfman", meta: "1st year, Novice", achievements: ["#44, #77, and #92 TOTY entries", "Fordham, Wellesley, Northeastern: 1st Novice Team", "Brandeis II: 1st Varsity Team", "Speaker awards include 1st Novice Speaker at Drexel II and Brandeis II, 5th Varsity Speaker at Wellesley, and 9th Varsity Speaker at Brandeis II"] },
   { name: "Max Hurowitz", meta: "2nd year, Varsity", achievements: ["#92 TOTY with Vishaal Arunprasad", "University of Massachusetts: Varsity Quarter-Finalist"] },
   { name: "Mimi Plawner", meta: "2nd year, Varsity", achievements: ["#27 TOTY with Oscar Cloutier Potter", "Wesleyan: 2nd Varsity Team", "Wellesley and University of Delaware: Varsity Semi-Finalist"] },
   { name: "Mollie Micinilio", meta: "1st year, Novice", achievements: ["No 2025-26 APDA awards listed yet."] },
@@ -361,9 +361,9 @@ export const currentMemberAchievements = [
   { name: "Tahalia Nira", meta: "2nd year, Varsity", achievements: ["No 2025-26 APDA awards listed yet."] },
   { name: "Thomas Sargent", meta: "1st year, Novice", achievements: ["No 2025-26 APDA awards listed yet."] },
   { name: "Thomas Suchowolec", meta: "1st year, Novice", achievements: ["No 2025-26 APDA awards listed yet."] },
-  { name: "Vishaal Arunprasad", meta: "1st year, Novice", achievements: ["#92 TOTY with Max Hurowitz", "Rutgers: 2nd Novice Team", "Amherst ProAms and University of Massachusetts: Varsity Quarter-Finalist", "Multiple Novice Speaker awards"] },
+  { name: "Vishaal Arunprasad", meta: "1st year, Novice", achievements: ["#92 TOTY with Max Hurowitz", "Rutgers: 2nd Novice Team", "Amherst ProAms and University of Massachusetts: Varsity Quarter-Finalist", "Novice Speaker awards include 6th at Brandeis II, 7th at Tufts, 8th at Brown II, and 9th at Yale"] },
   { name: "Vivaan Pagariya", meta: "1st year, Novice", achievements: ["No 2025-26 APDA awards listed yet."] },
-  { name: "Yash Shetty", meta: "2nd year, Varsity", achievements: ["#8 TOTY with Josh Lyons", "#20 SOTY", "Bates: 1st Varsity Team", "Multiple Varsity Speaker awards"] },
+  { name: "Yash Shetty", meta: "2nd year, Varsity", achievements: ["#8 TOTY with Josh Lyons", "#20 SOTY", "Bates: 1st Varsity Team", "Varsity Speaker awards include 1st at University of Delaware, 4th at Amherst ProAms, 6th at Fordham, 7th at Bates, and 8th at Williams"] },
   { name: "Zahi Wali Aadit", meta: "1st year, Varsity", achievements: ["No 2025-26 APDA awards listed yet."] },
   { name: "Zimo-Tracy Ge", meta: "2nd year, Varsity", achievements: ["No 2025-26 APDA awards listed yet."] },
 ];
