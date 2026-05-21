@@ -2376,9 +2376,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
         >
       {visibleTab === "member" && (
         <div>
-          <PageHeader eyebrow="Members Only" title="Private BUDS Links and Debate Resources.">
-            Use these team documents, forms, calendars, and APDA guides throughout the season.
-          </PageHeader>
+          <div className="mb-4 flex flex-col gap-1 border-l-4 border-[#CC0000] bg-white px-4 py-3 shadow-[0_12px_35px_rgba(45,41,38,0.06)] sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Members Only</p>
+              <h1 className="mt-1 text-2xl font-black leading-tight text-[#2D2926]">Private BUDS Links and Debate Resources</h1>
+            </div>
+            <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+              Team documents, forms, calendars, and APDA guides.
+            </p>
+          </div>
           <div className="grid gap-7">
             {memberLinksBySection.map((group) => (
               <section key={group.section} className="grid gap-3">
