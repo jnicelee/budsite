@@ -39,8 +39,11 @@ import {
 } from "./data/config";
 import {
   accomplishments,
-  alumni,
+  apdaChronologicalResults,
+  apdaHistoryStats,
+  apdaSourceUrl,
   board,
+  currentMemberAchievements,
   navItems,
   noviceResources,
   privateLinkSections,
@@ -505,9 +508,20 @@ function MeetingsPage({ auth }) {
 function HistoryPage() {
   return (
     <Page>
-      <PageHeader eyebrow="History" title="A Timeline That Can Grow with the Team.">
-        Add each year once you have records, photos, e-board names, and major results.
+      <PageHeader eyebrow="History" title="BU Debate Results, in APDA Order.">
+        Current season records pulled from APDA Results for Boston University and the 2025-26 roster.
       </PageHeader>
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {apdaHistoryStats.map((stat) => (
+          <Card key={stat.label} className="p-5">
+            <p className="text-4xl font-black leading-none text-[#CC0000]">{stat.value}</p>
+            <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#2D2926]">{stat.label}</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#5b5450]">{stat.detail}</p>
+          </Card>
+        ))}
+      </div>
+
       <div className="grid gap-5 md:grid-cols-3">
         {timeline.map((item) => (
           <Card key={item.year} className="border-t-8 border-t-[#CC0000]">
@@ -517,36 +531,82 @@ function HistoryPage() {
           </Card>
         ))}
       </div>
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <Card>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
+        <Card className="p-5 sm:p-6">
           <div className="mb-5 flex items-center gap-3">
             <Medal className="text-[#CC0000]" />
             <h2 className="min-w-0 break-words text-2xl font-black text-[#2D2926] sm:text-3xl">Accomplishments</h2>
           </div>
           <div className="grid gap-3">
             {accomplishments.map((item) => (
-              <div key={item} className="flex items-center justify-between border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+              <div key={item} className="flex items-start justify-between gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
                 <span className="font-bold text-[#2D2926]">{item}</span>
                 <ChevronRight size={18} className="text-[#CC0000]" />
               </div>
             ))}
           </div>
+          <a
+            href={apdaSourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]"
+          >
+            View APDA source <ExternalLink size={15} />
+          </a>
         </Card>
-        <Card>
+
+        <Card className="p-5 sm:p-6">
           <div className="mb-5 flex items-center gap-3">
-            <Sparkles className="text-[#CC0000]" />
-            <h2 className="text-3xl font-black text-[#2D2926]">Alumni</h2>
+            <Trophy className="text-[#CC0000]" />
+            <h2 className="text-3xl font-black text-[#2D2926]">2025-26 Results Timeline</h2>
           </div>
           <div className="grid gap-4">
-            {alumni.map((person) => (
-              <div key={person.name} className="border border-[#ded8d2] bg-white p-5">
-                <p className="font-black text-[#2D2926]">{person.name}</p>
-                <p className="mt-2 text-sm leading-6 text-[#5b5450]">{person.detail}</p>
+            {apdaChronologicalResults.map((result) => (
+              <div key={`${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                  <h3 className="text-xl font-black text-[#2D2926]">{result.tournament}</h3>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">{result.date}</p>
+                </div>
+                <ul className="mt-3 grid gap-2">
+                  {result.highlights.map((highlight) => (
+                    <li key={highlight} className="text-sm font-semibold leading-6 text-[#5b5450]">
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </Card>
       </div>
+
+      <section className="mt-6">
+        <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow>Current Members</Eyebrow>
+            <h2 className="mt-2 text-3xl font-black text-[#2D2926]">APDA Achievement Record</h2>
+          </div>
+          <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+            Each card reflects the current 2025-26 Boston University roster. Members with no listed award row are still recorded here as current roster members.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {currentMemberAchievements.map((member) => (
+            <Card key={member.name} className="p-5">
+              <p className="text-xl font-black leading-tight text-[#2D2926]">{member.name}</p>
+              <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">{member.meta}</p>
+              <ul className="mt-4 grid gap-2">
+                {member.achievements.map((achievement) => (
+                  <li key={achievement} className="border-t border-[#ded8d2] pt-2 text-sm font-semibold leading-6 text-[#5b5450]">
+                    {achievement}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </div>
+      </section>
     </Page>
   );
 }
