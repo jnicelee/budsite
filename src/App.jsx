@@ -2395,6 +2395,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
               <SmoothDetails
                 key={group.section}
                 className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+                defaultOpen={group.section === "BUDS Team Specific Links"}
                 title={(
                   <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
                     <span className="text-xl font-black text-[#2D2926]">{group.section}</span>
