@@ -1236,6 +1236,11 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
   const approvedBudgetRows = budget.rows.filter((row) => row.status === "Approved");
+  const getBudgetStatusClassName = (status) => {
+    if (status === "Approved") return "text-[#0b6b35]";
+    if (status === "Denied") return "text-[#8a0000]";
+    return "text-[#CC0000]";
+  };
   const totalSpent = approvedBudgetRows.reduce((sum, row) => sum + (Number(row.spent) || 0), 0);
   const totalAllocated = approvedBudgetRows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
   const totalRevenue = budget.revenueRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
@@ -2099,16 +2104,22 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <select
-                            value={BUDGET_STATUSES.includes(row.status) ? row.status : "On Hold"}
-                            onChange={(event) => updateBudgetRow(row.id, "status", event.target.value)}
-                            disabled={!canEdit}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-70"
-                          >
-                            {BUDGET_STATUSES.map((status) => (
-                              <option key={status} value={status}>{status}</option>
-                            ))}
-                          </select>
+                          {(() => {
+                            const currentStatus = BUDGET_STATUSES.includes(row.status) ? row.status : "On Hold";
+
+                            return (
+                              <select
+                                value={currentStatus}
+                                onChange={(event) => updateBudgetRow(row.id, "status", event.target.value)}
+                                disabled={!canEdit}
+                                className={`w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold outline-none focus:border-[#CC0000] disabled:opacity-70 ${getBudgetStatusClassName(currentStatus)}`}
+                              >
+                                {BUDGET_STATUSES.map((status) => (
+                                  <option key={status} value={status} className={getBudgetStatusClassName(status)}>{status}</option>
+                                ))}
+                              </select>
+                            );
+                          })()}
                         </td>
                       </tr>
                     ))}
