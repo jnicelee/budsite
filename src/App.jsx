@@ -752,15 +752,15 @@ function NoviceHubPage({ noviceContent }) {
       </PageHeader>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {noviceResources.map((resource) => (
-          <Card key={resource.title} className="group flex min-h-64 flex-col transition hover:-translate-y-1">
-            <span className="w-fit bg-[#CC0000] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white">{resource.tag}</span>
-            <h2 className="mt-6 text-2xl font-black leading-tight text-[#2D2926]">{resource.title}</h2>
-            <p className="mt-3 flex-1 text-sm leading-6 text-[#5b5450]">{resource.description}</p>
+          <Card key={resource.title} className="group flex min-h-52 flex-col p-4 transition hover:-translate-y-1 sm:p-5">
+            <span className="w-fit bg-[#CC0000] px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-white">{resource.tag}</span>
+            <h2 className="mt-4 text-xl font-black leading-tight text-[#2D2926]">{resource.title}</h2>
+            <p className="mt-2 flex-1 text-sm leading-6 text-[#5b5450]">{resource.description}</p>
             <a
               href={resource.url}
               target="_blank"
               rel="noreferrer"
-              className="mt-6 inline-flex items-center gap-2 text-left text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]"
+              className="mt-4 inline-flex items-center gap-2 text-left text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]"
             >
               Open link <ChevronRight className="transition group-hover:translate-x-1" size={16} />
             </a>
