@@ -233,6 +233,10 @@ function SmoothDetails({ title, children, className = "", defaultOpen = false })
   );
 }
 
+function sortResultSeasons(seasons = []) {
+  return [...seasons].sort((a, b) => b.id.localeCompare(a.id));
+}
+
 function AboutPage() {
   const aboutHighlights = [
     { value: "1999", label: "Modern BUDS era" },
@@ -656,6 +660,8 @@ function HistoryPage() {
 }
 
 function TrophiesPage({ trophiesContent }) {
+  const resultSeasons = sortResultSeasons(trophiesContent.resultSeasons || []);
+
   return (
     <Page>
       <PageHeader eyebrow="Trophies" title="BU Debate Results, in APDA Order.">
@@ -709,23 +715,35 @@ function TrophiesPage({ trophiesContent }) {
         <Card className="p-5 sm:p-6">
           <div className="mb-5 flex items-center gap-3">
             <Trophy className="text-[#CC0000]" />
-            <h2 className="text-3xl font-black text-[#2D2926]">2025-26 Results Timeline</h2>
+            <h2 className="text-3xl font-black text-[#2D2926]">Results Timelines</h2>
           </div>
-          <div className="grid gap-4">
-            {[...trophiesContent.results].reverse().map((result) => (
-              <div key={result.id || `${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-                  <h3 className="text-xl font-black text-[#2D2926]">{result.tournament}</h3>
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">{result.date}</p>
-                </div>
-                <ul className="mt-3 grid gap-2">
-                  {result.highlights.map((highlight) => (
-                    <li key={highlight} className="text-sm font-semibold leading-6 text-[#5b5450]">
-                      {highlight}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <div className="grid gap-3">
+            {resultSeasons.map((season, index) => (
+              <SmoothDetails key={season.id} title={season.label} defaultOpen={index === 0} className="border border-[#ded8d2] bg-white p-3">
+                {season.results.length === 0 ? (
+                  <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-4 text-sm font-bold text-[#5b5450]">
+                    No results logged yet.
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {[...season.results].reverse().map((result) => (
+                      <div key={result.id || `${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                          <h3 className="text-xl font-black text-[#2D2926]">{result.tournament}</h3>
+                          <p className="text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">{result.date}</p>
+                        </div>
+                        <ul className="mt-3 grid gap-2">
+                          {result.highlights.map((highlight) => (
+                            <li key={highlight} className="text-sm font-semibold leading-6 text-[#5b5450]">
+                              {highlight}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </SmoothDetails>
             ))}
           </div>
         </Card>
@@ -1255,6 +1273,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const [newTrophyAccomplishment, setNewTrophyAccomplishment] = useState("");
   const [newTrophyMilestone, setNewTrophyMilestone] = useState({ year: "", title: "", copy: "" });
   const [newTrophyResult, setNewTrophyResult] = useState({ date: "", tournament: "", highlights: "" });
+  const [selectedTrophySeasonId, setSelectedTrophySeasonId] = useState("");
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
@@ -1270,6 +1289,9 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const visibleTab = canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
+  const trophyResultSeasons = sortResultSeasons(trophiesContent.resultSeasons || []);
+  const selectedTrophySeason = trophyResultSeasons.find((season) => season.id === selectedTrophySeasonId) || trophyResultSeasons[0];
+  const selectedTrophySeasonIdValue = selectedTrophySeason?.id || "";
   const approvedBudgetRows = budget.rows.filter((row) => row.status === "Approved");
   const getBudgetStatusClassName = (status) => {
     if (status === "Approved") return "text-[#0b6b35]";
@@ -1617,14 +1639,21 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const addTrophyResult = (event) => {
     event.preventDefault();
     const highlights = newTrophyResult.highlights.split("\n").map((item) => item.trim()).filter(Boolean);
-    if (!newTrophyResult.date || !newTrophyResult.tournament.trim() || highlights.length === 0) return;
+    if (!selectedTrophySeasonIdValue || !newTrophyResult.date || !newTrophyResult.tournament.trim() || highlights.length === 0) return;
     const nextResult = {
       id: `result-${Date.now()}`,
       date: newTrophyResult.date,
       tournament: newTrophyResult.tournament.trim(),
       highlights,
     };
-    persistTrophiesContent((content) => ({ ...content, results: [...content.results, nextResult] }));
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? { ...season, results: [...season.results, nextResult] }
+          : season
+      )),
+    }));
     setNewTrophyResult({ date: "", tournament: "", highlights: "" });
   };
 
@@ -1656,13 +1685,47 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
     setNewTrophyMember({ name: "", meta: "", achievement: "" });
   };
 
+  const updateTrophyResult = (resultId, field, value) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? {
+            ...season,
+            results: season.results.map((result) => (
+              result.id === resultId ? { ...result, [field]: value } : result
+            )),
+          }
+          : season
+      )),
+    }));
+  };
+
+  const removeTrophyResult = (resultId) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? { ...season, results: season.results.filter((result) => result.id !== resultId) }
+          : season
+      )),
+    }));
+  };
+
   const updateTrophyResultHighlight = (resultId, highlightIndex, value) => {
     persistTrophiesContent((content) => ({
       ...content,
-      results: content.results.map((result) => (
-        result.id === resultId
-          ? { ...result, highlights: result.highlights.map((highlight, index) => (index === highlightIndex ? value : highlight)) }
-          : result
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? {
+            ...season,
+            results: season.results.map((result) => (
+              result.id === resultId
+                ? { ...result, highlights: result.highlights.map((highlight, index) => (index === highlightIndex ? value : highlight)) }
+                : result
+            )),
+          }
+          : season
       )),
     }));
   };
@@ -1670,10 +1733,17 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const removeTrophyResultHighlight = (resultId, highlightIndex) => {
     persistTrophiesContent((content) => ({
       ...content,
-      results: content.results.map((result) => (
-        result.id === resultId
-          ? { ...result, highlights: result.highlights.filter((_, index) => index !== highlightIndex) }
-          : result
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? {
+            ...season,
+            results: season.results.map((result) => (
+              result.id === resultId
+                ? { ...result, highlights: result.highlights.filter((_, index) => index !== highlightIndex) }
+                : result
+            )),
+          }
+          : season
       )),
     }));
   };
@@ -2493,6 +2563,18 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
             </div>
 
             <SmoothDetails title="Tournament Results Timeline" className="mt-5 border border-[#ded8d2] bg-white p-3">
+              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                Season
+                <select
+                  value={selectedTrophySeasonIdValue}
+                  onChange={(event) => setSelectedTrophySeasonId(event.target.value)}
+                  className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-bold normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                >
+                  {trophyResultSeasons.map((season) => (
+                    <option key={season.id} value={season.id}>{season.label}</option>
+                  ))}
+                </select>
+              </label>
               <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -2502,12 +2584,17 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                 <textarea value={newTrophyResult.highlights} onChange={(event) => setNewTrophyResult((current) => ({ ...current, highlights: event.target.value }))} placeholder="One highlight per line" rows={4} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
               </form>
               <div className="grid gap-2">
-                {[...trophiesContent.results].reverse().map((result) => (
+                {(selectedTrophySeason?.results || []).length === 0 && (
+                  <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
+                    No results logged for this season yet.
+                  </div>
+                )}
+                {[...(selectedTrophySeason?.results || [])].reverse().map((result) => (
                   <div key={result.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
                     <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
-                      <input type="date" value={result.date} onChange={(event) => updateTrophyItem("results", result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                      <input value={result.tournament} onChange={(event) => updateTrophyItem("results", result.id, "tournament", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("results", result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
+                      <input type="date" value={result.date} onChange={(event) => updateTrophyResult(result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                      <input value={result.tournament} onChange={(event) => updateTrophyResult(result.id, "tournament", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                      <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyResult(result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
                     </div>
                     {result.highlights.map((highlight, index) => (
                       <div key={`${result.id}-${index}`} className="grid gap-2 2xl:grid-cols-[1fr_auto]">

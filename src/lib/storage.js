@@ -148,6 +148,7 @@ export function saveStoredTrophiesContent(content) {
 
 export function normalizeTrophiesContent(content = defaultTrophiesContent) {
   const source = { ...defaultTrophiesContent, ...content };
+  const normalizedResultSeasons = normalizeResultSeasons(source);
   return {
     sourceUrl: source.sourceUrl || defaultTrophiesContent.sourceUrl,
     stats: normalizeTrophyItems(source.stats, (item, index) => ({
@@ -169,12 +170,8 @@ export function normalizeTrophiesContent(content = defaultTrophiesContent) {
         text: text || "",
       };
     }),
-    results: normalizeTrophyItems(source.results, (item, index) => ({
-      id: item.id || `result-${index}-${slugify(`${item.date || ""}-${item.tournament || "item"}`)}`,
-      date: item.date || "",
-      tournament: item.tournament || "",
-      highlights: Array.isArray(item.highlights) ? item.highlights.filter(Boolean) : [],
-    })),
+    resultSeasons: normalizedResultSeasons,
+    results: normalizedResultSeasons.find((season) => season.id === "2025-2026")?.results || normalizedResultSeasons[0]?.results || [],
     members: normalizeTrophyItems(source.members, (item, index) => ({
       id: item.id || `member-${index}-${slugify(item.name || "item")}`,
       name: item.name || "",
@@ -182,6 +179,54 @@ export function normalizeTrophiesContent(content = defaultTrophiesContent) {
       achievements: Array.isArray(item.achievements) ? item.achievements.filter(Boolean) : [],
     })),
   };
+}
+
+function normalizeResultSeasons(source) {
+  const legacyResults = normalizeResults(source.results || []);
+  const defaultSeasons = defaultTrophiesContent.resultSeasons || [];
+  const rawSeasons = Array.isArray(source.resultSeasons) && source.resultSeasons.length > 0
+    ? source.resultSeasons
+    : defaultSeasons;
+  const seasonMap = new Map();
+
+  rawSeasons.forEach((season, index) => {
+    const id = season.id || season.year || `season-${index}`;
+    seasonMap.set(id, {
+      id,
+      label: season.label || `${id} Results Timeline`,
+      results: normalizeResults(season.results || []),
+    });
+  });
+
+  if (legacyResults.length > 0) {
+    const existingSeason = seasonMap.get("2025-2026");
+    seasonMap.set("2025-2026", {
+      id: "2025-2026",
+      label: existingSeason?.label || "2025-26 Results Timeline",
+      results: existingSeason?.results?.length ? existingSeason.results : legacyResults,
+    });
+  }
+
+  defaultSeasons.forEach((season) => {
+    if (!seasonMap.has(season.id)) {
+      seasonMap.set(season.id, {
+        id: season.id,
+        label: season.label,
+        results: normalizeResults(season.results || []),
+      });
+    }
+  });
+
+  return [...seasonMap.values()].sort((a, b) => b.id.localeCompare(a.id));
+}
+
+function normalizeResults(results) {
+  return normalizeTrophyItems(results, (item, index) => ({
+      id: item.id || `result-${index}-${slugify(`${item.date || ""}-${item.tournament || "item"}`)}`,
+      date: item.date || "",
+      tournament: item.tournament || "",
+      highlights: Array.isArray(item.highlights) ? item.highlights.filter(Boolean) : [],
+    }));
 }
 
 function normalizeTrophyItems(items, normalizeItem) {

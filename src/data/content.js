@@ -373,6 +373,10 @@ export const defaultTrophiesContent = {
   stats: apdaHistoryStats,
   milestones: timeline,
   accomplishments,
+  resultSeasons: [
+    { id: "2026-2027", label: "2026-2027 Results Timeline", results: [] },
+    { id: "2025-2026", label: "2025-26 Results Timeline", results: apdaChronologicalResults },
+  ],
   results: apdaChronologicalResults,
   members: currentMemberAchievements,
 };
