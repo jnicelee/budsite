@@ -200,6 +200,39 @@ function ConfirmationModal({ confirmation, onCancel, onConfirm }) {
   );
 }
 
+function SmoothDetails({ title, children, className = "", defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className={className}>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 text-left text-lg font-black text-[#2D2926]"
+        aria-expanded={open}
+      >
+        <span>{title}</span>
+        <ChevronDown size={18} className={`shrink-0 transition duration-300 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="mt-3 grid gap-3">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 function AboutPage() {
   const aboutHighlights = [
     { value: "1999", label: "Modern BUDS era" },
@@ -2245,8 +2278,16 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                 </span>
               </button>
 
-              {notesEditorOpen && (
-                <div className="mt-5">
+              <AnimatePresence initial={false}>
+                {notesEditorOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-5">
                   <form onSubmit={handleNoteSubmit} className="grid gap-4">
                     <fieldset disabled={!canWriteNotes} className="grid gap-4 disabled:opacity-55">
                       <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
@@ -2310,8 +2351,10 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Card>
           </div>
 
@@ -2347,12 +2390,18 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
               </div>
             </div>
 
-            {trophyEditorOpen && (
-              <div className="mt-5">
+            <AnimatePresence initial={false}>
+              {trophyEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5">
             <div className="columns-1 gap-5 xl:columns-2">
-              <details className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3" open>
-                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Top Stats</summary>
-                <div className="mt-3 grid gap-3">
+              <SmoothDetails title="Top Stats" defaultOpen className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
                     <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -2371,12 +2420,9 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     </div>
                   ))}
                 </div>
-                </div>
-              </details>
+              </SmoothDetails>
 
-              <details className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
-                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Accomplishments List</summary>
-                <div className="mt-3 grid gap-3">
+              <SmoothDetails title="Accomplishments List" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3 2xl:grid-cols-[1fr_auto]">
                   <input value={newTrophyAccomplishment} onChange={(event) => setNewTrophyAccomplishment(event.target.value)} placeholder="Add accomplishment line" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
@@ -2389,12 +2435,9 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     </div>
                   ))}
                 </div>
-                </div>
-              </details>
+              </SmoothDetails>
 
-              <details className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
-                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Milestone Cards</summary>
-                <div className="mt-3 grid gap-3">
+              <SmoothDetails title="Milestone Cards" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                     <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -2415,12 +2458,9 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     </div>
                   ))}
                 </div>
-                </div>
-              </details>
+              </SmoothDetails>
 
-              <details className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
-                <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Current Member Achievements</summary>
-                <div className="mt-3 grid gap-3">
+              <SmoothDetails title="Current Member Achievements" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
                     <input value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} placeholder="Member name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -2446,13 +2486,10 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     </div>
                   ))}
                 </div>
-                </div>
-              </details>
+              </SmoothDetails>
             </div>
 
-            <details className="mt-5 border border-[#ded8d2] bg-white p-3">
-              <summary className="cursor-pointer text-lg font-black text-[#2D2926]">Tournament Results Timeline</summary>
-              <div className="mt-3 grid gap-3">
+            <SmoothDetails title="Tournament Results Timeline" className="mt-5 border border-[#ded8d2] bg-white p-3">
               <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -2478,10 +2515,11 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                   </div>
                 ))}
               </div>
-              </div>
-            </details>
-              </div>
-            )}
+            </SmoothDetails>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
         </div>
       )}
