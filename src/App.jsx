@@ -1102,7 +1102,7 @@ function TrophiesPage({ trophiesContent }) {
               <p className="text-xl font-black leading-tight text-[#2D2926]">{member.name}</p>
               <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">{member.meta}</p>
               <SmoothDetails
-                title={`${member.achievements.length} ${member.achievements.length === 1 ? "Achievement" : "Achievements"}`}
+                title="Achievements"
                 className="mt-4 border-t border-[#ded8d2] pt-3"
               >
                 <ul className="grid gap-2">
