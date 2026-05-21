@@ -851,9 +851,6 @@ function NoviceHubPage({ noviceContent }) {
             <Eyebrow>Novice FAQ</Eyebrow>
             <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Common First-Round Questions</h2>
           </div>
-          <span className="self-start border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#6d6560] sm:self-center">
-            E-board editable
-          </span>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           {noviceContent.faqs.map((faq, index) => (
