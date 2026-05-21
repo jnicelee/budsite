@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 import { PhotoCarousel } from "./components/PhotoCarousel";
+import { fetchApdaPreviewProposal } from "../api/apda-preview";
 import {
   Card,
   Eyebrow,
@@ -2045,8 +2046,10 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
     try {
       const currentSeason = selectedTrophySeasonIdValue ? selectedTrophySeasonIdValue.slice(0, 4) : "";
       const response = await fetch(`/api/apda-preview${currentSeason ? `?season=${encodeURIComponent(currentSeason)}` : ""}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || data.error || "APDA update failed.");
+      const contentType = response.headers.get("content-type") || "";
+      const data = response.ok && contentType.includes("application/json")
+        ? await response.json()
+        : await fetchApdaPreviewProposal(currentSeason);
       setApdaUpdatePreview(data);
       setApdaUpdateStatus({
         state: "ready",

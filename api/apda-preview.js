@@ -210,6 +210,17 @@ function buildContentProposal(schoolDetail, debaterDetails) {
   };
 }
 
+export async function fetchApdaPreviewProposal(requestedSeason = "") {
+  const schoolPath = `/api/schools/${BU_SCHOOL_ID}/detail/${requestedSeason ? `?season=${encodeURIComponent(requestedSeason)}` : ""}`;
+  const schoolDetail = await fetchJson(schoolPath);
+  const members = schoolDetail.season_summary?.members || [];
+  const debaterDetails = await mapWithConcurrency(members, 5, (member) => (
+    fetchJson(`/api/debaters/${member.debater.id}/detail/?season=${encodeURIComponent(schoolDetail.season)}`)
+  ));
+
+  return buildContentProposal(schoolDetail, debaterDetails);
+}
+
 export default async function handler(request, response) {
   if (request.method !== "GET") {
     response.setHeader("Allow", "GET");
@@ -220,14 +231,7 @@ export default async function handler(request, response) {
   try {
     const requestedUrl = new URL(request.url || "/", "https://budsite.local");
     const requestedSeason = request.query?.season || requestedUrl.searchParams.get("season") || "";
-    const schoolPath = `/api/schools/${BU_SCHOOL_ID}/detail/${requestedSeason ? `?season=${encodeURIComponent(requestedSeason)}` : ""}`;
-    const schoolDetail = await fetchJson(schoolPath);
-    const members = schoolDetail.season_summary?.members || [];
-    const debaterDetails = await mapWithConcurrency(members, 5, (member) => (
-      fetchJson(`/api/debaters/${member.debater.id}/detail/?season=${encodeURIComponent(schoolDetail.season)}`)
-    ));
-
-    response.status(200).json(buildContentProposal(schoolDetail, debaterDetails));
+    response.status(200).json(await fetchApdaPreviewProposal(requestedSeason));
   } catch (error) {
     response.status(502).json({
       error: "Could not pull APDA standings safely.",
