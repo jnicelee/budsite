@@ -99,9 +99,9 @@ export const initialBudgetRows = [
 export const initialBudgetRevenueRows = [];
 
 export const accomplishments = [
+  "100+ members on Terrier Central",
   "2025-26 COTY: #4 nationally, 218.5 points",
   "2024-25 COTY: #6 nationally, 156.5 points",
-  "100+ members on Terrier Central",
   "2025-26 COTY contributors: 11 BU debaters",
 ];
 
