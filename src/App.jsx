@@ -2062,7 +2062,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-auto pr-1">
+              <div className="min-h-0 max-h-[24rem] flex-1 overflow-auto pr-1">
                 <table className="w-full min-w-[38rem] border-collapse text-left text-sm">
                   <thead className="sticky top-0 bg-[#2D2926] text-white">
                     <tr>
@@ -2170,7 +2170,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     Add Money
                   </button>
                 </form>
-                <div className="mt-3 grid gap-2">
+                <div className="mt-3 grid max-h-52 gap-2 overflow-y-auto pr-1">
                   {(budget.revenueRows || []).length === 0 && (
                     <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
                       No Revenue Logged Yet.
