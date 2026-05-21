@@ -36,6 +36,21 @@ function formatSpeakerResult(result) {
   return `${result.debater?.name} earns ${ordinal(result.place)} ${type} Speaker.`;
 }
 
+function divisionPrestige(type = "") {
+  return type === "Varsity" ? 0 : type === "Novice" ? 1 : 2;
+}
+
+function awardPrestige(award) {
+  const result = award.result || {};
+  const kindRank = award.kind === "team" ? 0 : 1;
+  const placeRank = Number(result.place) || 999;
+  return (kindRank * 1000) + (divisionPrestige(result.type) * 100) + placeRank;
+}
+
+function sortAwardsByPrestige(awards) {
+  return [...awards].sort((a, b) => awardPrestige(a) - awardPrestige(b) || a.text.localeCompare(b.text));
+}
+
 async function fetchJson(path) {
   const response = await fetch(`${APDA_BASE_URL}${path}`, {
     headers: { Accept: "application/json" },
@@ -69,8 +84,8 @@ function mergeTournamentAward(tournamentMap, tournament, award) {
     teamAwards: new Map(),
     speakerAwards: new Map(),
   };
-  if (award.kind === "team") current.teamAwards.set(award.id, award.text);
-  if (award.kind === "speaker") current.speakerAwards.set(award.id, award.text);
+  if (award.kind === "team") current.teamAwards.set(award.id, award);
+  if (award.kind === "speaker") current.speakerAwards.set(award.id, award);
   tournamentMap.set(tournament.id, current);
 }
 
@@ -125,6 +140,7 @@ function buildContentProposal(schoolDetail, debaterDetails) {
           kind: "team",
           id: result.id,
           text: formatTeamResult(result),
+          result,
         });
       });
       (entry.speaker_results || []).forEach((result) => {
@@ -133,6 +149,7 @@ function buildContentProposal(schoolDetail, debaterDetails) {
           kind: "speaker",
           id: result.id,
           text: formatSpeakerResult(result),
+          result,
         });
       });
     });
@@ -143,7 +160,7 @@ function buildContentProposal(schoolDetail, debaterDetails) {
       id: entry.id,
       date: entry.date,
       tournament: entry.tournament,
-      highlights: [...entry.teamAwards.values(), ...entry.speakerAwards.values()],
+      highlights: sortAwardsByPrestige([...entry.teamAwards.values(), ...entry.speakerAwards.values()]).map((award) => award.text),
     }))
     .filter((entry) => entry.highlights.length > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
