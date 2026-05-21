@@ -1228,7 +1228,8 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
-  const canEdit = isAdmin;
+  const canEditWorkspace = isEboard;
+  const canEditMemberLinks = isAdmin;
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
   const canUsePrivateTabs = isEboard || canManageMembers;
@@ -1334,7 +1335,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
 
   const handleAgendaSubmit = (event) => {
     event.preventDefault();
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     const text = newAgendaText.trim();
     if (!text) return;
 
@@ -1356,7 +1357,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   };
 
   const completeAgendaItem = (item) => {
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     const completed_at = item.completed_at ? null : new Date().toISOString();
     const updatedItem = { ...item, completed_at };
     const nextAgenda = agenda.map((agendaItem) => (
@@ -1373,7 +1374,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   };
 
   const undoAgendaDelete = () => {
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     if (!lastDeletedAgendaItem) return;
     const restoredItem = { ...lastDeletedAgendaItem, completed_at: null };
     const itemStillExists = agenda.some((agendaItem) => agendaItem.id === restoredItem.id);
@@ -1389,7 +1390,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   };
 
   const removeAgendaItem = (item) => {
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     requestDeleteConfirmation({
       title: `Delete ${item.text}?`,
       body: "This agenda item will be removed from the workspace.",
@@ -1409,14 +1410,14 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   };
 
   const updateBudgetTotal = (total) => {
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     const nextBudget = { ...budget, total };
     updateBudget(nextBudget);
     upsertBudgetSettings(total);
   };
 
   const updateBudgetRow = (id, field, value) => {
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     if (field === "status" && value === "Denied") {
       const row = budget.rows.find((budgetRow) => budgetRow.id === id);
       requestDeleteConfirmation({
@@ -1449,7 +1450,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
 
   const addBudgetRow = (event) => {
     event.preventDefault();
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     const category = newBudgetCategory.trim();
     if (!category) return;
 
@@ -1467,7 +1468,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
 
   const addBudgetRevenueRow = (event) => {
     event.preventDefault();
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     const category = newRevenueCategory.trim();
     const amount = Number(newRevenueAmount);
     if (!category || amount <= 0) return;
@@ -1487,7 +1488,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   };
 
   const removeBudgetRevenueRow = (id) => {
-    if (!canEdit) return;
+    if (!canEditWorkspace) return;
     const row = (budget.revenueRows || []).find((revenueRow) => revenueRow.id === id);
     requestDeleteConfirmation({
       title: `Delete ${row?.category || "this revenue item"}?`,
@@ -1504,7 +1505,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   };
 
   const updateMemberLink = (id, field, value) => {
-    if (!canEdit) return;
+    if (!canEditMemberLinks) return;
     const nextLinks = memberLinks.map((link) => (
       link.id === id ? { ...link, [field]: value } : link
     ));
@@ -1793,7 +1794,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                           {group.section === "Debater Resources" ? "Resource" : "Team Link"}
                         </span>
                       </div>
-                      {canEdit ? (
+                      {canEditMemberLinks ? (
                         <>
                           <label className="grid gap-2">
                             <span className="sr-only">Link Name</span>
@@ -1826,7 +1827,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                         <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 text-sm font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-base sm:tracking-[0.18em]">
                           Open link <ChevronRight className="transition group-hover:translate-x-1" size={20} />
                         </a>
-                        {canEdit && (
+                        {canEditMemberLinks && (
                           <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
                             Edit URL
                             <input
@@ -1950,7 +1951,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                 <button
                   type="button"
                   onClick={undoAgendaDelete}
-                  disabled={!canEdit || !lastDeletedAgendaItem}
+                  disabled={!canEditWorkspace || !lastDeletedAgendaItem}
                   className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Undo
@@ -1958,12 +1959,12 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
               </div>
 
               <form onSubmit={handleAgendaSubmit} className="mb-4 grid gap-2">
-                <fieldset disabled={!canEdit} className="grid gap-2 disabled:opacity-55">
+                <fieldset disabled={!canEditWorkspace} className="grid gap-2 disabled:opacity-55">
                   <input
                     type="text"
                     value={newAgendaText}
                     onChange={(event) => setNewAgendaText(event.target.value)}
-                    placeholder={canEdit ? "Add agenda item or accountability task" : "Administrator-only editing"}
+                    placeholder={canEditWorkspace ? "Add agenda item or accountability task" : "E-board-only editing"}
                     className="border border-[#ded8d2] px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
                   />
                   <div className="grid gap-2 sm:grid-cols-[1fr_0.75fr_auto]">
@@ -2003,7 +2004,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                             type="checkbox"
                             checked={isComplete}
                             onChange={() => completeAgendaItem(item)}
-                            disabled={!canEdit}
+                            disabled={!canEditWorkspace}
                             className="mt-1 h-4 w-4 shrink-0 accent-[#CC0000]"
                           />
                           <span className="min-w-0">
@@ -2021,7 +2022,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                         <button
                           type="button"
                           onClick={() => removeAgendaItem(item)}
-                          disabled={!canEdit}
+                          disabled={!canEditWorkspace}
                           aria-label={`Delete ${item.text}`}
                           className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center border border-[#c9c2bc] bg-white text-[#6d6560] opacity-0 transition hover:border-[#CC0000] hover:text-[#CC0000] focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-0 group-hover:opacity-100"
                         >
@@ -2047,7 +2048,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     min="0"
                     value={budget.total}
                     onChange={(event) => updateBudgetTotal(Number(event.target.value))}
-                    disabled={!canEdit}
+                    disabled={!canEditWorkspace}
                     className="w-full bg-transparent text-2xl font-black outline-none disabled:opacity-70"
                   />
                 </label>
@@ -2079,7 +2080,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                             type="text"
                             value={row.category}
                             onChange={(event) => updateBudgetRow(row.id, "category", event.target.value)}
-                            disabled={!canEdit}
+                            disabled={!canEditWorkspace}
                             className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#2D2926] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
@@ -2089,7 +2090,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                             min="0"
                             value={row.allocated}
                             onChange={(event) => updateBudgetRow(row.id, "allocated", event.target.value)}
-                            disabled={!canEdit}
+                            disabled={!canEditWorkspace}
                             className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
@@ -2099,7 +2100,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                             min="0"
                             value={row.spent}
                             onChange={(event) => updateBudgetRow(row.id, "spent", event.target.value)}
-                            disabled={!canEdit}
+                            disabled={!canEditWorkspace}
                             className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
@@ -2111,7 +2112,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                               <select
                                 value={currentStatus}
                                 onChange={(event) => updateBudgetRow(row.id, "status", event.target.value)}
-                                disabled={!canEdit}
+                                disabled={!canEditWorkspace}
                                 className={`w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold outline-none focus:border-[#CC0000] disabled:opacity-70 ${getBudgetStatusClassName(currentStatus)}`}
                               >
                                 {BUDGET_STATUSES.map((status) => (
@@ -2131,11 +2132,11 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                   type="text"
                   value={newBudgetCategory}
                   onChange={(event) => setNewBudgetCategory(event.target.value)}
-                  placeholder={canEdit ? "New budget category" : "Administrator-only editing"}
-                  disabled={!canEdit}
+                  placeholder={canEditWorkspace ? "New budget category" : "E-board-only editing"}
+                  disabled={!canEditWorkspace}
                   className="min-w-0 flex-1 border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
                 />
-                <button type="submit" disabled={!canEdit} className="bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-40">
+                <button type="submit" disabled={!canEditWorkspace} className="bg-[#CC0000] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-40">
                   Add
                 </button>
               </form>
@@ -2152,8 +2153,8 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     type="text"
                     value={newRevenueCategory}
                     onChange={(event) => setNewRevenueCategory(event.target.value)}
-                    placeholder={canEdit ? "Revenue category, e.g. Hosted tournament" : "Administrator-only editing"}
-                    disabled={!canEdit}
+                    placeholder={canEditWorkspace ? "Revenue category, e.g. Hosted tournament" : "E-board-only editing"}
+                    disabled={!canEditWorkspace}
                     className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
                   />
                   <input
@@ -2162,10 +2163,10 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     value={newRevenueAmount}
                     onChange={(event) => setNewRevenueAmount(event.target.value)}
                     placeholder="Amount"
-                    disabled={!canEdit}
+                    disabled={!canEditWorkspace}
                     className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
                   />
-                  <button type="submit" disabled={!canEdit} className="bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-40">
+                  <button type="submit" disabled={!canEditWorkspace} className="bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:opacity-40">
                     Add Money
                   </button>
                 </form>
@@ -2184,7 +2185,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                       <button
                         type="button"
                         onClick={() => removeBudgetRevenueRow(row.id)}
-                        disabled={!canEdit}
+                        disabled={!canEditWorkspace}
                         aria-label={`Remove ${row.category} revenue`}
                         className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-[#b7d9c4] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
                       >
