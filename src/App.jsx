@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
 import { PhotoCarousel } from "./components/PhotoCarousel";
-import { fetchApdaPreviewProposal } from "../api/apda-preview";
 import {
   Card,
   Eyebrow,
@@ -2047,9 +2046,13 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
       const currentSeason = selectedTrophySeasonIdValue ? selectedTrophySeasonIdValue.slice(0, 4) : "";
       const response = await fetch(`/api/apda-preview${currentSeason ? `?season=${encodeURIComponent(currentSeason)}` : ""}`);
       const contentType = response.headers.get("content-type") || "";
-      const data = response.ok && contentType.includes("application/json")
-        ? await response.json()
-        : await fetchApdaPreviewProposal(currentSeason);
+      if (!response.ok || !contentType.includes("application/json")) {
+        const responseText = await response.text();
+        throw new Error(responseText.includes("const APDA")
+          ? "The APDA updater API is not running yet. Refresh after the latest deploy finishes, then try again."
+          : "The APDA updater returned an unexpected response. Please try again after refreshing.");
+      }
+      const data = await response.json();
       setApdaUpdatePreview(data);
       setApdaUpdateStatus({
         state: "ready",
