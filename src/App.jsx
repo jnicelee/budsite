@@ -791,6 +791,7 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
       .map((post, index) => [post.id, String(index + 1).padStart(2, "0")])
   );
   const latestMeetingLabel = sortedPosts[0]?.date ? formatMeetingDate(sortedPosts[0].date) : "None yet";
+  const announcementBody = meetingsContent.announcementBody.trim() || "No announcements right now. Check back soon for meeting updates.";
 
   useEffect(() => {
     let ignore = false;
@@ -850,15 +851,15 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
               <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Latest Update</p>
             </div>
           </div>
-          <div className="border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)]">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Announcements</p>
-            <h2 className="mt-2 text-2xl font-black leading-tight text-[#2D2926]">{meetingsContent.announcementTitle}</h2>
-            <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#5b5450]">{meetingsContent.announcementBody}</p>
-            {meetingsContent.announcementUpdatedAt && (
-              <p className="mt-4 text-xs font-black uppercase tracking-[0.12em] text-[#6d6560]">
-                Updated {formatMeetingDate(meetingsContent.announcementUpdatedAt)}
-              </p>
-            )}
+          <div className="flex min-h-44 flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)]">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Announcements</p>
+              <h2 className="mt-2 text-2xl font-black leading-tight text-[#2D2926]">{meetingsContent.announcementTitle}</h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#5b5450]">{announcementBody}</p>
+            </div>
+            <p className="mt-auto pt-4 text-xs font-black uppercase tracking-[0.12em] text-[#6d6560]">
+              {meetingsContent.announcementUpdatedAt ? `Updated ${formatMeetingDate(meetingsContent.announcementUpdatedAt)}` : "No update posted yet"}
+            </p>
           </div>
         </div>
       </div>
