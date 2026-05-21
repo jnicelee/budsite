@@ -5,10 +5,12 @@ import {
   Bold,
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   ClipboardList,
   DollarSign,
   ExternalLink,
   FileText,
+  Gavel,
   Italic,
   Link2,
   List,
@@ -19,7 +21,9 @@ import {
   MapPin,
   Medal,
   Menu,
+  Mic2,
   RefreshCw,
+  ScrollText,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -729,6 +733,75 @@ function AboutPage() {
 }
 
 function NoviceHubPage() {
+  const apdaSpeechSteps = [
+    {
+      order: 1,
+      side: "gov",
+      title: "Reading of Case Statement",
+      time: "10 sec - 1 min",
+      icon: FileText,
+      copy: "The Prime Minister reads the case title, a short setup, and what the judge is being asked to vote for.",
+    },
+    {
+      order: 2,
+      side: "opp",
+      title: "Points of Clarification",
+      time: "Up to 15 min",
+      icon: CircleHelp,
+      copy: "Both teams ask questions to clarify the case. Government answers, but no arguments are made yet.",
+    },
+    {
+      order: 3,
+      side: "gov",
+      title: "Prime Minister Constructive",
+      time: "7 min, 30 sec grace",
+      icon: Mic2,
+      copy: "Government defines terms, explains the plan, and gives the main reasons the case should win.",
+    },
+    {
+      order: 4,
+      side: "opp",
+      title: "Leader of Opposition Constructive",
+      time: "8 min, 30 sec grace",
+      icon: Mic2,
+      copy: "Opposition responds to the case, challenges framing, and gives independent reasons to reject it.",
+    },
+    {
+      order: 5,
+      side: "gov",
+      title: "Member of Government",
+      time: "8 min, 30 sec grace",
+      icon: Mic2,
+      copy: "Government extends the case with new material, answers opposition arguments, and weighs the debate.",
+    },
+    {
+      order: 6,
+      side: "opp",
+      title: "Member of Opposition",
+      time: "8 min, 30 sec grace",
+      icon: Mic2,
+      copy: "Opposition adds new offense, rebuilds earlier points, and explains why government has not met its burden.",
+    },
+    {
+      order: 7,
+      side: "opp",
+      title: "Leader of Opposition Rebuttal",
+      time: "4 min, 30 sec grace",
+      icon: ScrollText,
+      copy: "Opposition summarizes the round and compares the strongest reasons to vote against the case.",
+      note: "Rebuttals cannot introduce new arguments.",
+    },
+    {
+      order: 8,
+      side: "gov",
+      title: "Prime Minister Rebuttal",
+      time: "5 min, 30 sec grace",
+      icon: ScrollText,
+      copy: "Government gets the final word: rebuild, answer the last opposition points, and explain why the case wins.",
+      note: "Rebuttals cannot introduce new arguments.",
+    },
+  ];
+
   return (
     <Page>
       <PageHeader eyebrow="Novice Hub" title="A Cleaner Path from First Practice to First Tournament.">
@@ -751,6 +824,84 @@ function NoviceHubPage() {
           </Card>
         ))}
       </div>
+      <section className="mt-6 overflow-hidden border border-[#ded8d2] bg-white p-5 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-7 md:p-9">
+        <div className="mx-auto max-w-5xl text-center">
+          <Eyebrow>APDA Basics</Eyebrow>
+          <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926] md:text-5xl">APDA Speech Order</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#5b5450] md:text-base md:leading-7">
+            A quick map of who speaks when in a standard APDA cases round.
+          </p>
+          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+            <span className="inline-flex items-center justify-center gap-2 border border-[#b7cff8] bg-[#eef5ff] px-4 py-2 text-sm font-black text-[#135fbe]">
+              <span className="h-3 w-3 bg-[#1d67c4]" /> Government: prepared case
+            </span>
+            <span className="inline-flex items-center justify-center gap-2 border border-[#f0b7b7] bg-[#fff1f1] px-4 py-2 text-sm font-black text-[#b31313]">
+              <span className="h-3 w-3 bg-[#CC0000]" /> Opposition: no prep
+            </span>
+          </div>
+        </div>
+
+        <div className="relative mx-auto mt-8 grid max-w-6xl gap-4 md:mt-10 md:gap-6">
+          <div className="pointer-events-none absolute left-8 top-0 hidden h-full border-l-2 border-dashed border-[#cfd5dd] md:left-1/2 md:block" />
+          {apdaSpeechSteps.map((step) => {
+            const Icon = step.icon;
+            const isGov = step.side === "gov";
+            const speechCard = (
+              <article className={`relative grid min-h-full gap-3 border p-4 shadow-[0_12px_34px_rgba(45,41,38,0.06)] sm:grid-cols-[3.5rem_1fr] sm:p-5 ${
+                isGov ? "border-[#a9c7f5] bg-[#f4f8ff]" : "border-[#f0b7b7] bg-[#fff6f6]"
+              }`}>
+                <span className={`absolute right-3 top-3 grid h-8 w-8 place-items-center text-sm font-black text-white md:hidden ${isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"}`}>
+                  {step.order}
+                </span>
+                <div className={`grid h-12 w-12 place-items-center self-start ${
+                  isGov ? "bg-[#1d67c4] text-white" : "bg-[#CC0000] text-white"
+                }`}>
+                  <Icon size={24} />
+                </div>
+                <div className="pr-9 md:pr-0">
+                  <h3 className="text-lg font-black leading-tight text-[#202020]">{step.title}</h3>
+                  <p className={`mt-2 inline-flex px-3 py-1 text-xs font-black ${
+                    isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
+                  }`}>
+                    {step.time}
+                  </p>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-[#403a36]">{step.copy}</p>
+                  {step.note && (
+                    <p className="mt-3 border border-[#f4d690] bg-[#fff5d6] px-3 py-2 text-xs font-black text-[#6d4a00]">
+                      {step.note}
+                    </p>
+                  )}
+                </div>
+              </article>
+            );
+            return (
+              <div key={step.order} className="grid gap-3 md:grid-cols-[1fr_4rem_1fr] md:items-center">
+                <div>{isGov ? speechCard : null}</div>
+                <div className="hidden items-center justify-center md:col-start-2 md:flex">
+                  <span className={`relative z-10 grid h-11 w-11 place-items-center border-4 border-white text-lg font-black text-white shadow-[0_10px_25px_rgba(45,41,38,0.16)] ${
+                    isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"
+                  }`}>
+                    {step.order}
+                  </span>
+                </div>
+                <div>{isGov ? null : speechCard}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mx-auto mt-5 flex max-w-6xl items-start gap-4 border border-[#f1d38a] bg-[#fff8df] p-4 text-[#2D2926] sm:items-center sm:p-5">
+          <div className="grid h-11 w-11 shrink-0 place-items-center bg-[#f1aa1d] text-white">
+            <Gavel size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-black">The Judge Decides</h3>
+            <p className="mt-1 text-sm font-semibold leading-6 text-[#5b5450]">
+              After every speech, the judge compares which side gave the more convincing, better supported, and better weighed reasons.
+            </p>
+          </div>
+        </div>
+      </section>
       <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
