@@ -189,6 +189,16 @@ export function normalizeMeetingsContent(content = defaultMeetingsContent) {
 export function normalizeNoviceContent(content = defaultNoviceContent) {
   const source = { ...defaultNoviceContent, ...content };
   return {
+    speechSteps: normalizeTrophyItems(source.speechSteps, (item, index) => ({
+      id: item.id || `speech-${index}-${slugify(item.title || "item")}`,
+      order: Number(item.order) || index + 1,
+      side: item.side === "opp" ? "opp" : "gov",
+      title: item.title || "",
+      time: item.time || "",
+      icon: item.icon || "mic",
+      copy: item.copy || "",
+      note: item.note || "",
+    })).sort((a, b) => a.order - b.order),
     faqs: normalizeTrophyItems(source.faqs, (item, index) => ({
       id: item.id || `faq-${index}-${slugify(item.question || "item")}`,
       question: item.question || "",

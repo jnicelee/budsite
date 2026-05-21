@@ -737,74 +737,13 @@ function AboutPage() {
 }
 
 function NoviceHubPage({ noviceContent }) {
-  const apdaSpeechSteps = [
-    {
-      order: 1,
-      side: "gov",
-      title: "Reading of Case Statement",
-      time: "10 sec - 1 min",
-      icon: FileText,
-      copy: "The Prime Minister reads the case title, a short setup, and what the judge is being asked to vote for.",
-    },
-    {
-      order: 2,
-      side: "opp",
-      title: "Points of Clarification",
-      time: "Up to 15 min",
-      icon: CircleHelp,
-      copy: "Both teams ask questions to clarify the case. Government answers, but no arguments are made yet.",
-    },
-    {
-      order: 3,
-      side: "gov",
-      title: "Prime Minister Constructive",
-      time: "7 min, 30 sec grace",
-      icon: Mic2,
-      copy: "Government defines terms, explains the plan, and gives the main reasons the case should win.",
-    },
-    {
-      order: 4,
-      side: "opp",
-      title: "Leader of Opposition Constructive",
-      time: "8 min, 30 sec grace",
-      icon: Mic2,
-      copy: "Opposition responds to the case, challenges framing, and gives independent reasons to reject it.",
-    },
-    {
-      order: 5,
-      side: "gov",
-      title: "Member of Government",
-      time: "8 min, 30 sec grace",
-      icon: Mic2,
-      copy: "Government extends the case with new material, answers opposition arguments, and weighs the debate.",
-    },
-    {
-      order: 6,
-      side: "opp",
-      title: "Member of Opposition",
-      time: "8 min, 30 sec grace",
-      icon: Mic2,
-      copy: "Opposition adds new offense, rebuilds earlier points, and explains why government has not met its burden.",
-    },
-    {
-      order: 7,
-      side: "opp",
-      title: "Leader of Opposition Rebuttal",
-      time: "4 min, 30 sec grace",
-      icon: ScrollText,
-      copy: "Opposition summarizes the round and compares the strongest reasons to vote against the case.",
-      note: "Rebuttals cannot introduce new arguments.",
-    },
-    {
-      order: 8,
-      side: "gov",
-      title: "Prime Minister Rebuttal",
-      time: "5 min, 30 sec grace",
-      icon: ScrollText,
-      copy: "Government gets the final word: rebuild, answer the last opposition points, and explain why the case wins.",
-      note: "Rebuttals cannot introduce new arguments.",
-    },
-  ];
+  const speechIconMap = {
+    file: FileText,
+    help: CircleHelp,
+    mic: Mic2,
+    scroll: ScrollText,
+  };
+  const apdaSpeechSteps = noviceContent.speechSteps || [];
 
   return (
     <Page>
@@ -848,7 +787,7 @@ function NoviceHubPage({ noviceContent }) {
         <div className="relative mx-auto mt-8 grid max-w-6xl gap-4 md:mt-10 md:gap-6">
           <div className="pointer-events-none absolute left-8 top-0 hidden h-full border-l-2 border-dashed border-[#cfd5dd] md:left-1/2 md:block" />
           {apdaSpeechSteps.map((step) => {
-            const Icon = step.icon;
+            const Icon = speechIconMap[step.icon] || Mic2;
             const isGov = step.side === "gov";
             const speechCard = (
               <article className={`relative grid min-h-full gap-3 border p-4 shadow-[0_12px_34px_rgba(45,41,38,0.06)] sm:grid-cols-[3.5rem_1fr] sm:p-5 ${
@@ -1798,6 +1737,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [meetingNotes, setMeetingNotes] = useState("");
   const [meetingAnnouncement, setMeetingAnnouncement] = useState(meetingsContent);
   const [noviceFaqs, setNoviceFaqs] = useState(noviceContent.faqs);
+  const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(noviceContent.speechSteps || []);
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
@@ -1822,6 +1762,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [apdaUpdateStatus, setApdaUpdateStatus] = useState({ state: "idle", message: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false);
+  const [noviceInfographicEditorOpen, setNoviceInfographicEditorOpen] = useState(false);
   const [noviceFaqEditorOpen, setNoviceFaqEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
 
@@ -1880,6 +1821,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       }
       if (databaseState.noviceContent) {
         setNoviceFaqs(databaseState.noviceContent.faqs);
+        setNoviceSpeechSteps(databaseState.noviceContent.speechSteps || []);
         onNoviceContentChange(databaseState.noviceContent);
       }
       saveStoredAgenda(databaseState.agenda);
@@ -1962,8 +1904,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const persistNoviceFaqs = (nextFaqs) => {
     if (!canWriteNotes) return;
-    const nextContent = { ...noviceContent, faqs: nextFaqs };
+    const nextContent = { ...noviceContent, speechSteps: noviceSpeechSteps, faqs: nextFaqs };
     setNoviceFaqs(nextFaqs);
+    onNoviceContentChange(nextContent);
+  };
+
+  const persistNoviceSpeechSteps = (nextSteps) => {
+    if (!isAdmin) return;
+    const normalizedSteps = [...nextSteps].sort((a, b) => Number(a.order) - Number(b.order));
+    const nextContent = { ...noviceContent, speechSteps: normalizedSteps, faqs: noviceFaqs };
+    setNoviceSpeechSteps(normalizedSteps);
     onNoviceContentChange(nextContent);
   };
 
@@ -1992,6 +1942,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       body: "This FAQ will be removed from the public Novice Hub.",
       onConfirm: () => persistNoviceFaqs(noviceFaqs.filter((item) => item.id !== faq.id)),
     });
+  };
+
+  const updateNoviceSpeechStep = (id, field, value) => {
+    persistNoviceSpeechSteps(noviceSpeechSteps.map((step) => (
+      step.id === id
+        ? { ...step, [field]: field === "order" ? Number(value) : value }
+        : step
+    )));
   };
 
   const handleAgendaSubmit = (event) => {
@@ -3218,6 +3176,120 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
+
+          {isAdmin && (
+            <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+              <button
+                type="button"
+                onClick={() => setNoviceInfographicEditorOpen((current) => !current)}
+                className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+                aria-expanded={noviceInfographicEditorOpen}
+              >
+                <div>
+                  <div className="flex items-center gap-3">
+                    <ScrollText className="text-[#CC0000]" />
+                    <Eyebrow>Administrator Only</Eyebrow>
+                  </div>
+                  <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Novice Hub Infographic</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                    Edit the speech names, timing, sides, and descriptions in the public APDA Speech Order infographic.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                  {noviceInfographicEditorOpen ? "Close Infographic" : "Open Infographic"} <ChevronDown size={16} className={`transition ${noviceInfographicEditorOpen ? "rotate-180" : ""}`} />
+                </span>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {noviceInfographicEditorOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-5 grid gap-3">
+                      {noviceSpeechSteps.map((step) => (
+                        <div key={step.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                          <div className="grid gap-3 lg:grid-cols-[0.35fr_0.6fr_0.7fr_1.25fr]">
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Order
+                              <input
+                                type="number"
+                                min="1"
+                                value={step.order}
+                                onChange={(event) => updateNoviceSpeechStep(step.id, "order", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Side
+                              <select
+                                value={step.side}
+                                onChange={(event) => updateNoviceSpeechStep(step.id, "side", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              >
+                                <option value="gov">Government</option>
+                                <option value="opp">Opposition</option>
+                              </select>
+                            </label>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Icon
+                              <select
+                                value={step.icon}
+                                onChange={(event) => updateNoviceSpeechStep(step.id, "icon", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              >
+                                <option value="file">File</option>
+                                <option value="help">Question</option>
+                                <option value="mic">Speech</option>
+                                <option value="scroll">Rebuttal</option>
+                              </select>
+                            </label>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Time
+                              <input
+                                value={step.time}
+                                onChange={(event) => updateNoviceSpeechStep(step.id, "time", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                          </div>
+                          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Title
+                            <input
+                              value={step.title}
+                              onChange={(event) => updateNoviceSpeechStep(step.id, "title", event.target.value)}
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Description
+                            <textarea
+                              value={step.copy}
+                              onChange={(event) => updateNoviceSpeechStep(step.id, "copy", event.target.value)}
+                              rows={2}
+                              className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Note
+                            <input
+                              value={step.note || ""}
+                              onChange={(event) => updateNoviceSpeechStep(step.id, "note", event.target.value)}
+                              placeholder="Optional"
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
+          )}
 
           <Card className="flex min-h-0 flex-col p-4 sm:p-5">
             <button
