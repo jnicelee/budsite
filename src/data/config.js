@@ -6,6 +6,7 @@ export const PRIVATE_LINKS_STORAGE_KEY = "buds-private-links";
 export const MEMBERSHIP_REQUESTS_STORAGE_KEY = "buds-membership-requests";
 export const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
 export const TROPHIES_CONTENT_STORAGE_KEY = "buds-trophies-content";
+export const MEETINGS_CONTENT_STORAGE_KEY = "buds-meetings-content";
 
 export const COMPLETED_AGENDA_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 export const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];

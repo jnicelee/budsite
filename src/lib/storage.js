@@ -5,6 +5,7 @@ import {
   EBOARD_NOTES_STORAGE_KEY,
   LOGIN_STORAGE_KEY,
   MEMBER_ACCOUNTS_STORAGE_KEY,
+  MEETINGS_CONTENT_STORAGE_KEY,
   MEMBERSHIP_REQUESTS_STORAGE_KEY,
   PRIVATE_LINKS_STORAGE_KEY,
   TROPHIES_CONTENT_STORAGE_KEY,
@@ -12,6 +13,7 @@ import {
 import {
   agendaItems,
   defaultTrophiesContent,
+  defaultMeetingsContent,
   initialBudgetRevenueRows,
   initialBudgetRows,
   privateLinkDefaultsById,
@@ -144,6 +146,28 @@ export function getStoredTrophiesContent() {
 
 export function saveStoredTrophiesContent(content) {
   window.localStorage.setItem(TROPHIES_CONTENT_STORAGE_KEY, JSON.stringify(normalizeTrophiesContent(content)));
+}
+
+export function getStoredMeetingsContent() {
+  try {
+    const stored = window.localStorage.getItem(MEETINGS_CONTENT_STORAGE_KEY);
+    return normalizeMeetingsContent(stored ? JSON.parse(stored) : defaultMeetingsContent);
+  } catch {
+    return normalizeMeetingsContent(defaultMeetingsContent);
+  }
+}
+
+export function saveStoredMeetingsContent(content) {
+  window.localStorage.setItem(MEETINGS_CONTENT_STORAGE_KEY, JSON.stringify(normalizeMeetingsContent(content)));
+}
+
+export function normalizeMeetingsContent(content = defaultMeetingsContent) {
+  const source = { ...defaultMeetingsContent, ...content };
+  return {
+    announcementTitle: source.announcementTitle || defaultMeetingsContent.announcementTitle,
+    announcementBody: source.announcementBody || "",
+    announcementUpdatedAt: source.announcementUpdatedAt || "",
+  };
 }
 
 export function normalizeTrophiesContent(content = defaultTrophiesContent) {

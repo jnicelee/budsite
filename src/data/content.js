@@ -381,6 +381,12 @@ export const defaultTrophiesContent = {
   members: currentMemberAchievements,
 };
 
+export const defaultMeetingsContent = {
+  announcementTitle: "Announcements",
+  announcementBody: "Add a short public update for upcoming meetings, deadlines, travel reminders, or tournament logistics.",
+  announcementUpdatedAt: "",
+};
+
 export const board = [
   {
     name: "Josh Lyons",

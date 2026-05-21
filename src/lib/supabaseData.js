@@ -1,6 +1,6 @@
 import { agendaItems, initialBudgetRevenueRows, initialBudgetRows, privateLinks } from "../data/content";
 import { isSupabaseConfigured, supabase } from "../supabaseClient";
-import { enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeTrophiesContent } from "./storage";
+import { enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeMeetingsContent, normalizeTrophiesContent } from "./storage";
 
 function normalizeSupabaseBudgetRow(row) {
   return {
@@ -31,6 +31,7 @@ export async function loadDatabaseState() {
     budgetRevenueResult,
     privateLinksResult,
     trophiesContentResult,
+    meetingsContentResult,
   ] = await Promise.all([
     supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: false }),
     supabase.from("eboard_notes").select("id,date,title,body,created_at").order("date", { ascending: false }).order("created_at", { ascending: false }),
@@ -39,9 +40,10 @@ export async function loadDatabaseState() {
     supabase.from("eboard_budget_revenue").select("id,category,amount").order("created_at", { ascending: true }),
     supabase.from("private_links").select("id,label,description,url").order("created_at", { ascending: true }),
     supabase.from("site_content").select("content").eq("id", "trophies").maybeSingle(),
+    supabase.from("site_content").select("content").eq("id", "meetings").maybeSingle(),
   ]);
 
-  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error || trophiesContentResult.error) {
+  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error || trophiesContentResult.error || meetingsContentResult.error) {
     console.error("Supabase load failed", {
       agendaError: agendaResult.error,
       notesError: notesResult.error,
@@ -50,6 +52,7 @@ export async function loadDatabaseState() {
       budgetRevenueError: budgetRevenueResult.error,
       privateLinksError: privateLinksResult.error,
       trophiesContentError: trophiesContentResult.error,
+      meetingsContentError: meetingsContentResult.error,
     });
     return null;
   }
@@ -73,7 +76,26 @@ export async function loadDatabaseState() {
     },
     privateLinks: privateLinksResult.data.length > 0 ? enrichPrivateLinks(privateLinksResult.data) : privateLinks,
     trophiesContent: trophiesContentResult.data?.content ? normalizeTrophiesContent(trophiesContentResult.data.content) : null,
+    meetingsContent: meetingsContentResult.data?.content ? normalizeMeetingsContent(meetingsContentResult.data.content) : null,
   };
+}
+
+export async function loadMeetingsContent() {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.from("site_content").select("content").eq("id", "meetings").maybeSingle();
+  if (error) {
+    console.error("Supabase meetings content load failed", error);
+    return null;
+  }
+  return data?.content ? normalizeMeetingsContent(data.content) : null;
+}
+
+export async function upsertMeetingsContent(content) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("site_content")
+    .upsert({ id: "meetings", content: normalizeMeetingsContent(content), updated_at: new Date().toISOString() });
+  if (error) console.error("Supabase meetings content upsert failed", error);
 }
 
 export async function loadTrophiesContent() {

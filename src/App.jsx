@@ -66,6 +66,7 @@ import {
   findMemberAccountByEmail,
   insertMembershipRequest,
   insertNote,
+  loadMeetingsContent,
   loadDatabaseState,
   loadMemberAccounts,
   loadMembershipRequests,
@@ -78,6 +79,7 @@ import {
   upsertBudgetRevenueRow,
   upsertBudgetRow,
   upsertBudgetSettings,
+  upsertMeetingsContent,
   upsertMemberAccount,
   upsertPrivateLink,
   upsertTrophiesContent,
@@ -88,6 +90,7 @@ import {
   getStoredAuth,
   getStoredBudget,
   getStoredMemberAccounts,
+  getStoredMeetingsContent,
   getStoredMembershipRequests,
   getStoredNotes,
   getStoredPrivateLinks,
@@ -96,6 +99,7 @@ import {
   saveStoredAuth,
   saveStoredBudget,
   saveStoredMemberAccounts,
+  saveStoredMeetingsContent,
   saveStoredMembershipRequests,
   saveStoredNotes,
   saveStoredPrivateLinks,
@@ -777,7 +781,7 @@ function CalendarPage({ calendarEmbedUrl }) {
   );
 }
 
-function MeetingsPage({ auth, onRequestConfirmation }) {
+function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
   const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
   const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE;
   const sortedPosts = sortMeetingPosts(meetingPosts);
@@ -835,28 +839,27 @@ function MeetingsPage({ auth, onRequestConfirmation }) {
             <span className="block">Organized newest first, so announcements and lecture updates stay easy to browse.</span>
           </p>
         </div>
-        <div className="grid content-between gap-4 border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-8 md:p-10">
-          <div className="grid border border-[#ded8d2] sm:grid-cols-2">
-            <div className="border-b border-r border-[#ded8d2] p-5">
+        <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
+          <div className="grid gap-3 border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)]">
+            <div>
               <p className="text-4xl font-black leading-none text-[#CC0000]">{sortedPosts.length}</p>
               <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published Posts</p>
             </div>
-            <div className="border-b border-[#ded8d2] p-5">
-              <p className="text-2xl font-black leading-tight text-[#2D2926]">{latestMeetingLabel}</p>
+            <div className="border-t border-[#ded8d2] pt-3">
+              <p className="text-xl font-black leading-tight text-[#2D2926]">{latestMeetingLabel}</p>
               <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Latest Update</p>
             </div>
-            <div className="border-r border-[#ded8d2] p-5">
-              <p className="text-4xl font-black leading-none text-[#2D2926]">New</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Newest Notes First</p>
-            </div>
-            <div className="p-5">
-              <p className="text-4xl font-black leading-none text-[#2D2926]">EBD</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">E-Board Managed</p>
-            </div>
           </div>
-          <p className="text-sm font-semibold leading-6 text-[#5b5450]">
-            Only logged-in e-board members can delete meeting posts. Everyone can read the public meeting archive.
-          </p>
+          <div className="border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)]">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Announcements</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight text-[#2D2926]">{meetingsContent.announcementTitle}</h2>
+            <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#5b5450]">{meetingsContent.announcementBody}</p>
+            {meetingsContent.announcementUpdatedAt && (
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.12em] text-[#6d6560]">
+                Updated {formatMeetingDate(meetingsContent.announcementUpdatedAt)}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1592,13 +1595,14 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequestConfirmation, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesContentChange, onMeetingsContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingNotes, setMeetingNotes] = useState("");
+  const [meetingAnnouncement, setMeetingAnnouncement] = useState(meetingsContent);
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
   const [newAgendaText, setNewAgendaText] = useState("");
@@ -1672,6 +1676,10 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
       setNotes(databaseState.notes);
       setBudget(databaseState.budget);
       setMemberLinks(databaseState.privateLinks);
+      if (databaseState.meetingsContent) {
+        setMeetingAnnouncement(databaseState.meetingsContent);
+        onMeetingsContentChange(databaseState.meetingsContent);
+      }
       saveStoredAgenda(databaseState.agenda);
       saveStoredNotes(databaseState.notes);
       saveStoredBudget(databaseState.budget);
@@ -1683,7 +1691,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [onMeetingsContentChange]);
 
   useEffect(() => {
     let ignore = false;
@@ -1736,6 +1744,18 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
     setMeetingDate("");
     setMeetingTitle("");
     setMeetingNotes("");
+  };
+
+  const handleAnnouncementSubmit = (event) => {
+    event.preventDefault();
+    if (!canWriteNotes) return;
+    const nextContent = {
+      announcementTitle: meetingAnnouncement.announcementTitle.trim() || "Announcements",
+      announcementBody: meetingAnnouncement.announcementBody.trim(),
+      announcementUpdatedAt: new Date().toISOString().slice(0, 10),
+    };
+    setMeetingAnnouncement(nextContent);
+    onMeetingsContentChange(nextContent);
   };
 
   const handleAgendaSubmit = (event) => {
@@ -2827,6 +2847,38 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                     </fieldset>
                   </form>
 
+                  <form onSubmit={handleAnnouncementSubmit} className="mt-4 grid gap-3 border-t border-[#ded8d2] pt-4">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.08em] text-[#CC0000]">Meetings Page Announcement</p>
+                      <p className="mt-1 text-xs font-semibold normal-case tracking-normal text-[#6d6560]">
+                        This appears in the small announcements block on the public Meetings page.
+                      </p>
+                    </div>
+                    <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        Announcement Title
+                        <input
+                          type="text"
+                          value={meetingAnnouncement.announcementTitle}
+                          onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementTitle: event.target.value }))}
+                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        Announcement Body
+                        <textarea
+                          value={meetingAnnouncement.announcementBody}
+                          onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementBody: event.target.value }))}
+                          rows={3}
+                          className="resize-none border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                        />
+                      </label>
+                      <button type="submit" className="w-fit bg-[#2D2926] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#CC0000]">
+                        Save Announcement
+                      </button>
+                    </fieldset>
+                  </form>
+
                   <div className="mt-4 min-h-0 flex-1 border-t border-[#ded8d2] pt-4">
                     <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                       Past E-Board Notes
@@ -3214,6 +3266,7 @@ export default function App() {
   const [path, setPath] = useState(window.location.pathname);
   const [auth, setAuth] = useState(() => getStoredAuth());
   const [trophiesContent, setTrophiesContent] = useState(() => getStoredTrophiesContent());
+  const [meetingsContent, setMeetingsContent] = useState(() => getStoredMeetingsContent());
   const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
@@ -3233,14 +3286,23 @@ export default function App() {
   useEffect(() => {
     let ignore = false;
 
-    async function hydrateTrophiesContent() {
-      const databaseContent = await loadTrophiesContent();
-      if (!databaseContent || ignore) return;
-      setTrophiesContent(databaseContent);
-      saveStoredTrophiesContent(databaseContent);
+    async function hydrateSiteContent() {
+      const [databaseTrophiesContent, databaseMeetingsContent] = await Promise.all([
+        loadTrophiesContent(),
+        loadMeetingsContent(),
+      ]);
+      if (ignore) return;
+      if (databaseTrophiesContent) {
+        setTrophiesContent(databaseTrophiesContent);
+        saveStoredTrophiesContent(databaseTrophiesContent);
+      }
+      if (databaseMeetingsContent) {
+        setMeetingsContent(databaseMeetingsContent);
+        saveStoredMeetingsContent(databaseMeetingsContent);
+      }
     }
 
-    hydrateTrophiesContent();
+    hydrateSiteContent();
 
     return () => {
       ignore = true;
@@ -3251,6 +3313,12 @@ export default function App() {
     setTrophiesContent(nextContent);
     saveStoredTrophiesContent(nextContent);
     upsertTrophiesContent(nextContent);
+  }, []);
+
+  const updateMeetingsContent = useCallback((nextContent) => {
+    setMeetingsContent(nextContent);
+    saveStoredMeetingsContent(nextContent);
+    upsertMeetingsContent(nextContent);
   }, []);
 
   const requestConfirmation = useCallback(({ title, body, actionLabel = "Delete", onConfirm }) => {
@@ -3273,7 +3341,7 @@ export default function App() {
       case "/calendar":
         return <CalendarPage calendarEmbedUrl={calendarEmbedUrl} />;
       case "/meetings":
-        return <MeetingsPage auth={auth} onRequestConfirmation={requestConfirmation} />;
+        return <MeetingsPage auth={auth} meetingsContent={meetingsContent} onRequestConfirmation={requestConfirmation} />;
       case "/history":
         return <HistoryPage />;
       case "/trophies":
@@ -3287,7 +3355,7 @@ export default function App() {
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} onTrophiesContentChange={updateTrophiesContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");
@@ -3295,7 +3363,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, path, requestConfirmation, trophiesContent, updateTrophiesContent]);
+  }, [auth, calendarEmbedUrl, meetingsContent, path, requestConfirmation, trophiesContent, updateMeetingsContent, updateTrophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
