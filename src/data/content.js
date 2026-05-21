@@ -4,6 +4,7 @@ export const navItems = [
   { label: "Calendar", href: "/calendar" },
   { label: "Meetings", href: "/meetings" },
   { label: "History", href: "/history" },
+  { label: "Trophies", href: "/trophies" },
   { label: "E-Board", href: "/eboard" },
   { label: "Contact", href: "/contact" },
 ];

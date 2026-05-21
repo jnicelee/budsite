@@ -506,9 +506,92 @@ function MeetingsPage({ auth }) {
 }
 
 function HistoryPage() {
+  const historyTimeline = [
+    {
+      year: "Founded",
+      title: "A Home for Parliamentary Debate at BU",
+      copy: "Add the founding year, early leadership, and the story of how BUDS became a competitive APDA team.",
+    },
+    {
+      year: "Growth",
+      title: "Practices, tournaments, and institutional memory",
+      copy: "Use this section to track team traditions, regular meetings, major tournaments, and shifts in team culture.",
+    },
+    {
+      year: "Today",
+      title: "A competitive and welcoming debate community",
+      copy: "Feature current priorities, novice development, team goals, and the strongest recent accomplishments.",
+    },
+  ];
+  const historyAccomplishments = [
+    "Tournament wins and finals appearances",
+    "Speaker awards and novice breaks",
+    "Team awards and season milestones",
+    "Alumni judging, coaching, and mentorship",
+  ];
+  const historyAlumni = [
+    {
+      name: "Alumni Spotlight",
+      detail: "Add a short profile on a former BUDS member, including their favorite memory and post-grad path.",
+    },
+    {
+      name: "Mentor Network",
+      detail: "Create a directory of alumni who are open to judging, coaching, career chats, or tournament support.",
+    },
+  ];
+
   return (
     <Page>
-      <PageHeader eyebrow="History" title="BU Debate Results, in APDA Order.">
+      <PageHeader eyebrow="History" title="A Timeline That Can Grow with the Team.">
+        Add each year once you have records, photos, e-board names, and major results.
+      </PageHeader>
+      <div className="grid gap-5 md:grid-cols-3">
+        {historyTimeline.map((item) => (
+          <Card key={item.year} className="border-t-8 border-t-[#CC0000]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
+            <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
+          </Card>
+        ))}
+      </div>
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <Card>
+          <div className="mb-5 flex items-center gap-3">
+            <Medal className="text-[#CC0000]" />
+            <h2 className="min-w-0 break-words text-2xl font-black text-[#2D2926] sm:text-3xl">Accomplishments</h2>
+          </div>
+          <div className="grid gap-3">
+            {historyAccomplishments.map((item) => (
+              <div key={item} className="flex items-center justify-between border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+                <span className="font-bold text-[#2D2926]">{item}</span>
+                <ChevronRight size={18} className="text-[#CC0000]" />
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <div className="mb-5 flex items-center gap-3">
+            <Sparkles className="text-[#CC0000]" />
+            <h2 className="text-3xl font-black text-[#2D2926]">Alumni</h2>
+          </div>
+          <div className="grid gap-4">
+            {historyAlumni.map((person) => (
+              <div key={person.name} className="border border-[#ded8d2] bg-white p-5">
+                <p className="font-black text-[#2D2926]">{person.name}</p>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">{person.detail}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+    </Page>
+  );
+}
+
+function TrophiesPage() {
+  return (
+    <Page>
+      <PageHeader eyebrow="Trophies" title="BU Debate Results, in APDA Order.">
         Current season records pulled from APDA Results for Boston University and the 2025-26 roster.
       </PageHeader>
 
@@ -2003,6 +2086,8 @@ export default function App() {
         return <MeetingsPage auth={auth} />;
       case "/history":
         return <HistoryPage />;
+      case "/trophies":
+        return <TrophiesPage />;
       case "/eboard":
         return <EBoardPage />;
       case "/contact":
