@@ -2392,11 +2392,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
           </div>
           <div className="grid gap-7">
             {memberLinksBySection.map((group) => (
-              <section key={group.section} className="grid gap-3">
-                <div className="flex items-center justify-between border-b-2 border-[#CC0000] pb-2">
-                  <h2 className="text-xl font-black text-[#2D2926]">{group.section}</h2>
-                  <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{group.links.length} links</span>
-                </div>
+              <SmoothDetails
+                key={group.section}
+                className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+                title={(
+                  <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
+                    <span className="text-xl font-black text-[#2D2926]">{group.section}</span>
+                    <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{group.links.length} links</span>
+                  </span>
+                )}
+              >
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                   {group.links.map((link) => (
                     <div key={link.id} className="group flex min-h-[20rem] flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_20px_55px_rgba(45,41,38,0.07)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(45,41,38,0.12)] sm:min-h-[25rem] sm:p-7">
@@ -2454,7 +2459,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
                     </div>
                   ))}
                 </div>
-              </section>
+              </SmoothDetails>
             ))}
           </div>
         </div>
