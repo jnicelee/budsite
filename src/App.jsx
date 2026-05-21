@@ -2299,32 +2299,34 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
 
   return (
     <Page className={isEboard ? "max-w-[98rem] py-4 md:py-5" : ""}>
-      <div className="mb-3 flex flex-col gap-3 border-b-4 border-[#CC0000] bg-white p-3 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:flex-row md:items-center md:justify-between">
-        <div>
-          <Eyebrow>Private Hub</Eyebrow>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-[#2D2926] md:text-3xl">
-            {hubTitle}
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="break-all text-xs font-semibold text-[#6d6560]">{auth.email}</p>
-            {isAdmin && (
-              <span className="bg-[#2D2926] px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-white">
-                Administrator
-              </span>
-            )}
-            {!isAdmin && canManageMembers && (
-              <span className="bg-[#CC0000] px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-white">
-                Member Manager
-              </span>
-            )}
-            <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
-              {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
-            </span>
+      <div className="mb-3 border-b-4 border-[#CC0000] bg-white px-4 py-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:px-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <Eyebrow>Private Hub</Eyebrow>
+            <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-4xl">
+              {hubTitle}
+            </h1>
+            <p className="mt-2 break-all text-sm font-semibold text-[#6d6560]">{auth.email}</p>
           </div>
+          <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] md:self-center">
+            Log out <LogOut size={15} />
+          </button>
         </div>
-        <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-          Log out <LogOut size={16} />
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-[#ded8d2] pt-3">
+          {isAdmin && (
+            <span className="bg-[#2D2926] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
+              Administrator
+            </span>
+          )}
+          {!isAdmin && canManageMembers && (
+            <span className="bg-[#CC0000] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
+              Member Manager
+            </span>
+          )}
+          <span className={`px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
+            {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
+          </span>
+        </div>
       </div>
 
       <div className="mb-3 flex flex-wrap gap-2">
