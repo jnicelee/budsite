@@ -243,14 +243,17 @@ const richTextToolbarTools = [
   { label: "Bold", icon: Bold, command: "bold" },
   { label: "Italic", icon: Italic, command: "italic" },
   { label: "Underline", icon: Underline, command: "underline" },
-  { label: "Link", icon: Link2, command: "link" },
   { label: "Bulleted list", icon: List, command: "insertUnorderedList" },
   { label: "Numbered list", icon: ListOrdered, command: "insertOrderedList" },
 ];
 
 function RichTextEditor({ value, onChange, disabled = false, placeholder = "" }) {
   const editorRef = useRef(null);
+  const savedSelectionRef = useRef(null);
   const [focused, setFocused] = useState(false);
+  const [linkPanelOpen, setLinkPanelOpen] = useState(false);
+  const [linkText, setLinkText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
 
   useEffect(() => {
     if (!editorRef.current || focused) return;
@@ -262,26 +265,81 @@ function RichTextEditor({ value, onChange, disabled = false, placeholder = "" })
     onChange(nextValue);
   };
 
+  const saveSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !editorRef.current?.contains(selection.anchorNode)) return;
+    savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+  };
+
+  const restoreSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || !savedSelectionRef.current) return;
+    selection.removeAllRanges();
+    selection.addRange(savedSelectionRef.current);
+  };
+
   const runCommand = (command, commandValue = null) => {
     if (disabled) return;
     editorRef.current?.focus();
+    restoreSelection();
     document.execCommand(command, false, commandValue);
+    saveSelection();
     syncValue();
   };
 
-  const addLink = () => {
+  const openLinkPanel = () => {
     if (disabled) return;
-    const rawUrl = window.prompt("Enter a link URL");
-    if (!rawUrl) return;
-    const url = /^(https?:|mailto:)/i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
-    runCommand("createLink", url);
+    saveSelection();
+    const selectedText = window.getSelection()?.toString() || "";
+    setLinkText(selectedText);
+    setLinkUrl("");
+    setLinkPanelOpen((current) => !current);
+  };
+
+  const applyLink = () => {
+    if (disabled || !linkUrl.trim()) return;
+    const url = normalizeLinkUrl(linkUrl);
+    const displayText = linkText.trim();
+    if (!displayText) return;
+    editorRef.current?.focus();
+    restoreSelection();
+
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noreferrer";
+    anchor.textContent = displayText;
+
+    const selection = window.getSelection();
+    const hasEditorSelection =
+      selection &&
+      selection.rangeCount > 0 &&
+      editorRef.current &&
+      editorRef.current.contains(selection.getRangeAt(0).commonAncestorContainer);
+
+    if (hasEditorSelection) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(anchor);
+      range.setStartAfter(anchor);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else if (editorRef.current) {
+      if (editorRef.current.innerHTML.trim()) {
+        editorRef.current.append(document.createTextNode(" "));
+      }
+      editorRef.current.append(anchor);
+    }
+
+    setLinkPanelOpen(false);
+    setLinkText("");
+    setLinkUrl("");
+    saveSelection();
+    syncValue();
   };
 
   const handleToolbarClick = (command) => {
-    if (command === "link") {
-      addLink();
-      return;
-    }
     runCommand(command);
   };
 
@@ -289,21 +347,79 @@ function RichTextEditor({ value, onChange, disabled = false, placeholder = "" })
 
   return (
     <div className={`border border-[#ded8d2] bg-white ${disabled ? "opacity-55" : ""}`}>
-      <div className="flex flex-wrap gap-1 border-b border-[#ded8d2] bg-[#f6f4f2] p-2">
-        {richTextToolbarTools.map(({ label, icon: Icon, command }) => (
+      <div className="border-b border-[#ded8d2] bg-[#f6f4f2] p-2">
+        <div className="flex flex-wrap items-center gap-1">
+          {richTextToolbarTools.map(({ label, icon: Icon, command }) => (
+            <button
+              key={label}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => handleToolbarClick(command)}
+              disabled={disabled}
+              title={label}
+              aria-label={label}
+              className="grid h-9 w-9 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Icon size={16} />
+            </button>
+          ))}
+          <span className="mx-1 h-7 w-px bg-[#ded8d2]" />
           <button
-            key={label}
             type="button"
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => handleToolbarClick(command)}
+            onClick={openLinkPanel}
             disabled={disabled}
-            title={label}
-            aria-label={label}
-            className="grid h-9 w-9 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
+            title="Embed link"
+            aria-label="Embed link"
+            className={`inline-flex h-9 items-center gap-2 border px-3 text-xs font-black uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              linkPanelOpen ? "border-[#CC0000] bg-[#CC0000] text-white" : "border-[#ded8d2] bg-white text-[#2D2926] hover:border-[#CC0000] hover:text-[#CC0000]"
+            }`}
           >
-            <Icon size={16} />
+            <Link2 size={16} /> Link
           </button>
-        ))}
+        </div>
+        <AnimatePresence initial={false}>
+          {linkPanelOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-3 grid gap-2 border border-[#ded8d2] bg-white p-3 normal-case tracking-normal sm:grid-cols-[1fr_1.35fr_auto]">
+                <label className="grid gap-1 text-[0.68rem] font-black uppercase tracking-[0.1em] text-[#5b5450]">
+                  Link text
+                  <input
+                    type="text"
+                    value={linkText}
+                    onChange={(event) => setLinkText(event.target.value)}
+                    placeholder="Selected text"
+                    className="border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                  />
+                </label>
+                <label className="grid gap-1 text-[0.68rem] font-black uppercase tracking-[0.1em] text-[#5b5450]">
+                  URL
+                  <input
+                    type="url"
+                    value={linkUrl}
+                    onChange={(event) => setLinkUrl(event.target.value)}
+                    placeholder="https://example.com"
+                    className="border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={applyLink}
+                  disabled={!linkUrl.trim() || !linkText.trim()}
+                  className="self-end bg-[#2D2926] px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       <div className="relative">
         {isEmpty && !focused && (
@@ -318,10 +434,13 @@ function RichTextEditor({ value, onChange, disabled = false, placeholder = "" })
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false);
+            saveSelection();
             syncValue();
           }}
+          onKeyUp={saveSelection}
           onInput={syncValue}
-          className="rich-note min-h-40 px-3 py-3 text-sm font-medium leading-7 text-[#2D2926] outline-none focus:ring-2 focus:ring-[#CC0000]/25"
+          onMouseUp={saveSelection}
+          className="rich-note min-h-40 px-3 py-3 text-sm font-medium leading-7 text-[#2D2926] outline-none normal-case tracking-normal focus:ring-2 focus:ring-[#CC0000]/25"
         />
       </div>
     </div>
@@ -356,6 +475,11 @@ function richTextToPlainText(value = "") {
 function normalizeRichTextForDisplay(value = "") {
   if (!value) return "";
   return isRichText(value) ? sanitizeRichText(value) : escapeHtml(value).replace(/\n/g, "<br>");
+}
+
+function normalizeLinkUrl(value = "") {
+  const trimmed = value.trim();
+  return /^(https?:|mailto:)/i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
 function sanitizeRichText(value = "") {
