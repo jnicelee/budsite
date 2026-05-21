@@ -93,18 +93,18 @@ import {
 
 function HomePage() {
   return (
-    <section className="mx-auto grid w-full max-w-[98rem] items-start gap-7 px-4 py-6 sm:px-5 md:px-8 md:py-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-10">
-      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.12em] text-[#2D2926]">
+    <section className="mx-auto grid w-full max-w-[92rem] items-start gap-8 px-4 py-8 sm:px-5 md:px-8 md:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-4xl">
+        <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white/75 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#2D2926] shadow-sm">
           <Trophy size={16} className="text-[#CC0000]" /> Ranked #4 nationally in 2026
         </div>
-        <h1 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-tight text-[#2D2926] sm:text-5xl md:text-6xl xl:text-[4.35rem]">
+        <h1 className="text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] sm:text-5xl md:text-6xl xl:text-[4rem]">
           Nationally ranked debate, open to anyone at BU.
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-[#5b5450] sm:text-lg sm:leading-8">
+        <p className="mt-6 max-w-2xl text-base leading-7 text-[#5b5450] sm:text-lg sm:leading-8">
           BUDS competes in APDA, the American Parliamentary Debate Association. No tryouts, no dues, no experience required, just weekly chances to travel, argue, learn, and represent Boston University.
         </p>
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <PrimaryButton href="/join" className="px-6">
             Join BUDS <ArrowRight size={16} />
           </PrimaryButton>
@@ -112,51 +112,42 @@ function HomePage() {
             New to debate? <Sparkles size={16} />
           </SecondaryButton>
         </div>
-        <div className="mt-7 grid gap-3 sm:grid-cols-3">
+        <div className="mt-8 inline-flex max-w-full flex-wrap gap-x-5 gap-y-2 border-l-4 border-[#CC0000] bg-white/65 px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-sm">
           {["No tryouts", "No dues", "Weekly tournaments"].map((item) => (
-            <div key={item} className="border-l-4 border-[#CC0000] bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-[0_10px_26px_rgba(45,41,38,0.05)]">
+            <span key={item} className="whitespace-nowrap">
               {item}
-            </div>
+            </span>
           ))}
         </div>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }} className="grid gap-5">
-        <div className="overflow-hidden border border-[#1f1b19] bg-[#2D2926] text-white shadow-[0_20px_55px_rgba(45,41,38,0.14)]">
-          <div className="grid gap-0 md:grid-cols-[0.95fr_1.05fr]">
-            <div className="flex min-h-56 flex-col justify-between bg-[#CC0000] p-5 text-white sm:p-7 md:min-h-[29rem] md:p-8">
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-white/80">2026 national rank</p>
-                <p className="mt-5 text-[4.5rem] font-black leading-none tracking-tight sm:text-[6rem] md:text-[7.5rem]">#4</p>
-              </div>
-              <p className="max-w-xs text-base font-bold leading-7 text-white/90">
-                A top national team that still starts with an open door.
-              </p>
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}>
+        <div className="overflow-hidden border border-[#2D2926]/90 bg-[#2D2926] text-white shadow-[0_18px_48px_rgba(45,41,38,0.12)]">
+          <div className="grid gap-0 sm:grid-cols-[0.82fr_1.18fr]">
+            <div className="flex min-h-48 flex-col justify-between bg-[#CC0000] p-6 text-white sm:min-h-[24rem] md:p-8">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/78">2026 national rank</p>
+              <p className="text-[5rem] font-black leading-none tracking-tight sm:text-[6.5rem]">#4</p>
             </div>
-            <div className="grid content-between gap-6 p-7 md:p-8">
+            <div className="grid content-center gap-7 p-6 md:p-8">
               <div>
                 <Eyebrow light>Format</Eyebrow>
                 <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA Parliamentary Debate</h2>
-                <p className="mt-4 text-sm leading-6 text-white/72">
-                  Two-person teams, limited prep, persuasion under pressure, and tournaments across the collegiate debate circuit.
+                <p className="mt-4 max-w-md text-sm leading-6 text-white/72">
+                  Two-person teams, limited prep, and tournaments across the collegiate debate circuit.
                 </p>
               </div>
-              <div className="grid grid-cols-2 border border-white/15">
-                <div className="border-b border-r border-white/15 p-4">
-                  <p className="text-3xl font-black leading-none">0</p>
-                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">Tryouts</p>
+              <div className="grid gap-3 text-sm font-black uppercase tracking-[0.12em] text-white/72">
+                <div className="flex items-center justify-between border-t border-white/15 pt-3">
+                  <span>Tryouts</span>
+                  <span className="text-xl leading-none text-white">0</span>
                 </div>
-                <div className="border-b border-white/15 p-4">
-                  <p className="text-3xl font-black leading-none">$0</p>
-                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">Member fees</p>
+                <div className="flex items-center justify-between border-t border-white/15 pt-3">
+                  <span>Member fees</span>
+                  <span className="text-xl leading-none text-white">$0</span>
                 </div>
-                <div className="border-r border-white/15 p-4">
-                  <p className="text-3xl font-black leading-none">APDA</p>
-                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">League format</p>
-                </div>
-                <div className="p-4">
-                  <p className="text-3xl font-black leading-none">Travel</p>
-                  <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-white/60">Weekly</p>
+                <div className="flex items-center justify-between border-t border-white/15 pt-3">
+                  <span>League format</span>
+                  <span className="text-xl leading-none text-white">APDA</span>
                 </div>
               </div>
             </div>
@@ -168,7 +159,7 @@ function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.16 }}
-        className="lg:col-span-2"
+        className="pt-2 lg:col-span-2 lg:pt-4"
       >
         <PhotoCarousel />
       </motion.div>
@@ -1976,7 +1967,7 @@ export default function App() {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,rgba(45,41,38,0.045)_1px,transparent_1px),linear-gradient(rgba(45,41,38,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <header className="sticky top-0 z-50 border-b border-[#c9c7c3] bg-[#e1dfdc]/95 shadow-[0_16px_42px_rgba(45,41,38,0.08)] backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-[98rem] items-center justify-between gap-5 px-5 py-3 md:px-8">
+        <nav className="mx-auto flex max-w-[98rem] items-center justify-between gap-4 px-5 py-3 md:px-8">
           <SiteLink href="/" className="group flex min-w-0 items-center gap-3">
             <img
               src="/buds-logo.png"
@@ -1996,7 +1987,7 @@ export default function App() {
                 <SiteLink
                   key={item.href}
                   href={item.href}
-                  className={`rounded-sm border px-4 py-2 text-sm font-extrabold transition ${
+                  className={`whitespace-nowrap rounded-sm border px-2.5 py-2 text-sm font-extrabold transition lg:px-3.5 ${
                     active
                       ? "border-[#2D2926] bg-[#2D2926] text-white shadow-[0_8px_18px_rgba(45,41,38,0.14)]"
                       : "border-transparent text-[#4b4541] hover:border-[#c9c7c3] hover:bg-white hover:text-[#2D2926] hover:shadow-sm"
@@ -2008,11 +1999,11 @@ export default function App() {
             })}
           </div>
 
-          <div className="hidden items-center gap-3 md:flex">
-            <PrimaryButton href="/join" className="rounded-sm px-6">
+          <div className="hidden items-center gap-2 md:flex lg:gap-3">
+            <PrimaryButton href="/join" className="rounded-sm px-4 lg:px-6">
               Join <ArrowRight size={16} />
             </PrimaryButton>
-            <SecondaryButton href={auth ? "/hub" : "/login"} className="rounded-sm bg-[#fbfaf9] px-6">
+            <SecondaryButton href={auth ? "/hub" : "/login"} className="rounded-sm bg-[#fbfaf9] px-4 lg:px-6">
               {auth ? "Hub" : "Login"}
             </SecondaryButton>
           </div>

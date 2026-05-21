@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { homeCarouselSlides } from "../data/content";
-import { Eyebrow } from "./ui";
 
 export function PhotoCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -25,7 +24,7 @@ export function PhotoCarousel() {
   }, []);
 
   return (
-    <div className="overflow-hidden border border-[#ded8d2] bg-white shadow-[0_20px_55px_rgba(45,41,38,0.1)]">
+    <div className="overflow-hidden border border-[#ded8d2] bg-white shadow-[0_16px_42px_rgba(45,41,38,0.08)]">
       <div className="relative aspect-[4/5] min-h-[16rem] bg-[#2D2926] sm:aspect-[16/9] sm:min-h-[20rem] lg:aspect-[21/8]">
         <AnimatePresence mode="wait">
           <motion.img
@@ -39,15 +38,15 @@ export function PhotoCarousel() {
             transition={{ duration: 0.45 }}
           />
         </AnimatePresence>
-        <div className="absolute inset-x-0 bottom-0 bg-[#2D2926]/92 p-5 text-white md:p-6">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#FF0000]">{activeSlide.kicker}</p>
-          <p className="mt-2 max-w-4xl text-sm font-bold leading-6 text-white sm:text-base sm:leading-7 md:text-lg">{activeSlide.caption}</p>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#2D2926]/88 via-[#2D2926]/52 to-transparent p-5 pt-16 text-white md:p-7 md:pt-24">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">{activeSlide.kicker}</p>
+          <p className="mt-2 max-w-3xl text-sm font-bold leading-6 text-white sm:text-base sm:leading-7">{activeSlide.caption}</p>
         </div>
         <div className="absolute right-4 top-4 flex gap-2">
           <button
             type="button"
             onClick={goToPrevious}
-            className="grid h-11 w-11 place-items-center border border-white/60 bg-[#2D2926]/82 text-white transition hover:bg-[#CC0000]"
+            className="grid h-10 w-10 place-items-center border border-white/45 bg-[#2D2926]/60 text-white transition hover:bg-[#CC0000]"
             aria-label="Previous photo"
           >
             <ChevronLeft size={20} />
@@ -55,22 +54,19 @@ export function PhotoCarousel() {
           <button
             type="button"
             onClick={goToNext}
-            className="grid h-11 w-11 place-items-center border border-white/60 bg-[#2D2926]/82 text-white transition hover:bg-[#CC0000]"
+            className="grid h-10 w-10 place-items-center border border-white/45 bg-[#2D2926]/60 text-white transition hover:bg-[#CC0000]"
             aria-label="Next photo"
           >
             <ChevronRight size={20} />
           </button>
         </div>
-      </div>
-      <div className="flex items-center justify-between gap-4 px-5 py-4">
-        <Eyebrow>Photo Carousel</Eyebrow>
-        <div className="flex gap-2">
+        <div className="absolute bottom-5 right-5 flex gap-2">
           {homeCarouselSlides.map((slide, index) => (
             <button
               key={slide.caption}
               type="button"
               onClick={() => setActiveIndex(index)}
-              className={`h-2.5 w-8 border border-[#CC0000] transition ${index === activeIndex ? "bg-[#CC0000]" : "bg-white"}`}
+              className={`h-2 w-7 border border-white/70 transition ${index === activeIndex ? "bg-white" : "bg-white/20"}`}
               aria-label={`Show ${slide.kicker} photo`}
               aria-current={index === activeIndex}
             />
