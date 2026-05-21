@@ -562,9 +562,9 @@ function HistoryPage() {
           </div>
           <div className="grid gap-3">
             {historyAccomplishments.map((item) => (
-              <div key={item} className="flex items-center justify-between border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+              <div key={item} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+                <span className="mt-2 h-2 w-2 shrink-0 bg-[#CC0000]" aria-hidden="true" />
                 <span className="font-bold text-[#2D2926]">{item}</span>
-                <ChevronRight size={18} className="text-[#CC0000]" />
               </div>
             ))}
           </div>
@@ -623,9 +623,9 @@ function TrophiesPage() {
           </div>
           <div className="grid gap-3">
             {accomplishments.map((item) => (
-              <div key={item} className="flex items-start justify-between gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+              <div key={item} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+                <span className="mt-2 h-2 w-2 shrink-0 bg-[#CC0000]" aria-hidden="true" />
                 <span className="font-bold text-[#2D2926]">{item}</span>
-                <ChevronRight size={18} className="text-[#CC0000]" />
               </div>
             ))}
           </div>
