@@ -2366,7 +2366,10 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                 className="min-w-0 flex-1 text-left"
                 aria-expanded={trophyEditorOpen}
               >
-                <Eyebrow>Trophies Page Editor</Eyebrow>
+                <div className="flex items-center gap-3">
+                  <Trophy className="text-[#CC0000]" />
+                  <Eyebrow>Trophies Page Editor</Eyebrow>
+                </div>
                 <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Add and Update Public Achievements</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5b5450]">
                   Changes save to the public Trophies page. Use one highlight per line for tournament entries.
