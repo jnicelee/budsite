@@ -88,6 +88,52 @@ Required fields:
 
 When notes are saved, they become meeting posts in the Meetings tab. Posts are ordered by date, newest first. E-board members can delete meeting posts.
 
+### Trophies Page APDA Updater
+
+The **Update from APDA** button in the Trophies Page Editor has two stages: **preview** and **apply**. It does not change the website when first clicked.
+
+When clicked, the updater looks for:
+
+- The currently selected Trophies editor season. For example, `2025-2026` becomes APDA season `2025`.
+- Boston University's APDA school page, school ID `6`.
+- Current roster members from `season_summary.members`, including each debater's name, APDA status, and years on team.
+- Each current member's APDA detail page, used to collect tournament-level awards for that season.
+- BU's COTY history and current season COTY breakdown.
+- Tournament team awards where at least one debater is from Boston University.
+- Speaker awards where the speaker is from Boston University.
+
+The updater ignores:
+
+- Non-placed placeholder rows.
+- Awards with no real APDA placement.
+- Non-BU speaker awards.
+- Non-BU team results unless the team includes a BU debater.
+
+After the preview is reviewed and **Apply Reviewed Changes** is clicked, the updater changes:
+
+- **Top Stats**: replaces APDA-managed stats such as current COTY rank, current members, COTY contributors, and previous COTY rank.
+- **Accomplishments**: replaces APDA-managed lines involving Terrier Central members, COTY rank/points, and COTY contributors.
+- **Selected Season Results Timeline**: replaces that APDA season's timeline with the newly pulled tournament results.
+- **Current Member Achievement Cards**: replaces the member achievement list with the current APDA roster and each member's APDA-listed awards.
+
+The updater does not change:
+
+- Milestone cards.
+- Manually added non-APDA stats.
+- Manually added non-APDA accomplishments.
+- Other seasons besides the APDA season being applied.
+- Secretary notes, budget tracker, member accounts, or any other module.
+
+Generated tournament wording uses the public Trophies page style:
+
+- `are Varsity Champions`
+- `are Novice Champions`
+- `places 2nd in Varsity/Novice Team`
+- `reaches Varsity/Novice Semi-Finals`
+- `earns 1st/2nd/etc. Varsity/Novice Speaker`
+
+Within each tournament, generated highlights are ordered by prestige: team awards first, then speaker awards; Varsity before Novice; higher placements before lower placements.
+
 ### Members List
 
 Administrators and approved member managers can view member accounts.
