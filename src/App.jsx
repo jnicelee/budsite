@@ -1223,6 +1223,7 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const [newTrophyMilestone, setNewTrophyMilestone] = useState({ year: "", title: "", copy: "" });
   const [newTrophyResult, setNewTrophyResult] = useState({ date: "", tournament: "", highlights: "" });
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
+  const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
@@ -1252,7 +1253,9 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
     ? `Welcome, ${displayName}`
     : visibleTab === "members"
       ? "Members"
-      : "E-Board Workspace";
+      : visibleTab === "budsite"
+        ? "Budsite Editor"
+        : "E-Board Workspace";
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
     links: memberLinks.filter((link) => link.section === section),
@@ -1755,13 +1758,22 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
           Member Resources
         </button>
         {isEboard && (
-          <button
-            type="button"
-            onClick={() => setActiveTab("eboard")}
-            className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "eboard" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
-          >
-            E-Board Workspace
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setActiveTab("eboard")}
+              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "eboard" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+            >
+              E-Board Workspace
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("budsite")}
+              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] ${visibleTab === "budsite" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+            >
+              Budsite Editor
+            </button>
+          </>
         )}
         {canManageMembers && (
           <button
@@ -2197,76 +2209,101 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
               </div>
             </Card>
           </div>
+        </div>
+      )}
 
+      {visibleTab === "budsite" && isEboard && (
+        <div className="grid gap-5">
           <div className="grid">
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
-              <div className="mb-5 flex items-center gap-3">
-                <FileText className="text-[#CC0000]" />
-                <h2 className="text-xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
-              </div>
-              <form onSubmit={handleNoteSubmit} className="grid gap-4">
-                <fieldset disabled={!canWriteNotes} className="grid gap-4 disabled:opacity-55">
-                  <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
-                    <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                      Meeting Date
-                      <input
-                        type="date"
-                        value={meetingDate}
-                        onChange={(event) => setMeetingDate(event.target.value)}
-                        required
-                        className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                      />
-                    </label>
-                    <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                      Brief Title
-                      <input
-                        type="text"
-                        value={meetingTitle}
-                        onChange={(event) => setMeetingTitle(event.target.value)}
-                        required
-                        placeholder={canWriteNotes ? "Budget approvals and novice outreach" : "E-board-only editing"}
-                        className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                      />
-                    </label>
+              <button
+                type="button"
+                onClick={() => setNotesEditorOpen((current) => !current)}
+                className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+                aria-expanded={notesEditorOpen}
+              >
+                <div>
+                  <div className="flex items-center gap-3">
+                    <FileText className="text-[#CC0000]" />
+                    <Eyebrow>Budsite Editor</Eyebrow>
                   </div>
-                  <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                    Notes
-                    <textarea
-                      value={meetingNotes}
-                      onChange={(event) => setMeetingNotes(event.target.value)}
-                      rows={5}
-                      placeholder={canWriteNotes ? "Type meeting minutes, decisions, votes, next steps, and owner assignments here." : "E-board-only editing"}
-                      className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
-                    />
-                  </label>
-                  <button type="submit" disabled={!canWriteNotes} className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:opacity-40">
-                    Save Notes
-                  </button>
-                </fieldset>
-              </form>
+                  <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Secretary Meeting Notes</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                    Save public meeting notes and choose a past note to preview.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                  {notesEditorOpen ? "Close Notes" : "Open Notes"} <ChevronDown size={16} className={`transition ${notesEditorOpen ? "rotate-180" : ""}`} />
+                </span>
+              </button>
 
-              <div className="mt-4 min-h-0 flex-1 border-t border-[#ded8d2] pt-4">
-                <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                  Past E-Board Notes
-                  <select
-                    value={selectedNote?.id ?? ""}
-                    onChange={(event) => setSelectedNoteId(event.target.value)}
-                    className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                  >
-                    {sortedNotes.length === 0 && <option>No Saved Notes Yet</option>}
-                    {sortedNotes.map((note) => (
-                      <option key={note.id} value={note.id}>{note.date} - {note.title}</option>
-                    ))}
-                  </select>
-                </label>
-                {selectedNote && (
-                  <div className="mt-3 max-h-[11rem] overflow-y-auto border border-[#ded8d2] bg-[#f6f4f2] p-4">
-                    <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{selectedNote.date}</p>
-                    <h3 className="mt-2 text-xl font-black text-[#2D2926]">{selectedNote.title}</h3>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{selectedNote.body || "No Notes Body Added."}</p>
+              {notesEditorOpen && (
+                <div className="mt-5">
+                  <form onSubmit={handleNoteSubmit} className="grid gap-4">
+                    <fieldset disabled={!canWriteNotes} className="grid gap-4 disabled:opacity-55">
+                      <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
+                        <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Meeting Date
+                          <input
+                            type="date"
+                            value={meetingDate}
+                            onChange={(event) => setMeetingDate(event.target.value)}
+                            required
+                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                        <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Brief Title
+                          <input
+                            type="text"
+                            value={meetingTitle}
+                            onChange={(event) => setMeetingTitle(event.target.value)}
+                            required
+                            placeholder={canWriteNotes ? "Budget approvals and novice outreach" : "E-board-only editing"}
+                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                      </div>
+                      <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        Notes
+                        <textarea
+                          value={meetingNotes}
+                          onChange={(event) => setMeetingNotes(event.target.value)}
+                          rows={5}
+                          placeholder={canWriteNotes ? "Type meeting minutes, decisions, votes, next steps, and owner assignments here." : "E-board-only editing"}
+                          className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
+                        />
+                      </label>
+                      <button type="submit" disabled={!canWriteNotes} className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:opacity-40">
+                        Save Notes
+                      </button>
+                    </fieldset>
+                  </form>
+
+                  <div className="mt-4 min-h-0 flex-1 border-t border-[#ded8d2] pt-4">
+                    <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      Past E-Board Notes
+                      <select
+                        value={selectedNote?.id ?? ""}
+                        onChange={(event) => setSelectedNoteId(event.target.value)}
+                        className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      >
+                        {sortedNotes.length === 0 && <option>No Saved Notes Yet</option>}
+                        {sortedNotes.map((note) => (
+                          <option key={note.id} value={note.id}>{note.date} - {note.title}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {selectedNote && (
+                      <div className="mt-3 max-h-[11rem] overflow-y-auto border border-[#ded8d2] bg-[#f6f4f2] p-4">
+                        <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{selectedNote.date}</p>
+                        <h3 className="mt-2 text-xl font-black text-[#2D2926]">{selectedNote.title}</h3>
+                        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{selectedNote.body || "No Notes Body Added."}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </Card>
           </div>
 
