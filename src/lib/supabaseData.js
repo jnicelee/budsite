@@ -271,6 +271,15 @@ export async function updateMemberAccountRole(id, role) {
   if (error) console.error("Supabase member role update failed", error);
 }
 
+export async function updateMemberAccountName(id, name) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("member_accounts")
+    .update({ name, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) console.error("Supabase member name update failed", error);
+}
+
 export async function revokeMemberAccount(id) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase

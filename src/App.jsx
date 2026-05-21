@@ -45,6 +45,7 @@ import {
   MEMBER_ACCOUNT_ROLES,
   MEMBER_MANAGER_EMAILS,
   MEMBERSHIP_REQUEST_STATUSES,
+  RESERVED_ACCOUNT_EMAILS,
 } from "./data/config";
 import {
   apdaSourceUrl,
@@ -73,6 +74,7 @@ import {
   loadTrophiesContent,
   revokeMemberAccount,
   unrevokeMemberAccount,
+  updateMemberAccountName,
   updateMemberAccountRole,
   updateMembershipRequestStatus,
   upsertAgendaItem,
@@ -1267,6 +1269,12 @@ function JoinPage({ auth, onRequestConfirmation }) {
       return;
     }
 
+    if (RESERVED_ACCOUNT_EMAILS.includes(normalizedEmail)) {
+      setSubmitMessageType("error");
+      setSubmitMessage("That email is reserved and cannot be used for a membership request.");
+      return;
+    }
+
     if (requestPassword.trim().length < 6) {
       setSubmitMessageType("error");
       setSubmitMessage("Please choose a password with at least 6 characters.");
@@ -1297,6 +1305,12 @@ function JoinPage({ auth, onRequestConfirmation }) {
   };
 
   const reviewMembershipRequest = (id, status) => {
+    const reviewedRequest = requests.find((request) => request.id === id);
+    if (status === "Accepted" && reviewedRequest && RESERVED_ACCOUNT_EMAILS.includes(reviewedRequest.email.toLowerCase())) {
+      setReviewReasons((current) => ({ ...current, [id]: "This email is reserved and cannot be accepted through requests." }));
+      return;
+    }
+
     const reason = reviewReasons[id]?.trim() || (status === "Accepted" ? "Welcome to BUDS!" : "");
     if (!reason) {
       setReviewReasons((current) => ({ ...current, [id]: "Please add a reason before deciding." }));
@@ -1311,7 +1325,6 @@ function JoinPage({ auth, onRequestConfirmation }) {
     setRequests(nextRequests);
     saveStoredMembershipRequests(nextRequests);
     updateMembershipRequestStatus(id, status, reason);
-    const reviewedRequest = requests.find((request) => request.id === id);
     if (status === "Accepted" && reviewedRequest) {
       upsertMemberAccount({
         id: reviewedRequest.email,
@@ -2232,6 +2245,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
     updateMemberAccountRole(id, role);
   };
 
+  const updateMemberName = (id, name) => {
+    if (!isAdmin) return;
+    const nextAccounts = memberAccounts.map((account) => (
+      account.id === id ? { ...account, name, updated_at: new Date().toISOString() } : account
+    ));
+    setMemberAccounts(nextAccounts);
+    saveStoredMemberAccounts(nextAccounts);
+    updateMemberAccountName(id, name);
+  };
+
   const revokeMember = (id) => {
     if (!canManageMembers) return;
     const account = memberAccounts.find((memberAccount) => memberAccount.id === id);
@@ -2455,7 +2478,18 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
                 )}
                 {memberAccounts.map((account) => (
                   <tr key={account.id} className={`${account.status === "revoked" ? "bg-[#d4d0cc] opacity-80" : "bg-white"} border-b border-[#ded8d2]`}>
-                    <td className="px-4 py-3 font-black text-[#2D2926]">{account.name}</td>
+                    <td className="px-4 py-3 font-black text-[#2D2926]">
+                      {isAdmin ? (
+                        <input
+                          value={account.name}
+                          onChange={(event) => updateMemberName(account.id, event.target.value)}
+                          className="w-full min-w-40 border border-[#ded8d2] bg-white px-3 py-2 font-black text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          aria-label={`Name for ${account.email}`}
+                        />
+                      ) : (
+                        account.name
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-[#5b5450]">{account.email}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 text-xs font-black uppercase tracking-[0.08em] ${account.status === "revoked" ? "bg-[#2D2926] text-white" : "bg-[#e5f7ec] text-[#0b6b35]"}`}>
@@ -3175,7 +3209,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
               <SmoothDetails title="Current Member Achievements" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
-                    <input value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} placeholder="Member name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    {isAdmin ? (
+                      <input value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} placeholder="Member name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    ) : (
+                      <select value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} className="border border-[#ded8d2] bg-white px-3 py-2 text-sm outline-none focus:border-[#CC0000]">
+                        <option value="">Choose member</option>
+                        {trophiesContent.members.map((member) => (
+                          <option key={member.id} value={member.name}>{member.name}</option>
+                        ))}
+                      </select>
+                    )}
                     <input value={newTrophyMember.meta} onChange={(event) => setNewTrophyMember((current) => ({ ...current, meta: event.target.value }))} placeholder="Meta, optional" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                   </div>
@@ -3185,7 +3228,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, onTrophiesCont
                   {trophiesContent.members.map((member) => (
                     <div key={member.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
                       <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
-                        <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                        <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} disabled={!isAdmin} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                         <input value={member.meta} onChange={(event) => updateTrophyItem("members", member.id, "meta", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                         <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${member.name}?`, body: "This member achievement card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("members", member.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
                       </div>
