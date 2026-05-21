@@ -19,6 +19,8 @@ import {
   MapPin,
   Medal,
   Menu,
+  RefreshCw,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Trophy,
@@ -449,6 +451,37 @@ function RichTextEditor({ value, onChange, disabled = false, placeholder = "" })
 
 function sortResultSeasons(seasons = []) {
   return [...seasons].sort((a, b) => b.id.localeCompare(a.id));
+}
+
+function isApdaManagedStat(stat) {
+  return stat.id?.startsWith("apda-") || /coty rank|coty contributors|current members/i.test(`${stat.label} ${stat.detail}`);
+}
+
+function isApdaManagedAccomplishment(item) {
+  return item.id?.startsWith("apda-") || /terrier central|coty/i.test(item.text || "");
+}
+
+function mergeApdaTrophiesProposal(content, proposal) {
+  const nextStats = [
+    ...proposal.stats,
+    ...(content.stats || []).filter((stat) => !isApdaManagedStat(stat)),
+  ];
+  const nextAccomplishments = [
+    ...proposal.accomplishments,
+    ...(content.accomplishments || []).filter((item) => !isApdaManagedAccomplishment(item)),
+  ];
+  const nextResultSeasons = (content.resultSeasons || []).some((season) => season.id === proposal.resultSeason.id)
+    ? content.resultSeasons.map((season) => (season.id === proposal.resultSeason.id ? proposal.resultSeason : season))
+    : [...(content.resultSeasons || []), proposal.resultSeason];
+
+  return {
+    ...content,
+    sourceUrl: proposal.sourceUrl || content.sourceUrl,
+    stats: nextStats,
+    accomplishments: nextAccomplishments,
+    resultSeasons: sortResultSeasons(nextResultSeasons),
+    members: proposal.members || content.members,
+  };
 }
 
 function escapeHtml(value = "") {
@@ -1580,6 +1613,8 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const [selectedTrophySeasonId, setSelectedTrophySeasonId] = useState("");
   const [newTrophySeason, setNewTrophySeason] = useState("");
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
+  const [apdaUpdatePreview, setApdaUpdatePreview] = useState(null);
+  const [apdaUpdateStatus, setApdaUpdateStatus] = useState({ state: "idle", message: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
 
@@ -1999,6 +2034,43 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
           resultSeasons: content.resultSeasons.filter((season) => season.id !== selectedTrophySeasonIdValue),
         }));
         setSelectedTrophySeasonId(remainingSeasons[0]?.id || "");
+      },
+    });
+  };
+
+  const pullApdaTrophiesPreview = async () => {
+    if (!canEditTrophies) return;
+    setApdaUpdateStatus({ state: "loading", message: "Pulling the latest APDA standings. Existing Trophies content is untouched." });
+    setApdaUpdatePreview(null);
+    try {
+      const currentSeason = selectedTrophySeasonIdValue ? selectedTrophySeasonIdValue.slice(0, 4) : "";
+      const response = await fetch(`/api/apda-preview${currentSeason ? `?season=${encodeURIComponent(currentSeason)}` : ""}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.error || "APDA update failed.");
+      setApdaUpdatePreview(data);
+      setApdaUpdateStatus({
+        state: "ready",
+        message: `Review ${data.summary.tournamentCount} tournaments, ${data.summary.highlightCount} highlights, and ${data.summary.memberCount} member cards before applying.`,
+      });
+    } catch (error) {
+      setApdaUpdateStatus({
+        state: "error",
+        message: error instanceof Error ? error.message : "Could not pull APDA standings safely.",
+      });
+    }
+  };
+
+  const applyApdaTrophiesPreview = () => {
+    if (!apdaUpdatePreview) return;
+    requestDeleteConfirmation({
+      title: `Apply APDA update for ${apdaUpdatePreview.seasonDisplay}?`,
+      body: `This will update APDA-managed stats, accomplishments, the ${apdaUpdatePreview.seasonDisplay} results timeline, and current member achievement cards. You already reviewed the preview; this is the final save step.`,
+      actionLabel: "Apply Update",
+      onConfirm: () => {
+        persistTrophiesContent((content) => mergeApdaTrophiesProposal(content, apdaUpdatePreview));
+        setSelectedTrophySeasonId(apdaUpdatePreview.resultSeason.id);
+        setApdaUpdateStatus({ state: "idle", message: `Applied APDA update for ${apdaUpdatePreview.seasonDisplay}.` });
+        setApdaUpdatePreview(null);
       },
     });
   };
@@ -2825,6 +2897,126 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                   className="overflow-hidden"
                 >
                   <div className="mt-5">
+                    <div className="mb-5 border border-[#ded8d2] bg-[#f6f4f2] p-4">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="max-w-3xl">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={18} className="text-[#CC0000]" />
+                            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Safe APDA Update</p>
+                          </div>
+                          <h3 className="mt-2 text-xl font-black text-[#2D2926]">Pull standings, review, then apply.</h3>
+                          <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                            This creates a preview from APDA before saving anything. Applying the preview updates APDA-managed stats, accomplishments, the selected season timeline, and member achievement cards.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={pullApdaTrophiesPreview}
+                          disabled={apdaUpdateStatus.state === "loading"}
+                          className="inline-flex items-center justify-center gap-2 bg-[#2D2926] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#CC0000] disabled:cursor-wait disabled:opacity-55"
+                        >
+                          <RefreshCw size={15} className={apdaUpdateStatus.state === "loading" ? "animate-spin" : ""} />
+                          {apdaUpdateStatus.state === "loading" ? "Pulling APDA" : "Update from APDA"}
+                        </button>
+                      </div>
+                      {apdaUpdateStatus.message && (
+                        <p className={`mt-3 border-l-4 px-3 py-2 text-sm font-bold ${
+                          apdaUpdateStatus.state === "error"
+                            ? "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
+                            : "border-[#2D2926] bg-white text-[#5b5450]"
+                        }`}>
+                          {apdaUpdateStatus.message}
+                        </p>
+                      )}
+                      {apdaUpdatePreview && (
+                        <div className="mt-4 grid gap-4 border border-[#ded8d2] bg-white p-4">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Review Required</p>
+                              <h4 className="mt-1 text-lg font-black text-[#2D2926]">{apdaUpdatePreview.seasonDisplay} proposed update</h4>
+                              <p className="mt-1 text-sm leading-6 text-[#5b5450]">
+                                Source: <a href={apdaUpdatePreview.sourceUrl} className="font-black text-[#CC0000] underline">APDA Boston University standings</a>
+                              </p>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-4">
+                              <div className="border border-[#ded8d2] p-2 text-center">
+                                <p className="text-lg font-black">{apdaUpdatePreview.summary.tournamentCount}</p>
+                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Tournaments</p>
+                              </div>
+                              <div className="border border-[#ded8d2] p-2 text-center">
+                                <p className="text-lg font-black">{apdaUpdatePreview.summary.highlightCount}</p>
+                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Highlights</p>
+                              </div>
+                              <div className="border border-[#ded8d2] p-2 text-center">
+                                <p className="text-lg font-black">{apdaUpdatePreview.summary.memberCount}</p>
+                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Members</p>
+                              </div>
+                              <div className="border border-[#ded8d2] p-2 text-center">
+                                <p className="text-lg font-black">{apdaUpdatePreview.summary.cotyContributorCount}</p>
+                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">COTY</p>
+                              </div>
+                            </div>
+                          </div>
+                          {apdaUpdatePreview.warnings?.map((warning) => (
+                            <p key={warning} className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-3 py-2 text-sm font-bold text-[#8a0000]">
+                              {warning}
+                            </p>
+                          ))}
+                          <div className="grid gap-3 xl:grid-cols-2">
+                            <div className="border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Stats and accomplishments to update</p>
+                              <div className="mt-3 grid gap-2">
+                                {apdaUpdatePreview.stats.map((stat) => (
+                                  <div key={stat.id} className="border border-[#ded8d2] bg-white p-2 text-sm">
+                                    <span className="font-black">{stat.value}</span> {stat.label} <span className="text-[#6d6560]">({stat.detail})</span>
+                                  </div>
+                                ))}
+                                {apdaUpdatePreview.accomplishments.map((item) => (
+                                  <div key={item.id} className="border border-[#ded8d2] bg-white p-2 text-sm font-bold">
+                                    {item.text}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Timeline preview</p>
+                              <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto pr-1">
+                                {apdaUpdatePreview.resultSeason.results.slice(0, 8).map((result) => (
+                                  <div key={result.id} className="border border-[#ded8d2] bg-white p-2">
+                                    <p className="text-xs font-black text-[#CC0000]">{result.date}</p>
+                                    <p className="text-sm font-black text-[#2D2926]">{result.tournament}</p>
+                                    <ul className="mt-1 list-disc pl-5 text-xs leading-5 text-[#5b5450]">
+                                      {result.highlights.slice(0, 4).map((highlight) => (
+                                        <li key={highlight}>{highlight}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setApdaUpdatePreview(null);
+                                setApdaUpdateStatus({ state: "idle", message: "APDA preview dismissed. No changes were saved." });
+                              }}
+                              className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]"
+                            >
+                              Dismiss Preview
+                            </button>
+                            <button
+                              type="button"
+                              onClick={applyApdaTrophiesPreview}
+                              className="bg-[#CC0000] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]"
+                            >
+                              Apply Reviewed Changes
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
             <div className="columns-1 gap-5 xl:columns-2">
               <SmoothDetails title="Top Stats" defaultOpen className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
