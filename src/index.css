@@ -44,3 +44,28 @@ a {
   background: var(--bu-red);
   color: white;
 }
+
+.rich-note ul {
+  list-style: disc;
+  margin: 0.75rem 0 0.75rem 1.25rem;
+}
+
+.rich-note ol {
+  list-style: decimal;
+  margin: 0.75rem 0 0.75rem 1.25rem;
+}
+
+.rich-note li {
+  margin-top: 0.25rem;
+}
+
+.rich-note a {
+  color: var(--bu-red);
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.rich-note p,
+.rich-note div {
+  margin: 0.5rem 0;
+}

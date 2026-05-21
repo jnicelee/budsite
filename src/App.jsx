@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
+  Bold,
   ChevronDown,
   ChevronRight,
   ClipboardList,
   DollarSign,
   ExternalLink,
   FileText,
+  Italic,
+  Link2,
+  List,
+  ListOrdered,
   Lock,
   LogOut,
   Mail,
@@ -17,6 +22,7 @@ import {
   Sparkles,
   Trash2,
   Trophy,
+  Underline,
   X,
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
@@ -233,8 +239,168 @@ function SmoothDetails({ title, children, className = "", defaultOpen = false })
   );
 }
 
+const richTextToolbarTools = [
+  { label: "Bold", icon: Bold, command: "bold" },
+  { label: "Italic", icon: Italic, command: "italic" },
+  { label: "Underline", icon: Underline, command: "underline" },
+  { label: "Link", icon: Link2, command: "link" },
+  { label: "Bulleted list", icon: List, command: "insertUnorderedList" },
+  { label: "Numbered list", icon: ListOrdered, command: "insertOrderedList" },
+];
+
+function RichTextEditor({ value, onChange, disabled = false, placeholder = "" }) {
+  const editorRef = useRef(null);
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!editorRef.current || focused) return;
+    editorRef.current.innerHTML = value || "";
+  }, [focused, value]);
+
+  const syncValue = () => {
+    const nextValue = sanitizeRichText(editorRef.current?.innerHTML || "");
+    onChange(nextValue);
+  };
+
+  const runCommand = (command, commandValue = null) => {
+    if (disabled) return;
+    editorRef.current?.focus();
+    document.execCommand(command, false, commandValue);
+    syncValue();
+  };
+
+  const addLink = () => {
+    if (disabled) return;
+    const rawUrl = window.prompt("Enter a link URL");
+    if (!rawUrl) return;
+    const url = /^(https?:|mailto:)/i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    runCommand("createLink", url);
+  };
+
+  const handleToolbarClick = (command) => {
+    if (command === "link") {
+      addLink();
+      return;
+    }
+    runCommand(command);
+  };
+
+  const isEmpty = !richTextToPlainText(value);
+
+  return (
+    <div className={`border border-[#ded8d2] bg-white ${disabled ? "opacity-55" : ""}`}>
+      <div className="flex flex-wrap gap-1 border-b border-[#ded8d2] bg-[#f6f4f2] p-2">
+        {richTextToolbarTools.map(({ label, icon: Icon, command }) => (
+          <button
+            key={label}
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleToolbarClick(command)}
+            disabled={disabled}
+            title={label}
+            aria-label={label}
+            className="grid h-9 w-9 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Icon size={16} />
+          </button>
+        ))}
+      </div>
+      <div className="relative">
+        {isEmpty && !focused && (
+          <p className="pointer-events-none absolute left-3 top-3 text-sm font-medium text-[#8f8781]">
+            {placeholder}
+          </p>
+        )}
+        <div
+          ref={editorRef}
+          contentEditable={!disabled}
+          suppressContentEditableWarning
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            syncValue();
+          }}
+          onInput={syncValue}
+          className="rich-note min-h-40 px-3 py-3 text-sm font-medium leading-7 text-[#2D2926] outline-none focus:ring-2 focus:ring-[#CC0000]/25"
+        />
+      </div>
+    </div>
+  );
+}
+
 function sortResultSeasons(seasons = []) {
   return [...seasons].sort((a, b) => b.id.localeCompare(a.id));
+}
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function isRichText(value = "") {
+  return /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+function richTextToPlainText(value = "") {
+  if (!value) return "";
+  if (typeof window === "undefined") return value.replace(/<[^>]*>/g, " ").trim();
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = sanitizeRichText(value);
+  return wrapper.textContent?.trim() || "";
+}
+
+function normalizeRichTextForDisplay(value = "") {
+  if (!value) return "";
+  return isRichText(value) ? sanitizeRichText(value) : escapeHtml(value).replace(/\n/g, "<br>");
+}
+
+function sanitizeRichText(value = "") {
+  if (!value) return "";
+  if (typeof window === "undefined") return escapeHtml(value);
+
+  const allowedTags = new Set(["A", "B", "BR", "DIV", "EM", "I", "LI", "OL", "P", "SPAN", "STRONG", "U", "UL"]);
+  const template = document.createElement("template");
+  template.innerHTML = value;
+
+  const cleanNode = (node) => {
+    [...node.childNodes].forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) return;
+      if (child.nodeType !== Node.ELEMENT_NODE) {
+        child.remove();
+        return;
+      }
+
+      if (["SCRIPT", "STYLE"].includes(child.tagName)) {
+        child.remove();
+        return;
+      }
+
+      if (!allowedTags.has(child.tagName)) {
+        cleanNode(child);
+        child.replaceWith(...child.childNodes);
+        return;
+      }
+
+      const href = child.tagName === "A" ? child.getAttribute("href") || "" : "";
+      [...child.attributes].forEach((attribute) => child.removeAttribute(attribute.name));
+      if (child.tagName === "A") {
+        const isAllowedHref = /^(https?:|mailto:)/i.test(href);
+        if (isAllowedHref) {
+          child.setAttribute("href", href);
+          child.setAttribute("target", "_blank");
+          child.setAttribute("rel", "noreferrer");
+        }
+      }
+      cleanNode(child);
+    });
+  };
+
+  cleanNode(template.content);
+  return template.innerHTML;
 }
 
 function normalizeSeasonId(value) {
@@ -574,9 +740,14 @@ function MeetingsPage({ auth, onRequestConfirmation }) {
                   </button>
                 )}
               </div>
-              <p className="mt-5 whitespace-pre-wrap text-base leading-8 text-[#4d4743]">
-                {post.body || "No Notes Body Added."}
-              </p>
+              {post.body ? (
+                <div
+                  className="rich-note mt-5 text-base leading-8 text-[#4d4743]"
+                  dangerouslySetInnerHTML={{ __html: normalizeRichTextForDisplay(post.body) }}
+                />
+              ) : (
+                <p className="mt-5 text-base leading-8 text-[#4d4743]">No Notes Body Added.</p>
+              )}
             </div>
           </article>
         ))}
@@ -1384,11 +1555,13 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
   const handleNoteSubmit = (event) => {
     event.preventDefault();
     if (!canWriteNotes) return;
+    const body = sanitizeRichText(meetingNotes);
+    if (!richTextToPlainText(body)) return;
     const nextNote = {
       id: `${meetingDate}-${Date.now()}`,
       date: meetingDate,
       title: meetingTitle.trim(),
-      body: meetingNotes.trim(),
+      body,
       created_at: new Date().toISOString(),
     };
     const nextNotes = [nextNote, ...notes];
@@ -2434,12 +2607,11 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                       </div>
                       <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                         Notes
-                        <textarea
+                        <RichTextEditor
                           value={meetingNotes}
-                          onChange={(event) => setMeetingNotes(event.target.value)}
-                          rows={5}
+                          onChange={setMeetingNotes}
+                          disabled={!canWriteNotes}
                           placeholder={canWriteNotes ? "Type meeting minutes, decisions, votes, next steps, and owner assignments here." : "E-board-only editing"}
-                          className="resize-none border border-[#ded8d2] px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] xl:h-[9rem]"
                         />
                       </label>
                       <button type="submit" disabled={!canWriteNotes} className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:opacity-40">
@@ -2466,7 +2638,14 @@ function PrivateHubPage({ auth, trophiesContent, onTrophiesContentChange, onRequ
                       <div className="mt-3 max-h-[11rem] overflow-y-auto border border-[#ded8d2] bg-[#f6f4f2] p-4">
                         <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{selectedNote.date}</p>
                         <h3 className="mt-2 text-xl font-black text-[#2D2926]">{selectedNote.title}</h3>
-                        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{selectedNote.body || "No Notes Body Added."}</p>
+                        {selectedNote.body ? (
+                          <div
+                            className="rich-note mt-3 text-sm leading-6 text-[#5b5450]"
+                            dangerouslySetInnerHTML={{ __html: normalizeRichTextForDisplay(selectedNote.body) }}
+                          />
+                        ) : (
+                          <p className="mt-3 text-sm leading-6 text-[#5b5450]">No Notes Body Added.</p>
+                        )}
                       </div>
                     )}
                   </div>
