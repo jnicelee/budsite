@@ -419,6 +419,52 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function summarizeArrayChanges(label, draftItems = [], publishedItems = []) {
+  const draftById = new Map(draftItems.map((item) => [item.id, item]));
+  const publishedById = new Map(publishedItems.map((item) => [item.id, item]));
+  const added = draftItems.filter((item) => !publishedById.has(item.id)).length;
+  const removed = publishedItems.filter((item) => !draftById.has(item.id)).length;
+  const edited = draftItems.filter((item) => {
+    const publishedItem = publishedById.get(item.id);
+    return publishedItem && JSON.stringify(item) !== JSON.stringify(publishedItem);
+  }).length;
+  const parts = [];
+  if (added) parts.push(`${added} added`);
+  if (edited) parts.push(`${edited} edited`);
+  if (removed) parts.push(`${removed} removed`);
+  return parts.length > 0 ? `${label}: ${parts.join(", ")}` : "";
+}
+
+function getPublishChangeSummary(id, draft, published) {
+  if (JSON.stringify(draft) === JSON.stringify(published)) return "No draft changes detected.";
+  if (id === "meetings") {
+    const changes = [];
+    if (draft.announcementTitle !== published.announcementTitle) changes.push("announcement title changed");
+    if (draft.announcementBody !== published.announcementBody) changes.push("announcement body changed");
+    if (draft.announcementUpdatedAt !== published.announcementUpdatedAt) changes.push("updated date changed");
+    return changes.length > 0 ? changes.join("; ") : "Meetings announcement changed.";
+  }
+  if (id === "novice") {
+    return [
+      summarizeArrayChanges("Speech infographic", draft.speechSteps, published.speechSteps),
+      summarizeArrayChanges("FAQ", draft.faqs, published.faqs),
+    ].filter(Boolean).join("; ") || "Novice Hub content changed.";
+  }
+  if (id === "eboard") {
+    return summarizeArrayChanges("E-board members", draft.members, published.members) || "E-Board page content changed.";
+  }
+  if (id === "trophies") {
+    return [
+      summarizeArrayChanges("Top stats", draft.stats, published.stats),
+      summarizeArrayChanges("Accomplishments", draft.accomplishments, published.accomplishments),
+      summarizeArrayChanges("Milestones", draft.milestones, published.milestones),
+      summarizeArrayChanges("Result seasons", draft.resultSeasons, published.resultSeasons),
+      summarizeArrayChanges("Member achievement cards", draft.members, published.members),
+    ].filter(Boolean).join("; ") || "Trophies page content changed.";
+  }
+  return "Draft content changed.";
+}
+
 const richTextToolbarTools = [
   { label: "Bold", icon: Bold, command: "bold" },
   { label: "Italic", icon: Italic, command: "italic" },
@@ -2083,11 +2129,20 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     const target = publishMap[id];
     if (!target) return;
     const normalizedDraft = target.normalizer(target.draft);
-    const revision = createContentRevision(target.normalizer(target.published), `${target.label} before publish`);
-    updateRevisionList(id, revision, target.normalizer);
-    target.publish(normalizedDraft);
-    saveStoredDraftContent(id, normalizedDraft);
-    showEditorNotice(`${target.label} published.`);
+    const normalizedPublished = target.normalizer(target.published);
+    const summary = getPublishChangeSummary(id, normalizedDraft, normalizedPublished);
+    requestDeleteConfirmation({
+      title: `Publish ${target.label}?`,
+      body: `Change summary: ${summary} Publishing will replace the live public page and save the current live version in revision history.`,
+      actionLabel: "Publish",
+      onConfirm: () => {
+        const revision = createContentRevision(normalizedPublished, `${target.label} before publish`);
+        updateRevisionList(id, revision, target.normalizer);
+        target.publish(normalizedDraft);
+        saveStoredDraftContent(id, normalizedDraft);
+        showEditorNotice(`${target.label} published.`);
+      },
+    });
   };
 
   const restoreContentRevision = (id, revision) => {
@@ -3661,6 +3716,41 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </div>
               <SaveNotice notice={editorNotice} />
             </div>
+            <div className="mt-4 grid gap-3 border-y border-[#ded8d2] py-3 lg:grid-cols-3">
+              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+                <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">1. Draft</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Edit modules below. Changes stay private until published.</p>
+              </div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+                <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">2. Preview</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Use Preview Draft to check what the public page will look like.</p>
+              </div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+                <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">3. Publish</p>
+                <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Review the change summary, confirm, then the live page updates.</p>
+              </div>
+            </div>
+            <div className="mt-4 border border-[#ded8d2] bg-white p-3">
+              <SmoothDetails title="Editor Manual" className="text-sm">
+                <div className="grid gap-3 text-sm font-semibold leading-6 text-[#5b5450] lg:grid-cols-3">
+                  <div>
+                    <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Publishing</p>
+                    <p className="mt-1">Public pages do not update until Publish is confirmed. Publishing saves the previous live version as a revision.</p>
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Restoring</p>
+                    <p className="mt-1">Restore puts an old version into draft only. Preview it, then publish if it should become live.</p>
+                  </div>
+                  <div>
+                    <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Photos and APDA</p>
+                    <p className="mt-1">E-board photos upload to Supabase Storage. APDA updates should be previewed before applying and publishing.</p>
+                  </div>
+                </div>
+              </SmoothDetails>
+            </div>
+            <div>
+              <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Publishing Control</p>
+            </div>
             <div className="mt-4 grid items-start gap-3 lg:grid-cols-4">
               {contentDashboardItems.map((item) => {
                 const isDirty = JSON.stringify(item.draft) !== JSON.stringify(item.published);
@@ -3716,6 +3806,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </div>
             )}
           </Card>
+          <div className="border-b-4 border-[#CC0000] pb-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Meeting Tools</p>
+            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Meeting notes and public announcements</h2>
+          </div>
           <div className="grid">
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
               <button
@@ -3887,6 +3981,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
+
+          <div className="border-b-4 border-[#CC0000] pb-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Novice Hub Editors</p>
+            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Beginner education and FAQ content</h2>
+          </div>
 
           {isAdmin && (
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
@@ -4116,6 +4215,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </AnimatePresence>
           </Card>
 
+          <div className="border-b-4 border-[#CC0000] pb-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Public People</p>
+            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Current e-board profiles and photos</h2>
+          </div>
+
           <Card className="flex min-h-0 flex-col p-4 sm:p-5">
             <button
               type="button"
@@ -4285,6 +4389,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
+
+          <div className="border-b-4 border-[#CC0000] pb-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Trophies / APDA</p>
+            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Results, achievements, and standings updates</h2>
+          </div>
 
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
