@@ -2,6 +2,15 @@ import { agendaItems, initialBudgetRevenueRows, initialBudgetRows, privateLinks 
 import { isSupabaseConfigured, supabase } from "../supabaseClient";
 import { enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeEboardContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
 
+const contentNormalizers = {
+  trophies: normalizeTrophiesContent,
+  meetings: normalizeMeetingsContent,
+  novice: normalizeNoviceContent,
+  eboard: normalizeEboardContent,
+};
+
+const contentRevisionsId = (id) => `${id}-revisions`;
+
 function normalizeSupabaseBudgetRow(row) {
   return {
     id: row.id,
@@ -18,6 +27,14 @@ function normalizeSupabaseRevenueRow(row) {
     category: row.category,
     amount: Number(row.amount) || 0,
   };
+}
+
+function normalizeContentRevisionList(id, revisions = []) {
+  const normalizer = contentNormalizers[id] || ((content) => content);
+  return revisions.slice(0, 3).map((revision) => ({
+    ...revision,
+    content: normalizer(revision.content),
+  }));
 }
 
 export async function loadDatabaseState() {
@@ -158,6 +175,29 @@ export async function upsertTrophiesContent(content) {
     .from("site_content")
     .upsert({ id: "trophies", content: normalizeTrophiesContent(content), updated_at: new Date().toISOString() });
   if (error) console.error("Supabase trophies content upsert failed", error);
+}
+
+export async function loadContentRevisions(id) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.from("site_content").select("content").eq("id", contentRevisionsId(id)).maybeSingle();
+  if (error) {
+    console.error("Supabase content revisions load failed", error);
+    return null;
+  }
+  if (!data) return null;
+  return normalizeContentRevisionList(id, data?.content?.revisions || []);
+}
+
+export async function upsertContentRevisions(id, revisions) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("site_content")
+    .upsert({
+      id: contentRevisionsId(id),
+      content: { revisions: normalizeContentRevisionList(id, revisions) },
+      updated_at: new Date().toISOString(),
+    });
+  if (error) console.error("Supabase content revisions upsert failed", error);
 }
 
 export async function uploadPublicImage(file, folder = "uploads") {

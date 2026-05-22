@@ -73,6 +73,7 @@ import {
   findMemberAccountByEmail,
   insertMembershipRequest,
   insertNote,
+  loadContentRevisions,
   loadEboardContent,
   loadMeetingsContent,
   loadDatabaseState,
@@ -89,6 +90,7 @@ import {
   upsertBudgetRevenueRow,
   upsertBudgetRow,
   upsertBudgetSettings,
+  upsertContentRevisions,
   upsertEboardContent,
   upsertMeetingsContent,
   upsertMemberAccount,
@@ -374,6 +376,13 @@ function reorderArrayById(items, sourceId, targetId) {
 
 const draftStorageKey = (id) => `buds-draft-${id}`;
 const revisionsStorageKey = (id) => `buds-revisions-${id}`;
+const contentRevisionNormalizers = {
+  trophies: normalizeTrophiesContent,
+  meetings: normalizeMeetingsContent,
+  novice: normalizeNoviceContent,
+  eboard: normalizeEboardContent,
+};
+const contentRevisionIds = ["trophies", "meetings", "novice", "eboard"];
 
 function getStoredDraftContent(id, fallback, normalizer) {
   try {
@@ -400,6 +409,14 @@ function getStoredContentRevisions(id, normalizer) {
 
 function saveStoredContentRevisions(id, revisions) {
   window.localStorage.setItem(revisionsStorageKey(id), JSON.stringify(revisions.slice(0, 3)));
+}
+
+function normalizeContentRevisions(id, revisions = []) {
+  const normalizer = contentRevisionNormalizers[id] || ((content) => content);
+  return revisions.slice(0, 3).map((revision) => ({
+    ...revision,
+    content: normalizer(revision.content),
+  }));
 }
 
 function createContentRevision(content, label) {
@@ -2089,10 +2106,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     event.preventDefault();
   };
 
-  const updateRevisionList = (id, revision, normalizer) => {
-    const nextRevisions = [revision, ...(contentRevisions[id] || [])].slice(0, 3);
+  const persistContentRevisions = (id, revisions) => {
+    const nextRevisions = normalizeContentRevisions(id, revisions);
     setContentRevisions((current) => ({ ...current, [id]: nextRevisions }));
-    saveStoredContentRevisions(id, nextRevisions.map((item) => ({ ...item, content: normalizer(item.content) })));
+    saveStoredContentRevisions(id, nextRevisions);
+    upsertContentRevisions(id, nextRevisions);
+  };
+
+  const updateRevisionList = (id, revision) => {
+    persistContentRevisions(id, [revision, ...(contentRevisions[id] || [])]);
   };
 
   const publishContentDraft = (id) => {
@@ -2137,7 +2159,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       actionLabel: "Publish",
       onConfirm: () => {
         const revision = createContentRevision(normalizedPublished, `${target.label} before publish`);
-        updateRevisionList(id, revision, target.normalizer);
+        updateRevisionList(id, revision);
         target.publish(normalizedDraft);
         saveStoredDraftContent(id, normalizedDraft);
         showEditorNotice(`${target.label} published.`);
@@ -2172,12 +2194,46 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       body: "This saved revision will be removed from revision history. The current draft and live page will not change.",
       onConfirm: () => {
         const nextRevisions = (contentRevisions[id] || []).filter((item) => item.id !== revision.id);
-        setContentRevisions((current) => ({ ...current, [id]: nextRevisions }));
-        saveStoredContentRevisions(id, nextRevisions);
+        persistContentRevisions(id, nextRevisions);
         showEditorNotice("Revision deleted.");
       },
     });
   };
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateSharedRevisions() {
+      const revisionEntries = await Promise.all(
+        contentRevisionIds.map(async (id) => {
+          const sharedRevisions = await loadContentRevisions(id);
+          return [id, sharedRevisions];
+        }),
+      );
+      if (ignore) return;
+
+      setContentRevisions((current) => {
+        const next = { ...current };
+        revisionEntries.forEach(([id, sharedRevisions]) => {
+          if (sharedRevisions) {
+            next[id] = sharedRevisions;
+            saveStoredContentRevisions(id, sharedRevisions);
+            return;
+          }
+          if ((current[id] || []).length > 0) {
+            upsertContentRevisions(id, current[id]);
+          }
+        });
+        return next;
+      });
+    }
+
+    hydrateSharedRevisions();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const newNoviceFaqDuplicate = hasDuplicateValue(noviceFaqs, newNoviceFaq.question, (faq) => faq.question);
   const newEboardMemberDuplicate = hasDuplicateValue(eboardMembers, newEboardMember.name, (member) => member.name);
