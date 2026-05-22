@@ -1553,6 +1553,17 @@ function JoinPage({ auth, onRequestConfirmation }) {
               />
             </label>
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              BU Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="name@bu.edu"
+                required
+                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               Choose Password
               <input
                 type="password"
@@ -1563,17 +1574,6 @@ function JoinPage({ auth, onRequestConfirmation }) {
                 className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
               />
               <span className="text-xs font-bold normal-case tracking-normal text-[#8f8781]">At least 6 characters. This is what you will use to log in if accepted.</span>
-            </label>
-            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-              BU Email
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="name@bu.edu"
-                required
-                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-              />
             </label>
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               <span>
