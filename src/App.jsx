@@ -3673,7 +3673,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
                         <div className="grid max-h-24 gap-1 overflow-y-auto">
                           {contentRevisions[item.id].map((revision) => (
-                            <button key={revision.id} type="button" onClick={() => restoreContentRevision(item.id, revision)} className="text-left text-xs font-bold leading-5 text-[#2D2926] hover:text-[#CC0000]">
+                            <button key={revision.id} type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-3 py-2 text-left text-xs font-black uppercase tracking-[0.06em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
                               Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
                             </button>
                           ))}
