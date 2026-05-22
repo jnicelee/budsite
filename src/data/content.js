@@ -36,6 +36,13 @@ export const homeCarouselSlides = [
   },
 ];
 
+export const defaultHomeContent = {
+  carouselSlides: homeCarouselSlides.map((slide, index) => ({
+    id: `home-slide-${index + 1}`,
+    ...slide,
+  })),
+};
+
 export const noviceResources = [
   {
     title: "APDA Online Website",

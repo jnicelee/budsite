@@ -3,25 +3,27 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { homeCarouselSlides } from "../data/content";
 
-export function PhotoCarousel() {
+export function PhotoCarousel({ slides = homeCarouselSlides }) {
+  const carouselSlides = slides.length > 0 ? slides : homeCarouselSlides;
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeSlide = homeCarouselSlides[activeIndex];
+  const safeActiveIndex = Math.min(activeIndex, carouselSlides.length - 1);
+  const activeSlide = carouselSlides[safeActiveIndex];
 
   const goToPrevious = () => {
-    setActiveIndex((currentIndex) => (currentIndex - 1 + homeCarouselSlides.length) % homeCarouselSlides.length);
+    setActiveIndex((currentIndex) => (currentIndex - 1 + carouselSlides.length) % carouselSlides.length);
   };
 
   const goToNext = () => {
-    setActiveIndex((currentIndex) => (currentIndex + 1) % homeCarouselSlides.length);
+    setActiveIndex((currentIndex) => (currentIndex + 1) % carouselSlides.length);
   };
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setActiveIndex((currentIndex) => (currentIndex + 1) % homeCarouselSlides.length);
+      setActiveIndex((currentIndex) => (currentIndex + 1) % carouselSlides.length);
     }, 6500);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [carouselSlides.length]);
 
   return (
     <div className="overflow-hidden border border-[#ded8d2] bg-white shadow-[0_16px_42px_rgba(45,41,38,0.08)]">
@@ -61,14 +63,14 @@ export function PhotoCarousel() {
           </button>
         </div>
         <div className="absolute bottom-5 right-5 flex gap-2">
-          {homeCarouselSlides.map((slide, index) => (
+          {carouselSlides.map((slide, index) => (
             <button
-              key={slide.caption}
+              key={slide.id || slide.caption}
               type="button"
               onClick={() => setActiveIndex(index)}
-              className={`h-2 w-7 border border-white/70 transition ${index === activeIndex ? "bg-white" : "bg-white/20"}`}
+              className={`h-2 w-7 border border-white/70 transition ${index === safeActiveIndex ? "bg-white" : "bg-white/20"}`}
               aria-label={`Show ${slide.kicker} photo`}
-              aria-current={index === activeIndex}
+              aria-current={index === safeActiveIndex}
             />
           ))}
         </div>

@@ -1,12 +1,13 @@
 import { agendaItems, initialBudgetRevenueRows, initialBudgetRows, privateLinks } from "../data/content";
 import { isSupabaseConfigured, supabase } from "../supabaseClient";
-import { enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeEboardContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
+import { enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeEboardContent, normalizeHomeContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
 
 const contentNormalizers = {
   trophies: normalizeTrophiesContent,
   meetings: normalizeMeetingsContent,
   novice: normalizeNoviceContent,
   eboard: normalizeEboardContent,
+  home: normalizeHomeContent,
 };
 
 const contentRevisionsId = (id) => `${id}-revisions`;
@@ -51,6 +52,7 @@ export async function loadDatabaseState() {
     meetingsContentResult,
     noviceContentResult,
     eboardContentResult,
+    homeContentResult,
   ] = await Promise.all([
     supabase.from("eboard_agenda").select("id,text,owner,due,completed_at").order("created_at", { ascending: false }),
     supabase.from("eboard_notes").select("id,date,title,body,created_at").order("date", { ascending: false }).order("created_at", { ascending: false }),
@@ -62,9 +64,10 @@ export async function loadDatabaseState() {
     supabase.from("site_content").select("content").eq("id", "meetings").maybeSingle(),
     supabase.from("site_content").select("content").eq("id", "novice").maybeSingle(),
     supabase.from("site_content").select("content").eq("id", "eboard").maybeSingle(),
+    supabase.from("site_content").select("content").eq("id", "home").maybeSingle(),
   ]);
 
-  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error || trophiesContentResult.error || meetingsContentResult.error || noviceContentResult.error || eboardContentResult.error) {
+  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error || trophiesContentResult.error || meetingsContentResult.error || noviceContentResult.error || eboardContentResult.error || homeContentResult.error) {
     console.error("Supabase load failed", {
       agendaError: agendaResult.error,
       notesError: notesResult.error,
@@ -76,6 +79,7 @@ export async function loadDatabaseState() {
       meetingsContentError: meetingsContentResult.error,
       noviceContentError: noviceContentResult.error,
       eboardContentError: eboardContentResult.error,
+      homeContentError: homeContentResult.error,
     });
     return null;
   }
@@ -102,6 +106,7 @@ export async function loadDatabaseState() {
     meetingsContent: meetingsContentResult.data?.content ? normalizeMeetingsContent(meetingsContentResult.data.content) : null,
     noviceContent: noviceContentResult.data?.content ? normalizeNoviceContent(noviceContentResult.data.content) : null,
     eboardContent: eboardContentResult.data?.content ? normalizeEboardContent(eboardContentResult.data.content) : null,
+    homeContent: homeContentResult.data?.content ? normalizeHomeContent(homeContentResult.data.content) : null,
   };
 }
 
@@ -175,6 +180,24 @@ export async function upsertTrophiesContent(content) {
     .from("site_content")
     .upsert({ id: "trophies", content: normalizeTrophiesContent(content), updated_at: new Date().toISOString() });
   if (error) console.error("Supabase trophies content upsert failed", error);
+}
+
+export async function loadHomeContent() {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.from("site_content").select("content").eq("id", "home").maybeSingle();
+  if (error) {
+    console.error("Supabase home content load failed", error);
+    return null;
+  }
+  return data?.content ? normalizeHomeContent(data.content) : null;
+}
+
+export async function upsertHomeContent(content) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("site_content")
+    .upsert({ id: "home", content: normalizeHomeContent(content), updated_at: new Date().toISOString() });
+  if (error) console.error("Supabase home content upsert failed", error);
 }
 
 export async function loadContentRevisions(id) {

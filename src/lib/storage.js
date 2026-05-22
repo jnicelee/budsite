@@ -3,6 +3,7 @@ import {
   EBOARD_AGENDA_STORAGE_KEY,
   EBOARD_BUDGET_STORAGE_KEY,
   EBOARD_CONTENT_STORAGE_KEY,
+  HOME_CONTENT_STORAGE_KEY,
   EBOARD_NOTES_STORAGE_KEY,
   LOGIN_STORAGE_KEY,
   MEMBER_ACCOUNTS_STORAGE_KEY,
@@ -15,6 +16,7 @@ import {
 import {
   agendaItems,
   defaultEboardContent,
+  defaultHomeContent,
   defaultNoviceContent,
   defaultTrophiesContent,
   defaultMeetingsContent,
@@ -190,6 +192,32 @@ export function getStoredEboardContent() {
 
 export function saveStoredEboardContent(content) {
   window.localStorage.setItem(EBOARD_CONTENT_STORAGE_KEY, JSON.stringify(normalizeEboardContent(content)));
+}
+
+export function getStoredHomeContent() {
+  try {
+    const stored = window.localStorage.getItem(HOME_CONTENT_STORAGE_KEY);
+    return normalizeHomeContent(stored ? JSON.parse(stored) : defaultHomeContent);
+  } catch {
+    return normalizeHomeContent(defaultHomeContent);
+  }
+}
+
+export function saveStoredHomeContent(content) {
+  window.localStorage.setItem(HOME_CONTENT_STORAGE_KEY, JSON.stringify(normalizeHomeContent(content)));
+}
+
+export function normalizeHomeContent(content = defaultHomeContent) {
+  const source = { ...defaultHomeContent, ...content };
+  return {
+    carouselSlides: normalizeTrophyItems(source.carouselSlides, (item, index) => ({
+      id: item.id || `home-slide-${index}-${slugify(item.caption || item.kicker || "photo")}`,
+      src: item.src || "",
+      alt: item.alt || "",
+      kicker: item.kicker || "",
+      caption: item.caption || "",
+    })).filter((slide) => slide.src || slide.caption || slide.kicker),
+  };
 }
 
 export function normalizeMeetingsContent(content = defaultMeetingsContent) {

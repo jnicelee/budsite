@@ -75,6 +75,7 @@ import {
   insertNote,
   loadContentRevisions,
   loadEboardContent,
+  loadHomeContent,
   loadMeetingsContent,
   loadDatabaseState,
   loadMemberAccounts,
@@ -92,6 +93,7 @@ import {
   upsertBudgetSettings,
   upsertContentRevisions,
   upsertEboardContent,
+  upsertHomeContent,
   upsertMeetingsContent,
   upsertMemberAccount,
   upsertNoviceContent,
@@ -105,6 +107,7 @@ import {
   getStoredAuth,
   getStoredBudget,
   getStoredEboardContent,
+  getStoredHomeContent,
   getStoredMemberAccounts,
   getStoredMeetingsContent,
   getStoredMembershipRequests,
@@ -113,6 +116,7 @@ import {
   getStoredPrivateLinks,
   getStoredTrophiesContent,
   normalizeEboardContent,
+  normalizeHomeContent,
   normalizeMeetingsContent,
   normalizeNoviceContent,
   normalizeTrophiesContent,
@@ -120,6 +124,7 @@ import {
   saveStoredAuth,
   saveStoredBudget,
   saveStoredEboardContent,
+  saveStoredHomeContent,
   saveStoredMemberAccounts,
   saveStoredMeetingsContent,
   saveStoredMembershipRequests,
@@ -129,7 +134,8 @@ import {
   saveStoredTrophiesContent,
 } from "./lib/storage";
 
-function HomePage() {
+function HomePage({ homeContent }) {
+  const carouselSlides = normalizeHomeContent(homeContent).carouselSlides;
   return (
     <section className="mx-auto grid w-full max-w-[92rem] items-start gap-8 px-4 py-8 sm:px-5 md:px-8 md:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-4xl">
@@ -214,7 +220,7 @@ function HomePage() {
             </div>
           </div>
         </div>
-        <PhotoCarousel />
+        <PhotoCarousel slides={carouselSlides} />
       </motion.div>
     </section>
   );
@@ -381,8 +387,9 @@ const contentRevisionNormalizers = {
   meetings: normalizeMeetingsContent,
   novice: normalizeNoviceContent,
   eboard: normalizeEboardContent,
+  home: normalizeHomeContent,
 };
-const contentRevisionIds = ["trophies", "meetings", "novice", "eboard"];
+const contentRevisionIds = ["trophies", "meetings", "novice", "eboard", "home"];
 
 function getStoredDraftContent(id, fallback, normalizer) {
   try {
@@ -469,6 +476,9 @@ function getPublishChangeSummary(id, draft, published) {
   }
   if (id === "eboard") {
     return summarizeArrayChanges("E-board members", draft.members, published.members) || "E-Board page content changed.";
+  }
+  if (id === "home") {
+    return summarizeArrayChanges("Landing carousel photos", draft.carouselSlides, published.carouselSlides) || "Landing page carousel changed.";
   }
   if (id === "trophies") {
     return [
@@ -1991,12 +2001,13 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onRequestConfirmation, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, homeContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onHomeContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [draftTrophiesContent, setDraftTrophiesContent] = useState(() => getStoredDraftContent("trophies", trophiesContent, normalizeTrophiesContent));
   const [draftMeetingsContent, setDraftMeetingsContent] = useState(() => getStoredDraftContent("meetings", meetingsContent, normalizeMeetingsContent));
   const [draftNoviceContent, setDraftNoviceContent] = useState(() => getStoredDraftContent("novice", noviceContent, normalizeNoviceContent));
   const [draftEboardContent, setDraftEboardContent] = useState(() => getStoredDraftContent("eboard", eboardContent, normalizeEboardContent));
+  const [draftHomeContent, setDraftHomeContent] = useState(() => getStoredDraftContent("home", homeContent, normalizeHomeContent));
   const [contentRevisions, setContentRevisions] = useState(() => ({
     trophies: getStoredContentRevisions("trophies", normalizeTrophiesContent),
     meetings: getStoredContentRevisions("meetings", normalizeMeetingsContent),
@@ -2014,6 +2025,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
   const [eboardMembers, setEboardMembers] = useState(draftEboardContent.members || []);
   const [newEboardMember, setNewEboardMember] = useState({ name: "", role: "", bio: "", photo: "" });
+  const [newCarouselSlide, setNewCarouselSlide] = useState({ src: "", alt: "", kicker: "", caption: "" });
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
   const [newAgendaText, setNewAgendaText] = useState("");
@@ -2040,6 +2052,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceInfographicEditorOpen, setNoviceInfographicEditorOpen] = useState(false);
   const [noviceFaqEditorOpen, setNoviceFaqEditorOpen] = useState(false);
   const [eboardEditorOpen, setEboardEditorOpen] = useState(false);
+  const [carouselEditorOpen, setCarouselEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
   const [trophyEditorSection, setTrophyEditorSection] = useState("stats");
   const [editorNotice, setEditorNotice] = useState({ type: "", message: "" });
@@ -2084,6 +2097,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     links: memberLinks.filter((link) => getPrivateLinkSection(link) === section),
   })).filter((group) => group.links.length > 0);
   const contentDashboardItems = [
+    { id: "home", title: "Landing Page", href: "/", draft: draftHomeContent, published: homeContent },
     { id: "trophies", title: "Trophies", href: "/trophies", draft: draftTrophiesContent, published: trophiesContent },
     { id: "meetings", title: "Meetings Announcement", href: "/meetings", draft: draftMeetingsContent, published: meetingsContent },
     { id: "novice", title: "Novice Hub", href: "/novice-hub", draft: draftNoviceContent, published: noviceContent },
@@ -2147,6 +2161,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         normalizer: normalizeEboardContent,
         publish: onEboardContentChange,
       },
+      home: {
+        label: "Landing page",
+        published: homeContent,
+        draft: draftHomeContent,
+        normalizer: normalizeHomeContent,
+        publish: onHomeContentChange,
+      },
     };
     const target = publishMap[id];
     if (!target) return;
@@ -2173,6 +2194,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       meetings: { setDraft: setDraftMeetingsContent, normalizer: normalizeMeetingsContent, sync: setMeetingAnnouncement },
       novice: { setDraft: setDraftNoviceContent, normalizer: normalizeNoviceContent },
       eboard: { setDraft: setDraftEboardContent, normalizer: normalizeEboardContent },
+      home: { setDraft: setDraftHomeContent, normalizer: normalizeHomeContent },
     };
     const target = restoreMap[id];
     if (!target) return;
@@ -2269,11 +2291,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         setEboardMembers((current) => current.length > 0 ? current : databaseState.eboardContent.members || []);
         onEboardContentChange(databaseState.eboardContent);
       }
+      if (databaseState.homeContent) {
+        setDraftHomeContent((current) => current || databaseState.homeContent);
+        onHomeContentChange(databaseState.homeContent);
+      }
       saveStoredAgenda(databaseState.agenda);
       saveStoredNotes(databaseState.notes);
       saveStoredBudget(databaseState.budget);
       saveStoredPrivateLinks(databaseState.privateLinks);
       if (databaseState.eboardContent) saveStoredEboardContent(databaseState.eboardContent);
+      if (databaseState.homeContent) saveStoredHomeContent(databaseState.homeContent);
     }
 
     hydrateFromDatabase();
@@ -2281,7 +2308,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     return () => {
       ignore = true;
     };
-  }, [onEboardContentChange, onMeetingsContentChange, onNoviceContentChange]);
+  }, [onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
 
   useEffect(() => {
     let ignore = false;
@@ -2749,6 +2776,87 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     persistEboardContent((content) => ({
       ...content,
       members: reorderArrayById(content.members, dragItem.id, targetId),
+    }));
+    finishEditorDrag();
+  };
+
+  const persistHomeContent = (updater) => {
+    if (!canWriteNotes) return;
+    const nextContent = typeof updater === "function" ? updater(draftHomeContent) : updater;
+    const normalizedContent = normalizeHomeContent(nextContent);
+    setDraftHomeContent(normalizedContent);
+    saveStoredDraftContent("home", normalizedContent);
+    showEditorNotice("Landing page carousel draft saved. Publish it when ready.");
+  };
+
+  const updateCarouselSlide = (id, field, value) => {
+    persistHomeContent((content) => ({
+      ...content,
+      carouselSlides: content.carouselSlides.map((slide) => (
+        slide.id === id ? { ...slide, [field]: value } : slide
+      )),
+    }));
+  };
+
+  const handleCarouselPhotoUpload = async (id, file) => {
+    if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
+    const storedUrl = await uploadPublicImage(file, "home-carousel");
+    const photo = storedUrl || await readFileAsDataUrl(file);
+    updateCarouselSlide(id, "src", photo);
+    showEditorNotice(storedUrl ? "Carousel photo uploaded to Supabase Storage." : "Photo saved locally for preview. Supabase Storage is not configured.", storedUrl ? "success" : "error");
+  };
+
+  const handleNewCarouselPhotoUpload = async (file) => {
+    if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
+    const storedUrl = await uploadPublicImage(file, "home-carousel");
+    const photo = storedUrl || await readFileAsDataUrl(file);
+    setNewCarouselSlide((current) => ({ ...current, src: photo }));
+    showEditorNotice(storedUrl ? "Carousel photo uploaded to Supabase Storage." : "Photo saved locally for preview. Supabase Storage is not configured.", storedUrl ? "success" : "error");
+  };
+
+  const addCarouselSlide = (event) => {
+    event.preventDefault();
+    if (!canWriteNotes || !newCarouselSlide.src.trim()) {
+      showEditorNotice("Upload a photo or paste an image URL before adding a carousel slide.", "error");
+      return;
+    }
+    const nextSlide = {
+      id: `home-slide-${Date.now()}`,
+      src: newCarouselSlide.src.trim(),
+      alt: newCarouselSlide.alt.trim() || "BUDS team photo",
+      kicker: newCarouselSlide.kicker.trim() || "Team Photo",
+      caption: newCarouselSlide.caption.trim(),
+    };
+    persistHomeContent((content) => ({ ...content, carouselSlides: [...content.carouselSlides, nextSlide] }));
+    setNewCarouselSlide({ src: "", alt: "", kicker: "", caption: "" });
+  };
+
+  const removeCarouselSlide = (slide) => {
+    if (!canWriteNotes) return;
+    requestDeleteConfirmation({
+      title: `Delete ${slide.kicker || "this carousel photo"}?`,
+      body: "This will remove the photo from the landing page carousel draft.",
+      onConfirm: () => {
+        persistHomeContent((content) => ({
+          ...content,
+          carouselSlides: content.carouselSlides.filter((item) => item.id !== slide.id),
+        }));
+      },
+    });
+  };
+
+  const moveCarouselSlide = (index, direction) => {
+    persistHomeContent((content) => ({
+      ...content,
+      carouselSlides: moveArrayItem(content.carouselSlides, index, index + direction),
+    }));
+  };
+
+  const dropCarouselSlide = (targetId) => {
+    if (dragItem?.collection !== "home-carousel" || dragItem.id === targetId) return;
+    persistHomeContent((content) => ({
+      ...content,
+      carouselSlides: reorderArrayById(content.carouselSlides, dragItem.id, targetId),
     }));
     finishEditorDrag();
   };
@@ -3869,8 +3977,194 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 {previewDraftId === "meetings" && <MeetingsPage auth={auth} meetingsContent={draftMeetingsContent} onRequestConfirmation={onRequestConfirmation} />}
                 {previewDraftId === "novice" && <NoviceHubPage noviceContent={draftNoviceContent} />}
                 {previewDraftId === "eboard" && <EBoardPage eboardContent={draftEboardContent} />}
+                {previewDraftId === "home" && <HomePage homeContent={draftHomeContent} />}
               </div>
             )}
+          </Card>
+          <div className="border-b-4 border-[#CC0000] pb-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Landing Page</p>
+            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Homepage carousel photos and captions</h2>
+          </div>
+          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setCarouselEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={carouselEditorOpen}
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="text-[#CC0000]" />
+                  <Eyebrow>Budsite Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Landing Page Carousel</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Upload photos, edit captions, and reorder the homepage carousel.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {carouselEditorOpen ? "Close Carousel" : "Open Carousel"} <ChevronDown size={16} className={`transition ${carouselEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {carouselEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5 grid gap-4">
+                    <form onSubmit={addCarouselSlide} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
+                      <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                        <HelperText>Upload a photo or paste an image URL. Captions are optional, but alt text keeps the carousel accessible.</HelperText>
+                        <div className="grid gap-3 lg:grid-cols-[0.75fr_1fr_1fr]">
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Photo
+                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                              <Upload size={16} /> Upload Photo
+                              <input type="file" accept="image/*" onChange={(event) => handleNewCarouselPhotoUpload(event.target.files?.[0])} className="sr-only" />
+                            </span>
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Image URL
+                            <input
+                              type="url"
+                              value={newCarouselSlide.src}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, src: event.target.value }))}
+                              placeholder="https://..."
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Label
+                            <input
+                              value={newCarouselSlide.kicker}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
+                              placeholder="Tournament"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                        <div className="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Alt Text
+                            <input
+                              value={newCarouselSlide.alt}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, alt: event.target.value }))}
+                              placeholder="Team members at a tournament"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Caption
+                            <input
+                              value={newCarouselSlide.caption}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, caption: event.target.value }))}
+                              placeholder="Short public caption"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                        {newCarouselSlide.src && (
+                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[10rem_1fr] sm:items-center">
+                            <img src={newCarouselSlide.src} alt="New carousel preview" className="aspect-[16/9] w-full object-cover" />
+                            <button type="button" onClick={() => setNewCarouselSlide((current) => ({ ...current, src: "" }))} className="w-fit border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                              Remove Photo
+                            </button>
+                          </div>
+                        )}
+                        <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+                          Add Carousel Photo
+                        </button>
+                      </fieldset>
+                    </form>
+
+                    <div className="grid gap-4">
+                      {draftHomeContent.carouselSlides.map((slide, index) => (
+                        <div
+                          key={slide.id}
+                          draggable={canWriteNotes}
+                          onDragStart={() => startEditorDrag("home-carousel", slide.id)}
+                          onDragOver={allowEditorDrop}
+                          onDrop={() => dropCarouselSlide(slide.id)}
+                          onDragEnd={finishEditorDrag}
+                          className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[13rem_1fr_auto]"
+                        >
+                          <div className="grid gap-2">
+                            <div className="aspect-[16/9] overflow-hidden bg-[#2D2926]">
+                              {slide.src ? (
+                                <img src={slide.src} alt={slide.alt || slide.kicker || "Carousel preview"} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="grid h-full place-items-center text-sm font-black uppercase tracking-[0.08em] text-white">No photo</div>
+                              )}
+                            </div>
+                            <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                              <Upload size={14} /> Change Photo
+                              <input type="file" accept="image/*" onChange={(event) => handleCarouselPhotoUpload(slide.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
+                            </label>
+                            <button type="button" onClick={() => updateCarouselSlide(slide.id, "src", "")} disabled={!canWriteNotes} className="border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] disabled:opacity-40">
+                              Remove Photo
+                            </button>
+                          </div>
+                          <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Label
+                                <input
+                                  value={slide.kicker}
+                                  onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Image URL
+                                <input
+                                  value={slide.src}
+                                  onChange={(event) => updateCarouselSlide(slide.id, "src", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                            </div>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Alt Text
+                              <input
+                                value={slide.alt}
+                                onChange={(event) => updateCarouselSlide(slide.id, "alt", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Caption
+                              <textarea
+                                value={slide.caption}
+                                onChange={(event) => updateCarouselSlide(slide.id, "caption", event.target.value)}
+                                rows={3}
+                                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                          </fieldset>
+                          <button
+                            type="button"
+                            onClick={() => removeCarouselSlide(slide)}
+                            disabled={!canWriteNotes}
+                            className="grid h-10 w-10 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] disabled:opacity-40 lg:self-start"
+                            aria-label={`Remove ${slide.kicker || "carousel photo"}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <div className="lg:col-start-3 lg:row-start-2">
+                            <ReorderButtons onMoveUp={() => moveCarouselSlide(index, -1)} onMoveDown={() => moveCarouselSlide(index, 1)} disabledUp={index === 0} disabledDown={index === draftHomeContent.carouselSlides.length - 1} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
           <div className="border-b-4 border-[#CC0000] pb-2">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Meeting Tools</p>
@@ -4933,6 +5227,7 @@ export default function App() {
   const [meetingsContent, setMeetingsContent] = useState(() => getStoredMeetingsContent());
   const [noviceContent, setNoviceContent] = useState(() => getStoredNoviceContent());
   const [eboardContent, setEboardContent] = useState(() => getStoredEboardContent());
+  const [homeContent, setHomeContent] = useState(() => getStoredHomeContent());
   const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
@@ -4953,11 +5248,12 @@ export default function App() {
     let ignore = false;
 
     async function hydrateSiteContent() {
-      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent, databaseEboardContent] = await Promise.all([
+      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent, databaseEboardContent, databaseHomeContent] = await Promise.all([
         loadTrophiesContent(),
         loadMeetingsContent(),
         loadNoviceContent(),
         loadEboardContent(),
+        loadHomeContent(),
       ]);
       if (ignore) return;
       if (databaseTrophiesContent) {
@@ -4975,6 +5271,10 @@ export default function App() {
       if (databaseEboardContent) {
         setEboardContent(databaseEboardContent);
         saveStoredEboardContent(databaseEboardContent);
+      }
+      if (databaseHomeContent) {
+        setHomeContent(databaseHomeContent);
+        saveStoredHomeContent(databaseHomeContent);
       }
     }
 
@@ -5009,6 +5309,12 @@ export default function App() {
     upsertEboardContent(nextContent);
   }, []);
 
+  const updateHomeContent = useCallback((nextContent) => {
+    setHomeContent(nextContent);
+    saveStoredHomeContent(nextContent);
+    upsertHomeContent(nextContent);
+  }, []);
+
   const requestConfirmation = useCallback(({ title, body, actionLabel = "Delete", onConfirm }) => {
     setConfirmation({ title, body, actionLabel, onConfirm });
   }, []);
@@ -5021,7 +5327,7 @@ export default function App() {
   const page = useMemo(() => {
     switch (path) {
       case "/":
-        return <HomePage />;
+        return <HomePage homeContent={homeContent} />;
       case "/about":
         return <AboutPage />;
       case "/novice-hub":
@@ -5043,7 +5349,7 @@ export default function App() {
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} homeContent={homeContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onHomeContentChange={updateHomeContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");
@@ -5051,7 +5357,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, eboardContent, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateEboardContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
+  }, [auth, calendarEmbedUrl, eboardContent, homeContent, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateEboardContent, updateHomeContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#eeeae6] text-[#2D2926]">
