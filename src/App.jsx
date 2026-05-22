@@ -1169,7 +1169,7 @@ function TrophiesPage({ trophiesContent }) {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[0.72fr_1.28fr]">
         <Card className="p-5 sm:p-6">
           <div className="mb-5 flex items-center gap-3">
             <Medal className="text-[#CC0000]" />
