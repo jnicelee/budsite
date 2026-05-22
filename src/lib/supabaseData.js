@@ -160,6 +160,23 @@ export async function upsertTrophiesContent(content) {
   if (error) console.error("Supabase trophies content upsert failed", error);
 }
 
+export async function uploadPublicImage(file, folder = "uploads") {
+  if (!isSupabaseConfigured || !file) return null;
+  const extension = file.name?.split(".").pop()?.toLowerCase() || "jpg";
+  const safeFolder = folder.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+  const path = `${safeFolder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+  const { error } = await supabase.storage.from("public-assets").upload(path, file, {
+    cacheControl: "31536000",
+    upsert: false,
+  });
+  if (error) {
+    console.error("Supabase image upload failed", error);
+    return null;
+  }
+  const { data } = supabase.storage.from("public-assets").getPublicUrl(path);
+  return data.publicUrl || null;
+}
+
 export async function upsertAgendaItem(item) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from("eboard_agenda").upsert(item);

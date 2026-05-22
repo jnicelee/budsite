@@ -95,6 +95,7 @@ import {
   upsertNoviceContent,
   upsertPrivateLink,
   upsertTrophiesContent,
+  uploadPublicImage,
 } from "./lib/supabaseData";
 import {
   clearStoredAuth,
@@ -109,6 +110,10 @@ import {
   getStoredNotes,
   getStoredPrivateLinks,
   getStoredTrophiesContent,
+  normalizeEboardContent,
+  normalizeMeetingsContent,
+  normalizeNoviceContent,
+  normalizeTrophiesContent,
   saveStoredAgenda,
   saveStoredAuth,
   saveStoredBudget,
@@ -365,6 +370,53 @@ function reorderArrayById(items, sourceId, targetId) {
   const sourceIndex = items.findIndex((item) => item.id === sourceId);
   const targetIndex = items.findIndex((item) => item.id === targetId);
   return moveArrayItem(items, sourceIndex, targetIndex);
+}
+
+const draftStorageKey = (id) => `buds-draft-${id}`;
+const revisionsStorageKey = (id) => `buds-revisions-${id}`;
+
+function getStoredDraftContent(id, fallback, normalizer) {
+  try {
+    const stored = window.localStorage.getItem(draftStorageKey(id));
+    return stored ? normalizer(JSON.parse(stored)) : normalizer(fallback);
+  } catch {
+    return normalizer(fallback);
+  }
+}
+
+function saveStoredDraftContent(id, content) {
+  window.localStorage.setItem(draftStorageKey(id), JSON.stringify(content));
+}
+
+function getStoredContentRevisions(id, normalizer) {
+  try {
+    const stored = window.localStorage.getItem(revisionsStorageKey(id));
+    const revisions = stored ? JSON.parse(stored) : [];
+    return revisions.map((revision) => ({ ...revision, content: normalizer(revision.content) }));
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredContentRevisions(id, revisions) {
+  window.localStorage.setItem(revisionsStorageKey(id), JSON.stringify(revisions.slice(0, 8)));
+}
+
+function createContentRevision(content, label) {
+  return {
+    id: `revision-${Date.now()}`,
+    label,
+    createdAt: new Date().toISOString(),
+    content,
+  };
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.readAsDataURL(file);
+  });
 }
 
 const richTextToolbarTools = [
@@ -1878,16 +1930,26 @@ function LoginPage({ onLogin }) {
 
 function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
+  const [draftTrophiesContent, setDraftTrophiesContent] = useState(() => getStoredDraftContent("trophies", trophiesContent, normalizeTrophiesContent));
+  const [draftMeetingsContent, setDraftMeetingsContent] = useState(() => getStoredDraftContent("meetings", meetingsContent, normalizeMeetingsContent));
+  const [draftNoviceContent, setDraftNoviceContent] = useState(() => getStoredDraftContent("novice", noviceContent, normalizeNoviceContent));
+  const [draftEboardContent, setDraftEboardContent] = useState(() => getStoredDraftContent("eboard", eboardContent, normalizeEboardContent));
+  const [contentRevisions, setContentRevisions] = useState(() => ({
+    trophies: getStoredContentRevisions("trophies", normalizeTrophiesContent),
+    meetings: getStoredContentRevisions("meetings", normalizeMeetingsContent),
+    novice: getStoredContentRevisions("novice", normalizeNoviceContent),
+    eboard: getStoredContentRevisions("eboard", normalizeEboardContent),
+  }));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingNotes, setMeetingNotes] = useState("");
-  const [meetingAnnouncement, setMeetingAnnouncement] = useState(meetingsContent);
-  const [noviceFaqs, setNoviceFaqs] = useState(noviceContent.faqs);
-  const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(noviceContent.speechSteps || []);
+  const [meetingAnnouncement, setMeetingAnnouncement] = useState(draftMeetingsContent);
+  const [noviceFaqs, setNoviceFaqs] = useState(draftNoviceContent.faqs);
+  const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(draftNoviceContent.speechSteps || []);
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
-  const [eboardMembers, setEboardMembers] = useState(eboardContent.members || []);
+  const [eboardMembers, setEboardMembers] = useState(draftEboardContent.members || []);
   const [newEboardMember, setNewEboardMember] = useState({ name: "", role: "", bio: "", photo: "" });
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
@@ -1919,6 +1981,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [trophyEditorSection, setTrophyEditorSection] = useState("stats");
   const [editorNotice, setEditorNotice] = useState({ type: "", message: "" });
   const [dragItem, setDragItem] = useState(null);
+  const [previewDraftId, setPreviewDraftId] = useState("");
 
   const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
@@ -1931,7 +1994,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const visibleTab = canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
-  const trophyResultSeasons = sortResultSeasons(trophiesContent.resultSeasons || []);
+  const trophyResultSeasons = sortResultSeasons(draftTrophiesContent.resultSeasons || []);
   const selectedTrophySeason = trophyResultSeasons.find((season) => season.id === selectedTrophySeasonId) || trophyResultSeasons[0];
   const selectedTrophySeasonIdValue = selectedTrophySeason?.id || "";
   const approvedBudgetRows = budget.rows.filter((row) => row.status === "Approved");
@@ -1957,6 +2020,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     section,
     links: memberLinks.filter((link) => getPrivateLinkSection(link) === section),
   })).filter((group) => group.links.length > 0);
+  const contentDashboardItems = [
+    { id: "trophies", title: "Trophies", href: "/trophies", draft: draftTrophiesContent, published: trophiesContent },
+    { id: "meetings", title: "Meetings Announcement", href: "/meetings", draft: draftMeetingsContent, published: meetingsContent },
+    { id: "novice", title: "Novice Hub", href: "/novice-hub", draft: draftNoviceContent, published: noviceContent },
+    { id: "eboard", title: "E-Board Page", href: "/eboard", draft: draftEboardContent, published: eboardContent },
+  ];
 
   const showEditorNotice = (message, type = "success") => {
     setEditorNotice({ type, message });
@@ -1974,11 +2043,79 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     event.preventDefault();
   };
 
+  const updateRevisionList = (id, revision, normalizer) => {
+    const nextRevisions = [revision, ...(contentRevisions[id] || [])].slice(0, 8);
+    setContentRevisions((current) => ({ ...current, [id]: nextRevisions }));
+    saveStoredContentRevisions(id, nextRevisions.map((item) => ({ ...item, content: normalizer(item.content) })));
+  };
+
+  const publishContentDraft = (id) => {
+    const publishMap = {
+      trophies: {
+        label: "Trophies page",
+        published: trophiesContent,
+        draft: draftTrophiesContent,
+        normalizer: normalizeTrophiesContent,
+        publish: onTrophiesContentChange,
+      },
+      meetings: {
+        label: "Meetings page announcement",
+        published: meetingsContent,
+        draft: draftMeetingsContent,
+        normalizer: normalizeMeetingsContent,
+        publish: onMeetingsContentChange,
+      },
+      novice: {
+        label: "Novice Hub",
+        published: noviceContent,
+        draft: draftNoviceContent,
+        normalizer: normalizeNoviceContent,
+        publish: onNoviceContentChange,
+      },
+      eboard: {
+        label: "E-Board page",
+        published: eboardContent,
+        draft: draftEboardContent,
+        normalizer: normalizeEboardContent,
+        publish: onEboardContentChange,
+      },
+    };
+    const target = publishMap[id];
+    if (!target) return;
+    const normalizedDraft = target.normalizer(target.draft);
+    const revision = createContentRevision(target.normalizer(target.published), `${target.label} before publish`);
+    updateRevisionList(id, revision, target.normalizer);
+    target.publish(normalizedDraft);
+    saveStoredDraftContent(id, normalizedDraft);
+    showEditorNotice(`${target.label} published.`);
+  };
+
+  const restoreContentRevision = (id, revision) => {
+    const restoreMap = {
+      trophies: { setDraft: setDraftTrophiesContent, normalizer: normalizeTrophiesContent },
+      meetings: { setDraft: setDraftMeetingsContent, normalizer: normalizeMeetingsContent, sync: setMeetingAnnouncement },
+      novice: { setDraft: setDraftNoviceContent, normalizer: normalizeNoviceContent },
+      eboard: { setDraft: setDraftEboardContent, normalizer: normalizeEboardContent },
+    };
+    const target = restoreMap[id];
+    if (!target) return;
+    const restoredContent = target.normalizer(revision.content);
+    target.setDraft(restoredContent);
+    target.sync?.(restoredContent);
+    if (id === "novice") {
+      setNoviceFaqs(restoredContent.faqs);
+      setNoviceSpeechSteps(restoredContent.speechSteps || []);
+    }
+    if (id === "eboard") setEboardMembers(restoredContent.members || []);
+    saveStoredDraftContent(id, restoredContent);
+    showEditorNotice("Revision restored into draft. Publish it when ready.");
+  };
+
   const newNoviceFaqDuplicate = hasDuplicateValue(noviceFaqs, newNoviceFaq.question, (faq) => faq.question);
   const newEboardMemberDuplicate = hasDuplicateValue(eboardMembers, newEboardMember.name, (member) => member.name);
-  const newTrophyStatDuplicate = hasDuplicateValue(trophiesContent.stats, newTrophyStat.label, (stat) => stat.label);
-  const newTrophyAccomplishmentDuplicate = hasDuplicateValue(trophiesContent.accomplishments, newTrophyAccomplishment, (item) => item.text);
-  const newTrophyMilestoneDuplicate = hasDuplicateValue(trophiesContent.milestones, newTrophyMilestone.title, (item) => item.title);
+  const newTrophyStatDuplicate = hasDuplicateValue(draftTrophiesContent.stats, newTrophyStat.label, (stat) => stat.label);
+  const newTrophyAccomplishmentDuplicate = hasDuplicateValue(draftTrophiesContent.accomplishments, newTrophyAccomplishment, (item) => item.text);
+  const newTrophyMilestoneDuplicate = hasDuplicateValue(draftTrophiesContent.milestones, newTrophyMilestone.title, (item) => item.title);
   const newTrophyResultDuplicate = hasDuplicateValue(selectedTrophySeason?.results || [], newTrophyResult.tournament, (result) => result.tournament);
 
   useEffect(() => {
@@ -1993,16 +2130,19 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       setBudget(databaseState.budget);
       setMemberLinks(databaseState.privateLinks);
       if (databaseState.meetingsContent) {
-        setMeetingAnnouncement(databaseState.meetingsContent);
+        setDraftMeetingsContent((current) => current || databaseState.meetingsContent);
+        setMeetingAnnouncement((current) => current || databaseState.meetingsContent);
         onMeetingsContentChange(databaseState.meetingsContent);
       }
       if (databaseState.noviceContent) {
-        setNoviceFaqs(databaseState.noviceContent.faqs);
-        setNoviceSpeechSteps(databaseState.noviceContent.speechSteps || []);
+        setDraftNoviceContent((current) => current || databaseState.noviceContent);
+        setNoviceFaqs((current) => current.length > 0 ? current : databaseState.noviceContent.faqs);
+        setNoviceSpeechSteps((current) => current.length > 0 ? current : databaseState.noviceContent.speechSteps || []);
         onNoviceContentChange(databaseState.noviceContent);
       }
       if (databaseState.eboardContent) {
-        setEboardMembers(databaseState.eboardContent.members || []);
+        setDraftEboardContent((current) => current || databaseState.eboardContent);
+        setEboardMembers((current) => current.length > 0 ? current : databaseState.eboardContent.members || []);
         onEboardContentChange(databaseState.eboardContent);
       }
       saveStoredAgenda(databaseState.agenda);
@@ -2088,25 +2228,28 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       announcementUpdatedAt: new Date().toISOString().slice(0, 10),
     };
     setMeetingAnnouncement(nextContent);
-    onMeetingsContentChange(nextContent);
-    showEditorNotice("Meeting announcement saved.");
+    setDraftMeetingsContent(nextContent);
+    saveStoredDraftContent("meetings", nextContent);
+    showEditorNotice("Meeting announcement draft saved. Publish it when ready.");
   };
 
   const persistNoviceFaqs = (nextFaqs) => {
     if (!canWriteNotes) return;
-    const nextContent = { ...noviceContent, speechSteps: noviceSpeechSteps, faqs: nextFaqs };
+    const nextContent = { ...draftNoviceContent, speechSteps: noviceSpeechSteps, faqs: nextFaqs };
+    setDraftNoviceContent(nextContent);
     setNoviceFaqs(nextFaqs);
-    onNoviceContentChange(nextContent);
-    showEditorNotice("Novice FAQ saved.");
+    saveStoredDraftContent("novice", nextContent);
+    showEditorNotice("Novice FAQ draft saved. Publish it when ready.");
   };
 
   const persistNoviceSpeechSteps = (nextSteps) => {
     if (!isAdmin) return;
     const normalizedSteps = [...nextSteps].sort((a, b) => Number(a.order) - Number(b.order));
-    const nextContent = { ...noviceContent, speechSteps: normalizedSteps, faqs: noviceFaqs };
+    const nextContent = { ...draftNoviceContent, speechSteps: normalizedSteps, faqs: noviceFaqs };
+    setDraftNoviceContent(nextContent);
     setNoviceSpeechSteps(normalizedSteps);
-    onNoviceContentChange(nextContent);
-    showEditorNotice("Novice infographic saved.");
+    saveStoredDraftContent("novice", nextContent);
+    showEditorNotice("Novice infographic draft saved. Publish it when ready.");
   };
 
   const handleNoviceFaqSubmit = (event) => {
@@ -2402,11 +2545,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const persistEboardContent = (updater) => {
     if (!canWriteNotes) return;
-    const currentContent = { ...eboardContent, members: eboardMembers };
+    const currentContent = { ...draftEboardContent, members: eboardMembers };
     const nextContent = typeof updater === "function" ? updater(currentContent) : updater;
+    setDraftEboardContent(nextContent);
     setEboardMembers(nextContent.members || []);
-    onEboardContentChange(nextContent);
-    showEditorNotice("E-Board page saved.");
+    saveStoredDraftContent("eboard", nextContent);
+    showEditorNotice("E-Board page draft saved. Publish it when ready.");
   };
 
   const updateEboardMember = (id, field, value) => {
@@ -2418,22 +2562,20 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     }));
   };
 
-  const handleEboardPhotoUpload = (id, file) => {
+  const handleEboardPhotoUpload = async (id, file) => {
     if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateEboardMember(id, "photo", typeof reader.result === "string" ? reader.result : "");
-    };
-    reader.readAsDataURL(file);
+    const storedUrl = await uploadPublicImage(file, "eboard");
+    const photo = storedUrl || await readFileAsDataUrl(file);
+    updateEboardMember(id, "photo", photo);
+    showEditorNotice(storedUrl ? "Photo uploaded to Supabase Storage." : "Photo saved locally for preview. Supabase Storage is not configured.", storedUrl ? "success" : "error");
   };
 
-  const handleNewEboardPhotoUpload = (file) => {
+  const handleNewEboardPhotoUpload = async (file) => {
     if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setNewEboardMember((current) => ({ ...current, photo: typeof reader.result === "string" ? reader.result : "" }));
-    };
-    reader.readAsDataURL(file);
+    const storedUrl = await uploadPublicImage(file, "eboard");
+    const photo = storedUrl || await readFileAsDataUrl(file);
+    setNewEboardMember((current) => ({ ...current, photo }));
+    showEditorNotice(storedUrl ? "Photo uploaded to Supabase Storage." : "Photo saved locally for preview. Supabase Storage is not configured.", storedUrl ? "success" : "error");
   };
 
   const addEboardMember = (event) => {
@@ -2489,9 +2631,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const persistTrophiesContent = (updater) => {
     if (!canEditTrophies) return;
-    const nextContent = typeof updater === "function" ? updater(trophiesContent) : updater;
-    onTrophiesContentChange(nextContent);
-    showEditorNotice("Trophies page saved.");
+    const nextContent = typeof updater === "function" ? updater(draftTrophiesContent) : updater;
+    setDraftTrophiesContent(nextContent);
+    saveStoredDraftContent("trophies", nextContent);
+    showEditorNotice("Trophies page draft saved. Publish it when ready.");
   };
 
   const updateTrophyItem = (section, id, field, value) => {
@@ -2516,7 +2659,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       showEditorNotice("Add both a stat value and label before saving.", "error");
       return;
     }
-    if (hasDuplicateValue(trophiesContent.stats, newTrophyStat.label, (stat) => stat.label)) {
+    if (hasDuplicateValue(draftTrophiesContent.stats, newTrophyStat.label, (stat) => stat.label)) {
       showEditorNotice("That top stat already exists.", "error");
       return;
     }
@@ -2537,7 +2680,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       showEditorNotice("Add accomplishment text before saving.", "error");
       return;
     }
-    if (hasDuplicateValue(trophiesContent.accomplishments, text, (item) => item.text)) {
+    if (hasDuplicateValue(draftTrophiesContent.accomplishments, text, (item) => item.text)) {
       showEditorNotice("That accomplishment already exists.", "error");
       return;
     }
@@ -2554,7 +2697,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       showEditorNotice("Add both a milestone year and title before saving.", "error");
       return;
     }
-    if (hasDuplicateValue(trophiesContent.milestones, newTrophyMilestone.title, (item) => item.title)) {
+    if (hasDuplicateValue(draftTrophiesContent.milestones, newTrophyMilestone.title, (item) => item.title)) {
       showEditorNotice("That milestone title already exists.", "error");
       return;
     }
@@ -3495,16 +3638,61 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       {visibleTab === "budsite" && isEboard && (
         <div className="grid gap-5">
           <Card className="p-4 sm:p-5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <Eyebrow>Editing Guide</Eyebrow>
                 <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Change public pages without touching code.</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5b5450]">
-                  Open one module, make edits, and use preview links when available. Duplicate and required-field warnings are shown before new items are added.
+                  Draft changes stay private until you publish. Preview drafts here, then publish when the page looks right.
                 </p>
               </div>
               <SaveNotice notice={editorNotice} />
             </div>
+            <div className="mt-5 grid gap-3 lg:grid-cols-4">
+              {contentDashboardItems.map((item) => {
+                const isDirty = JSON.stringify(item.draft) !== JSON.stringify(item.published);
+                return (
+                  <div key={item.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.12em] text-[#CC0000]">{isDirty ? "Draft changes" : "Published"}</p>
+                      <h3 className="mt-1 text-lg font-black text-[#2D2926]">{item.title}</h3>
+                    </div>
+                    <div className="grid gap-2">
+                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        {previewDraftId === item.id ? "Hide Preview" : "Preview Draft"}
+                      </button>
+                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
+                        Publish
+                      </button>
+                      <a href={item.href} className="border border-[#ded8d2] bg-white px-3 py-2 text-center text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                        Live Page
+                      </a>
+                    </div>
+                    {(contentRevisions[item.id] || []).length > 0 && (
+                      <div className="border-t border-[#ded8d2] pt-2">
+                        <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
+                        <div className="grid max-h-24 gap-1 overflow-y-auto">
+                          {contentRevisions[item.id].map((revision) => (
+                            <button key={revision.id} type="button" onClick={() => restoreContentRevision(item.id, revision)} className="text-left text-xs font-bold leading-5 text-[#2D2926] hover:text-[#CC0000]">
+                              Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {previewDraftId && (
+              <div className="mt-5 max-h-[32rem] overflow-y-auto border border-[#ded8d2] bg-white p-4">
+                <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Draft Preview</p>
+                {previewDraftId === "trophies" && <TrophiesPage trophiesContent={draftTrophiesContent} />}
+                {previewDraftId === "meetings" && <MeetingsPage auth={auth} meetingsContent={draftMeetingsContent} onRequestConfirmation={onRequestConfirmation} />}
+                {previewDraftId === "novice" && <NoviceHubPage noviceContent={draftNoviceContent} />}
+                {previewDraftId === "eboard" && <EBoardPage eboardContent={draftEboardContent} />}
+              </div>
+            )}
           </Card>
           <div className="grid">
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
@@ -4276,7 +4464,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <FieldWarning>{newTrophyStatDuplicate ? "A top stat with this label already exists." : ""}</FieldWarning>
                 </form>
                 <div className="grid gap-2">
-                  {trophiesContent.stats.map((stat, index) => (
+                  {draftTrophiesContent.stats.map((stat, index) => (
                     <div
                       key={stat.id}
                       draggable
@@ -4290,7 +4478,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
                       <input value={stat.detail} onChange={(event) => updateTrophyItem("stats", stat.id, "detail", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                       <div className="flex items-center gap-2">
-                        <ReorderButtons onMoveUp={() => moveTrophyItem("stats", index, -1)} onMoveDown={() => moveTrophyItem("stats", index, 1)} disabledUp={index === 0} disabledDown={index === trophiesContent.stats.length - 1} />
+                        <ReorderButtons onMoveUp={() => moveTrophyItem("stats", index, -1)} onMoveDown={() => moveTrophyItem("stats", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.stats.length - 1} />
                         <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${stat.label}?`, body: "This stat will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("stats", stat.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${stat.label}`}><Trash2 size={16} /></button>
                       </div>
                     </div>
@@ -4310,7 +4498,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   </div>
                 </form>
                 <div className="grid gap-2">
-                  {trophiesContent.accomplishments.map((item, index) => (
+                  {draftTrophiesContent.accomplishments.map((item, index) => (
                     <div
                       key={item.id}
                       draggable
@@ -4322,7 +4510,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     >
                       <input value={item.text} onChange={(event) => updateTrophyItem("accomplishments", item.id, "text", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
                       <div className="flex items-center gap-2">
-                        <ReorderButtons onMoveUp={() => moveTrophyItem("accomplishments", index, -1)} onMoveDown={() => moveTrophyItem("accomplishments", index, 1)} disabledUp={index === 0} disabledDown={index === trophiesContent.accomplishments.length - 1} />
+                        <ReorderButtons onMoveUp={() => moveTrophyItem("accomplishments", index, -1)} onMoveDown={() => moveTrophyItem("accomplishments", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.accomplishments.length - 1} />
                         <button type="button" onClick={() => requestDeleteConfirmation({ title: "Delete this accomplishment?", body: item.text, onConfirm: () => removeTrophyItem("accomplishments", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
                       </div>
                     </div>
@@ -4344,7 +4532,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <FieldWarning>{newTrophyMilestoneDuplicate ? "A milestone with this title already exists." : ""}</FieldWarning>
                 </form>
                 <div className="grid gap-2">
-                  {trophiesContent.milestones.map((item, index) => (
+                  {draftTrophiesContent.milestones.map((item, index) => (
                     <div
                       key={item.id}
                       draggable
@@ -4358,7 +4546,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
                         <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
                         <div className="flex items-center gap-2">
-                          <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === trophiesContent.milestones.length - 1} />
+                          <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.milestones.length - 1} />
                           <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
                         </div>
                       </div>
@@ -4379,7 +4567,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     ) : (
                       <select value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} className="border border-[#ded8d2] bg-white px-3 py-2 text-sm outline-none focus:border-[#CC0000]">
                         <option value="">Choose member</option>
-                        {trophiesContent.members.map((member) => (
+                        {draftTrophiesContent.members.map((member) => (
                           <option key={member.id} value={member.name}>{member.name}</option>
                         ))}
                       </select>
@@ -4390,7 +4578,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <textarea value={newTrophyMember.achievement} onChange={(event) => setNewTrophyMember((current) => ({ ...current, achievement: event.target.value }))} placeholder="Achievement to add to this member" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                 </form>
                 <div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
-                  {trophiesContent.members.map((member, memberIndex) => (
+                  {draftTrophiesContent.members.map((member, memberIndex) => (
                     <div
                       key={member.id}
                       draggable
@@ -4404,7 +4592,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} disabled={!isAdmin} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                         <input value={member.meta} onChange={(event) => updateTrophyItem("members", member.id, "meta", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                         <div className="flex items-center gap-2">
-                          <ReorderButtons onMoveUp={() => moveTrophyItem("members", memberIndex, -1)} onMoveDown={() => moveTrophyItem("members", memberIndex, 1)} disabledUp={memberIndex === 0} disabledDown={memberIndex === trophiesContent.members.length - 1} />
+                          <ReorderButtons onMoveUp={() => moveTrophyItem("members", memberIndex, -1)} onMoveDown={() => moveTrophyItem("members", memberIndex, 1)} disabledUp={memberIndex === 0} disabledDown={memberIndex === draftTrophiesContent.members.length - 1} />
                           <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${member.name}?`, body: "This member achievement card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("members", member.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
                         </div>
                       </div>
