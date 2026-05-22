@@ -1023,13 +1023,13 @@ function NoviceHubPage({ noviceContent }) {
             <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Common First-Round Questions</h2>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="columns-1 gap-3 md:columns-2">
           {noviceContent.faqs.map((faq, index) => (
             <SmoothDetails
               key={faq.id}
               title={faq.question}
               defaultOpen={index === 0}
-              className="border border-[#ded8d2] bg-white p-4 shadow-[0_14px_38px_rgba(45,41,38,0.06)]"
+              className="mb-3 break-inside-avoid border border-[#ded8d2] bg-white p-4 shadow-[0_14px_38px_rgba(45,41,38,0.06)]"
             >
               <p className="text-sm font-semibold leading-6 text-[#5b5450]">{faq.answer}</p>
             </SmoothDetails>
