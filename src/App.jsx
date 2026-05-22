@@ -3637,43 +3637,43 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
       {visibleTab === "budsite" && isEboard && (
         <div className="grid gap-5">
-          <Card className="p-4 sm:p-5">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <Card className="p-4">
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <Eyebrow>Editing Guide</Eyebrow>
-                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Change public pages without touching code.</h2>
-                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                <h2 className="mt-1 text-xl font-black text-[#2D2926]">Change public pages without touching code.</h2>
+                <p className="mt-1 text-sm leading-6 text-[#5b5450]">
                   Draft changes stay private until you publish. Preview drafts here, then publish when the page looks right.
                 </p>
               </div>
               <SaveNotice notice={editorNotice} />
             </div>
-            <div className="mt-5 grid gap-3 lg:grid-cols-4">
+            <div className="mt-4 grid items-start gap-3 lg:grid-cols-4">
               {contentDashboardItems.map((item) => {
                 const isDirty = JSON.stringify(item.draft) !== JSON.stringify(item.published);
                 return (
-                  <div key={item.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                  <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.12em] text-[#CC0000]">{isDirty ? "Draft changes" : "Published"}</p>
-                      <h3 className="mt-1 text-lg font-black text-[#2D2926]">{item.title}</h3>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">{isDirty ? "Draft changes" : "Published"}</p>
+                      <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
                     </div>
-                    <div className="grid gap-2">
-                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                    <div className="grid grid-cols-3 gap-1">
+                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-2 py-2 text-[0.62rem] font-black uppercase tracking-[0.06em] text-[#2D2926]">
                         {previewDraftId === item.id ? "Hide Preview" : "Preview Draft"}
                       </button>
-                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
+                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-2 py-2 text-[0.62rem] font-black uppercase tracking-[0.06em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
                         Publish
                       </button>
-                      <a href={item.href} className="border border-[#ded8d2] bg-white px-3 py-2 text-center text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      <a href={item.href} className="border border-[#ded8d2] bg-white px-2 py-2 text-center text-[0.62rem] font-black uppercase tracking-[0.06em] text-[#2D2926]">
                         Live Page
                       </a>
                     </div>
                     {(contentRevisions[item.id] || []).length > 0 && (
                       <div className="border-t border-[#ded8d2] pt-2">
                         <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
-                        <div className="grid max-h-24 gap-1 overflow-y-auto">
+                        <div className="grid max-h-[5.5rem] gap-1 overflow-y-auto pr-1">
                           {contentRevisions[item.id].map((revision) => (
-                            <button key={revision.id} type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-3 py-2 text-left text-xs font-black uppercase tracking-[0.06em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
+                            <button key={revision.id} type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.65rem] font-black uppercase tracking-[0.04em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
                               Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
                             </button>
                           ))}
