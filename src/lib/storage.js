@@ -93,7 +93,7 @@ export function saveStoredBudget(budget) {
 
 export function normalizeBudget(budget) {
   return {
-    total: Number(budget.total) || 5750,
+    total: budget.total === "" ? "" : Number(budget.total) || 5750,
     rows: budget.rows || initialBudgetRows,
     revenueRows: budget.revenueRows || initialBudgetRevenueRows,
   };

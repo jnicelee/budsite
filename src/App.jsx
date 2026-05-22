@@ -468,6 +468,10 @@ function sortResultSeasons(seasons = []) {
   return [...seasons].sort((a, b) => b.id.localeCompare(a.id));
 }
 
+function budgetNumberValue(value) {
+  return value === "" ? 0 : Number(value) || 0;
+}
+
 function isApdaManagedStat(stat) {
   return stat.id?.startsWith("apda-") || /coty rank|coty contributors|current members/i.test(`${stat.label} ${stat.detail}`);
 }
@@ -1783,10 +1787,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     if (status === "Denied") return "text-[#8a0000]";
     return "text-[#CC0000]";
   };
-  const totalSpent = approvedBudgetRows.reduce((sum, row) => sum + (Number(row.spent) || 0), 0);
-  const totalAllocated = approvedBudgetRows.reduce((sum, row) => sum + (Number(row.allocated) || 0), 0);
-  const totalRevenue = budget.revenueRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
-  const effectiveBudget = (Number(budget.total) || 0) + totalRevenue;
+  const totalSpent = approvedBudgetRows.reduce((sum, row) => sum + budgetNumberValue(row.spent), 0);
+  const totalAllocated = approvedBudgetRows.reduce((sum, row) => sum + budgetNumberValue(row.allocated), 0);
+  const totalRevenue = budget.revenueRows.reduce((sum, row) => sum + budgetNumberValue(row.amount), 0);
+  const effectiveBudget = budgetNumberValue(budget.total) + totalRevenue;
   const remainingBudget = effectiveBudget - totalSpent;
   const displayName = auth?.name?.trim() || auth?.email?.split("@")[0] || "member";
   const hubTitle = visibleTab === "member"
@@ -2029,7 +2033,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     if (!canEditWorkspace) return;
     const nextBudget = { ...budget, total };
     updateBudget(nextBudget);
-    upsertBudgetSettings(total);
+    upsertBudgetSettings(budgetNumberValue(total));
   };
 
   const updateBudgetRow = (id, field, value) => {
@@ -2055,13 +2059,19 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       ...budget,
       rows: budget.rows.map((row) => (
         row.id === id
-          ? { ...row, [field]: field === "allocated" || field === "spent" ? Number(value) : value }
+          ? { ...row, [field]: value }
           : row
       )),
     };
     updateBudget(nextBudget);
     const updatedRow = nextBudget.rows.find((row) => row.id === id);
-    if (updatedRow) upsertBudgetRow(updatedRow);
+    if (updatedRow) {
+      upsertBudgetRow({
+        ...updatedRow,
+        allocated: budgetNumberValue(updatedRow.allocated),
+        spent: budgetNumberValue(updatedRow.spent),
+      });
+    }
   };
 
   const addBudgetRow = (event) => {
@@ -2849,7 +2859,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     type="number"
                     min="0"
                     value={budget.total}
-                    onChange={(event) => updateBudgetTotal(Number(event.target.value))}
+                    onChange={(event) => updateBudgetTotal(event.target.value)}
                     disabled={!canEditWorkspace}
                     className="w-full bg-transparent text-2xl font-black outline-none disabled:opacity-70"
                   />
