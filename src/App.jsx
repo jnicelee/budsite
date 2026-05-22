@@ -2111,6 +2111,19 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     showEditorNotice("Revision restored into draft. Publish it when ready.");
   };
 
+  const deleteContentRevision = (id, revision) => {
+    requestDeleteConfirmation({
+      title: `Delete revision from ${formatMeetingDate(revision.createdAt.slice(0, 10))}?`,
+      body: "This saved revision will be removed from revision history. The current draft and live page will not change.",
+      onConfirm: () => {
+        const nextRevisions = (contentRevisions[id] || []).filter((item) => item.id !== revision.id);
+        setContentRevisions((current) => ({ ...current, [id]: nextRevisions }));
+        saveStoredContentRevisions(id, nextRevisions);
+        showEditorNotice("Revision deleted.");
+      },
+    });
+  };
+
   const newNoviceFaqDuplicate = hasDuplicateValue(noviceFaqs, newNoviceFaq.question, (faq) => faq.question);
   const newEboardMemberDuplicate = hasDuplicateValue(eboardMembers, newEboardMember.name, (member) => member.name);
   const newTrophyStatDuplicate = hasDuplicateValue(draftTrophiesContent.stats, newTrophyStat.label, (stat) => stat.label);
@@ -3673,9 +3686,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
                         <div className="grid max-h-[5.5rem] gap-1 overflow-y-auto pr-1">
                           {contentRevisions[item.id].map((revision) => (
-                            <button key={revision.id} type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.65rem] font-black uppercase tracking-[0.04em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
-                              Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
-                            </button>
+                            <div key={revision.id} className="grid grid-cols-[1fr_auto] gap-1">
+                              <button type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.65rem] font-black uppercase tracking-[0.04em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
+                                Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
+                              </button>
+                              <button type="button" onClick={() => deleteContentRevision(item.id, revision)} className="grid h-full min-h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff1f1]" aria-label={`Delete revision from ${formatMeetingDate(revision.createdAt.slice(0, 10))}`}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </div>
