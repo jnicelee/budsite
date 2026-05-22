@@ -1882,15 +1882,15 @@ function LoginPage({ onLogin }) {
             <Eyebrow light>Private Access</Eyebrow>
             <h2 className="mt-5 text-3xl font-black leading-tight text-white sm:text-4xl">Log in with your membership ID.</h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-white/78">
-              Use the BU email and password from your approved membership request. Members get resources; e-board accounts also get the workspace and Budsite Editor.
+              Use the BU email and password from your approved membership request. Members get resources.
             </p>
           </div>
           <div className="mt-8 grid gap-3 border border-white/20 bg-white/5 p-5 text-sm font-bold text-white/80">
             <p>New? Request an account before trying to log in.</p>
             <p>Waiting? You can log in only after an admin accepts your request.</p>
-            <PrimaryButton href="/join" className="mt-2 w-fit bg-white text-[#2D2926] hover:bg-[#f6f4f2]">
+            <a href="/join" onClick={(event) => { event.preventDefault(); navigateTo("/join"); }} className="mt-2 inline-flex w-fit items-center justify-center gap-2 rounded-sm bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:bg-[#f6f4f2] hover:text-[#CC0000]">
               Request Account <ArrowRight size={16} />
-            </PrimaryButton>
+            </a>
           </div>
         </Card>
 
