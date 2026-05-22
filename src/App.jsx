@@ -3771,13 +3771,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
-                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-2 py-2 text-[0.62rem] font-black uppercase tracking-[0.06em] text-[#2D2926]">
+                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-1.5 py-1.5 text-[0.56rem] font-black uppercase tracking-[0.03em] text-[#2D2926]">
                         {previewDraftId === item.id ? "Hide Preview" : "Preview Draft"}
                       </button>
-                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-2 py-2 text-[0.62rem] font-black uppercase tracking-[0.06em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
+                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-1.5 py-1.5 text-[0.56rem] font-black uppercase tracking-[0.03em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
                         Publish
                       </button>
-                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-2 py-2 text-center text-[0.62rem] font-black uppercase tracking-[0.06em] text-[#2D2926]">
+                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-1.5 py-1.5 text-center text-[0.56rem] font-black uppercase tracking-[0.03em] text-[#2D2926]">
                         Live Page
                       </a>
                     </div>
