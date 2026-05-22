@@ -862,7 +862,7 @@ function NoviceHubPage({ noviceContent }) {
           <div>
             <h3 className="text-lg font-black">The Judge Decides</h3>
             <p className="mt-1 text-sm font-semibold leading-6 text-[#5b5450]">
-              After every speech, the judge compares which side gave the more convincing, better supported, and better weighed reasons.
+              After the round, both teams leave the room to let the judge deliberate on which side gave the more convincing, better supported, and better weighed reasons.
             </p>
           </div>
         </div>
