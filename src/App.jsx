@@ -2514,6 +2514,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               Administrator
             </span>
           )}
+          {!isAdmin && auth?.role === "eboard" && (
+            <span className="bg-[#CC0000] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
+              E-Board
+            </span>
+          )}
           {!isAdmin && canManageMembers && (
             <span className="bg-[#CC0000] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
               Member Manager
