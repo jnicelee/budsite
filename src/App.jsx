@@ -3903,10 +3903,10 @@ export default function App() {
   }, [auth, calendarEmbedUrl, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
 
   return (
-    <main className="min-h-screen bg-[#f6f4f2] text-[#2D2926]">
+    <main className="min-h-screen bg-[#eeeae6] text-[#2D2926]">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,rgba(45,41,38,0.045)_1px,transparent_1px),linear-gradient(rgba(45,41,38,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
-      <header className="sticky top-0 z-50 border-b border-[#c9c7c3] bg-[#e1dfdc]/95 shadow-[0_16px_42px_rgba(45,41,38,0.08)] backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-[#ded8d2] bg-white/95 shadow-[0_10px_28px_rgba(45,41,38,0.07)] backdrop-blur-xl">
         <nav className="mx-auto flex max-w-[98rem] items-center justify-between gap-4 px-5 py-3 md:px-8">
           <SiteLink href="/" className="group flex min-w-0 items-center gap-3">
             <img
