@@ -3925,11 +3925,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             <div>
               <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Publishing Control</p>
             </div>
-            <div className="mt-4 grid items-start gap-3 lg:grid-cols-4">
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
               {contentDashboardItems.map((item) => {
                 const isDirty = JSON.stringify(item.draft) !== JSON.stringify(item.published);
                 return (
-                  <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                  <div key={item.id} className="grid w-[16rem] shrink-0 gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
                     <div>
                       <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">{isDirty ? "Draft changes" : "Published"}</p>
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
