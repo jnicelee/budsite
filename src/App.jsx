@@ -3935,13 +3935,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
-                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-1.5 py-1 text-[0.42rem] font-black uppercase leading-tight tracking-[0.01em] text-[#2D2926]">
+                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-1.5 py-1 text-[0.34rem] font-black uppercase leading-tight tracking-normal text-[#2D2926]">
                         {previewDraftId === item.id ? "Hide Preview" : "Preview Draft"}
                       </button>
-                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-1.5 py-1 text-[0.42rem] font-black uppercase leading-tight tracking-[0.01em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
+                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-1.5 py-1 text-[0.34rem] font-black uppercase leading-tight tracking-normal text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
                         Publish
                       </button>
-                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-1.5 py-1 text-center text-[0.42rem] font-black uppercase leading-tight tracking-[0.01em] text-[#2D2926]">
+                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-1.5 py-1 text-center text-[0.34rem] font-black uppercase leading-tight tracking-normal text-[#2D2926]">
                         Live Page
                       </a>
                     </div>
@@ -3951,7 +3951,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <div className="grid max-h-[5.5rem] min-h-[2.25rem] gap-1 overflow-y-auto pr-1">
                           {contentRevisions[item.id].map((revision) => (
                             <div key={revision.id} className="grid grid-cols-[1fr_auto] gap-1">
-                              <button type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.52rem] font-black uppercase tracking-[0.02em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
+                              <button type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.44rem] font-black uppercase tracking-normal text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
                                 Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
                               </button>
                               <button type="button" onClick={() => deleteContentRevision(item.id, revision)} className="grid h-full min-h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff1f1]" aria-label={`Delete revision from ${formatMeetingDate(revision.createdAt.slice(0, 10))}`}>
