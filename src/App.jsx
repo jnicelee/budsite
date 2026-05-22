@@ -3765,7 +3765,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <Eyebrow>Editing Guide</Eyebrow>
-                <h2 className="mt-1 text-xl font-black text-[#2D2926]">Change public pages without touching code.</h2>
+                <h2 className="mt-1 text-xl font-black text-[#2D2926]">Manage public page updates with confidence.</h2>
                 <p className="mt-1 text-sm leading-6 text-[#5b5450]">
                   Draft changes stay private until you publish. Preview drafts here, then publish when the page looks right.
                 </p>
