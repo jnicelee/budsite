@@ -91,6 +91,7 @@ function mergeTournamentAward(tournamentMap, tournament, award) {
 
 function buildMemberAchievement(member, debaterDetail, season) {
   const summary = (debaterDetail.season_summaries || []).find((item) => item.season === season);
+  const seasonLabel = summary?.season_display || String(season || "Selected season");
   const achievements = [];
   const teamAwardSeen = new Set();
   const speakerAwardSeen = new Set();
@@ -101,12 +102,12 @@ function buildMemberAchievement(member, debaterDetail, season) {
       if (!result.id || teamAwardSeen.has(result.id)) return;
       teamAwardSeen.add(result.id);
       const place = result.place_display === "1st" ? "Champion" : result.place_display;
-      achievements.push(`${entry.tournament?.display || entry.tournament?.name}: ${result.type || "Varsity"} ${place}`);
+      achievements.push(`${seasonLabel} ${entry.tournament?.display || entry.tournament?.name}: ${result.type || "Varsity"} ${place}`);
     });
     (entry.speaker_results || []).forEach((result) => {
       if (!result.id || speakerAwardSeen.has(result.id)) return;
       speakerAwardSeen.add(result.id);
-      achievements.push(`${entry.tournament?.display || entry.tournament?.name}: ${ordinal(result.place)} ${result.type || "Varsity"} Speaker`);
+      achievements.push(`${seasonLabel} ${entry.tournament?.display || entry.tournament?.name}: ${ordinal(result.place)} ${result.type || "Varsity"} Speaker`);
     });
   });
 
