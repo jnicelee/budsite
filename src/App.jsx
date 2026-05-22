@@ -399,7 +399,7 @@ function getStoredContentRevisions(id, normalizer) {
 }
 
 function saveStoredContentRevisions(id, revisions) {
-  window.localStorage.setItem(revisionsStorageKey(id), JSON.stringify(revisions.slice(0, 8)));
+  window.localStorage.setItem(revisionsStorageKey(id), JSON.stringify(revisions.slice(0, 3)));
 }
 
 function createContentRevision(content, label) {
@@ -2044,7 +2044,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
 
   const updateRevisionList = (id, revision, normalizer) => {
-    const nextRevisions = [revision, ...(contentRevisions[id] || [])].slice(0, 8);
+    const nextRevisions = [revision, ...(contentRevisions[id] || [])].slice(0, 3);
     setContentRevisions((current) => ({ ...current, [id]: nextRevisions }));
     saveStoredContentRevisions(id, nextRevisions.map((item) => ({ ...item, content: normalizer(item.content) })));
   };
