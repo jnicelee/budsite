@@ -233,13 +233,59 @@ export function normalizeTrophiesContent(content = defaultTrophiesContent) {
     }),
     resultSeasons: normalizedResultSeasons,
     results: normalizedResultSeasons.find((season) => season.id === "2025-2026")?.results || normalizedResultSeasons[0]?.results || [],
-    members: normalizeTrophyItems(source.members, (item, index) => ({
+    members: mergeTrophyMembersByName(normalizeTrophyItems(source.members, (item, index) => ({
       id: item.id || `member-${index}-${slugify(item.name || "item")}`,
       name: item.name || "",
       meta: item.meta || "",
       achievements: Array.isArray(item.achievements) ? item.achievements.filter(Boolean) : [],
-    })),
+    }))),
   };
+}
+
+function isPlaceholderAchievement(value = "") {
+  return /^no .* awards listed yet\.$/i.test(value.trim());
+}
+
+function mergeAchievements(existing = [], incoming = []) {
+  const merged = [...existing, ...incoming].map((item) => item.trim()).filter(Boolean);
+  const realAchievements = merged.filter((item) => !isPlaceholderAchievement(item));
+  const source = realAchievements.length > 0 ? realAchievements : merged;
+  return [...new Set(source)];
+}
+
+function memberMergeRank(member) {
+  const achievements = member.achievements || [];
+  const realAchievementCount = achievements.filter((item) => !isPlaceholderAchievement(item)).length;
+  return realAchievementCount * 1000 + achievements.length;
+}
+
+function mergeTrophyMembersByName(members) {
+  const memberMap = new Map();
+
+  members.forEach((member) => {
+    const key = member.name.trim().toLowerCase();
+    if (!key) return;
+    const existing = memberMap.get(key);
+    if (!existing) {
+      memberMap.set(key, {
+        ...member,
+        name: member.name.trim(),
+        achievements: mergeAchievements(member.achievements),
+      });
+      return;
+    }
+
+    const primary = memberMergeRank(member) > memberMergeRank(existing) ? member : existing;
+    const secondary = primary === member ? existing : member;
+    memberMap.set(key, {
+      ...primary,
+      name: primary.name.trim(),
+      meta: primary.meta || secondary.meta,
+      achievements: mergeAchievements(existing.achievements, member.achievements),
+    });
+  });
+
+  return [...memberMap.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function normalizeResultSeasons(source) {

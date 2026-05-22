@@ -118,6 +118,50 @@ function buildMemberAchievement(member, debaterDetail, season) {
   };
 }
 
+function isPlaceholderAchievement(value = "") {
+  return /^no .* awards listed yet\.$/i.test(value.trim());
+}
+
+function mergeAchievements(existing = [], incoming = []) {
+  const merged = [...existing, ...incoming].map((item) => item.trim()).filter(Boolean);
+  const realAchievements = merged.filter((item) => !isPlaceholderAchievement(item));
+  const source = realAchievements.length > 0 ? realAchievements : merged;
+  return [...new Set(source)];
+}
+
+function memberMergeRank(member) {
+  const achievements = member.achievements || [];
+  const realAchievementCount = achievements.filter((item) => !isPlaceholderAchievement(item)).length;
+  return realAchievementCount * 1000 + achievements.length;
+}
+
+function mergeMembersByName(members) {
+  const memberMap = new Map();
+  members.forEach((member) => {
+    const key = member.name.trim().toLowerCase();
+    if (!key) return;
+    const existing = memberMap.get(key);
+    if (!existing) {
+      memberMap.set(key, {
+        ...member,
+        name: member.name.trim(),
+        achievements: mergeAchievements(member.achievements),
+      });
+      return;
+    }
+
+    const primary = memberMergeRank(member) > memberMergeRank(existing) ? member : existing;
+    const secondary = primary === member ? existing : member;
+    memberMap.set(key, {
+      ...primary,
+      name: primary.name.trim(),
+      meta: primary.meta || secondary.meta,
+      achievements: mergeAchievements(existing.achievements, member.achievements),
+    });
+  });
+  return [...memberMap.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function buildContentProposal(schoolDetail, debaterDetails) {
   const season = schoolDetail.season;
   const seasonDisplay = schoolDetail.season_display;
@@ -165,9 +209,7 @@ function buildContentProposal(schoolDetail, debaterDetails) {
     .filter((entry) => entry.highlights.length > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const proposedMembers = members
-    .map((member, index) => buildMemberAchievement(member, debaterDetails[index], season))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const proposedMembers = mergeMembersByName(members.map((member, index) => buildMemberAchievement(member, debaterDetails[index], season)));
 
   const stats = [
     {
