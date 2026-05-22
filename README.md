@@ -88,6 +88,26 @@ Required fields:
 
 When notes are saved, they become meeting posts in the Meetings tab. Posts are ordered by date, newest first. E-board members can delete meeting posts.
 
+### Budsite Editor Drafts and Restoring Revisions
+
+The **Budsite Editor** uses a safe draft workflow for public page edits.
+
+- Edit public content in the Budsite Editor.
+- Use **Preview Draft** to review the draft version.
+- Use **Publish** only when the draft should replace the live public page.
+- Publishing saves the previous live version into **Revision History**.
+
+To restore an older version:
+
+- Go to **Hub** > **Budsite Editor**.
+- In the **Editing Guide** dashboard, find the page to restore.
+- Under **Revision History**, click the restore option for the date you want.
+- The old version is restored into the draft, not the live website.
+- Click **Preview Draft** to check it.
+- Click **Publish** if the restored draft should become the live page.
+
+Safe restore flow: **Restore revision** > **Preview Draft** > **Publish**.
+
 ### Trophies Page APDA Updater
 
 The **Update from APDA** button in the Trophies Page Editor has two stages: **preview** and **apply**. It does not change the website when first clicked.
