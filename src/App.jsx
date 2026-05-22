@@ -3677,14 +3677,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-2 py-2 text-[0.62rem] font-black uppercase tracking-[0.06em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
                         Publish
                       </button>
-                      <a href={item.href} className="border border-[#ded8d2] bg-white px-2 py-2 text-center text-[0.62rem] font-black uppercase tracking-[0.06em] text-[#2D2926]">
+                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-2 py-2 text-center text-[0.62rem] font-black uppercase tracking-[0.06em] text-[#2D2926]">
                         Live Page
                       </a>
                     </div>
-                    {(contentRevisions[item.id] || []).length > 0 && (
-                      <div className="border-t border-[#ded8d2] pt-2">
-                        <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
-                        <div className="grid max-h-[5.5rem] gap-1 overflow-y-auto pr-1">
+                    <div className="border-t border-[#ded8d2] pt-2">
+                      <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
+                      {(contentRevisions[item.id] || []).length > 0 ? (
+                        <div className="grid max-h-[5.5rem] min-h-[2.25rem] gap-1 overflow-y-auto pr-1">
                           {contentRevisions[item.id].map((revision) => (
                             <div key={revision.id} className="grid grid-cols-[1fr_auto] gap-1">
                               <button type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.65rem] font-black uppercase tracking-[0.04em] text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
@@ -3696,8 +3696,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <p className="border border-dashed border-[#ded8d2] bg-white px-2 py-2 text-[0.65rem] font-black uppercase tracking-[0.04em] text-[#8f8781]">
+                          No revisions yet
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
