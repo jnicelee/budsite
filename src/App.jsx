@@ -190,8 +190,23 @@ function HomePage() {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.16 }}
-        className="pt-2 lg:col-span-2 lg:pt-4"
+        className="grid gap-5 pt-2 lg:col-span-2 lg:pt-4"
       >
+        <div className="border border-[#ded8d2] bg-white p-5 shadow-[0_16px_42px_rgba(45,41,38,0.06)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <Eyebrow>New Debater Path</Eyebrow>
+              <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Start with one practice, then one round.</h2>
+            </div>
+            <div className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] sm:grid-cols-4">
+              {["Read Novice Hub", "Come to Practice", "Find a Partner", "Try a Tournament"].map((step, index) => (
+                <div key={step} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+                  <span className="mr-2 text-[#CC0000]">{index + 1}</span>{step}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
         <PhotoCarousel />
       </motion.div>
     </section>
@@ -273,6 +288,83 @@ function SmoothDetails({ title, children, className = "", defaultOpen = false })
       </AnimatePresence>
     </section>
   );
+}
+
+function HelperText({ children }) {
+  return (
+    <p className="text-xs font-bold normal-case leading-5 tracking-normal text-[#8f8781]">
+      {children}
+    </p>
+  );
+}
+
+function FieldWarning({ children }) {
+  if (!children) return null;
+  return (
+    <p className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-3 py-2 text-xs font-black normal-case leading-5 tracking-normal text-[#8a0000]">
+      {children}
+    </p>
+  );
+}
+
+function SaveNotice({ notice }) {
+  if (!notice?.message) return null;
+  return (
+    <p className={`border-l-4 px-4 py-3 text-sm font-black ${
+      notice.type === "error"
+        ? "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
+        : "border-[#0b6b35] bg-[#e5f7ec] text-[#0b6b35]"
+    }`}>
+      {notice.message}
+    </p>
+  );
+}
+
+function ReorderButtons({ onMoveUp, onMoveDown, disabledUp = false, disabledDown = false }) {
+  return (
+    <div className="flex gap-1">
+      <button
+        type="button"
+        onClick={onMoveUp}
+        disabled={disabledUp}
+        className="border border-[#ded8d2] bg-white px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        Up
+      </button>
+      <button
+        type="button"
+        onClick={onMoveDown}
+        disabled={disabledDown}
+        className="border border-[#ded8d2] bg-white px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-35"
+      >
+        Down
+      </button>
+    </div>
+  );
+}
+
+function normalizeComparisonValue(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function hasDuplicateValue(items, value, selector = (item) => item, ignoreId = "") {
+  const normalizedValue = normalizeComparisonValue(value);
+  if (!normalizedValue) return false;
+  return items.some((item) => item?.id !== ignoreId && normalizeComparisonValue(selector(item)) === normalizedValue);
+}
+
+function moveArrayItem(items, fromIndex, toIndex) {
+  if (fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) return items;
+  const nextItems = [...items];
+  const [item] = nextItems.splice(fromIndex, 1);
+  nextItems.splice(toIndex, 0, item);
+  return nextItems;
+}
+
+function reorderArrayById(items, sourceId, targetId) {
+  const sourceIndex = items.findIndex((item) => item.id === sourceId);
+  const targetIndex = items.findIndex((item) => item.id === targetId);
+  return moveArrayItem(items, sourceIndex, targetIndex);
 }
 
 const richTextToolbarTools = [
@@ -1524,10 +1616,15 @@ function JoinPage({ auth, onRequestConfirmation }) {
               Request membership in the Boston University Debate Society.
             </h1>
             <p className="mt-6 max-w-2xl text-base font-medium leading-7 text-white/90 sm:text-lg sm:leading-8">
-              Send a quick request with your BU email. Administrators can review new members, accept or deny requests, and leave a decision reason.
+              New members request an account first. After an administrator accepts you, use this same BU email and password to log in through the Hub.
             </p>
           </div>
           <div className="mt-10 grid gap-4 border border-white/40 bg-white p-4 text-[#2D2926] sm:p-6">
+            <div className="grid gap-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] sm:grid-cols-3">
+              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">1. Request</div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">2. Wait for approval</div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">3. Log in</div>
+            </div>
             <div className="flex items-start gap-3">
               <MapPin className="mt-1 shrink-0 text-[#CC0000]" />
               <div>
@@ -1725,7 +1822,7 @@ function LoginPage({ onLogin }) {
   return (
     <Page>
       <PageHeader eyebrow="Private Login" title="Choose Your BUDS Access Level.">
-        Members unlock private team resources. E-board unlocks the same member hub plus the e-board workspace.
+        Accepted members log in here. New members should request an account first.
       </PageHeader>
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="!bg-[#2D2926] p-5 text-white sm:p-8">
@@ -1733,12 +1830,15 @@ function LoginPage({ onLogin }) {
             <Eyebrow light>Private Access</Eyebrow>
             <h2 className="mt-5 text-3xl font-black leading-tight text-white sm:text-4xl">Log in with your membership ID.</h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-white/78">
-              Use the email and password connected to your BUDS account. Members can access private team resources, and e-board members can open the workspace from the e-board login option.
+              Use the BU email and password from your approved membership request. Members get resources; e-board accounts also get the workspace and Budsite Editor.
             </p>
           </div>
           <div className="mt-8 grid gap-3 border border-white/20 bg-white/5 p-5 text-sm font-bold text-white/80">
-            <p>Accepted members use the password they chose on the join form.</p>
-            <p>Use a BU email unless you have an approved administrator account.</p>
+            <p>New? Request an account before trying to log in.</p>
+            <p>Waiting? You can log in only after an admin accepts your request.</p>
+            <PrimaryButton href="/join" className="mt-2 w-fit bg-white text-[#2D2926] hover:bg-[#f6f4f2]">
+              Request Account <ArrowRight size={16} />
+            </PrimaryButton>
           </div>
         </Card>
 
@@ -1816,6 +1916,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceFaqEditorOpen, setNoviceFaqEditorOpen] = useState(false);
   const [eboardEditorOpen, setEboardEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
+  const [trophyEditorSection, setTrophyEditorSection] = useState("stats");
+  const [editorNotice, setEditorNotice] = useState({ type: "", message: "" });
+  const [dragItem, setDragItem] = useState(null);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
@@ -1854,6 +1957,29 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     section,
     links: memberLinks.filter((link) => getPrivateLinkSection(link) === section),
   })).filter((group) => group.links.length > 0);
+
+  const showEditorNotice = (message, type = "success") => {
+    setEditorNotice({ type, message });
+  };
+
+  const startEditorDrag = (collection, id) => {
+    setDragItem({ collection, id });
+  };
+
+  const finishEditorDrag = () => {
+    setDragItem(null);
+  };
+
+  const allowEditorDrop = (event) => {
+    event.preventDefault();
+  };
+
+  const newNoviceFaqDuplicate = hasDuplicateValue(noviceFaqs, newNoviceFaq.question, (faq) => faq.question);
+  const newEboardMemberDuplicate = hasDuplicateValue(eboardMembers, newEboardMember.name, (member) => member.name);
+  const newTrophyStatDuplicate = hasDuplicateValue(trophiesContent.stats, newTrophyStat.label, (stat) => stat.label);
+  const newTrophyAccomplishmentDuplicate = hasDuplicateValue(trophiesContent.accomplishments, newTrophyAccomplishment, (item) => item.text);
+  const newTrophyMilestoneDuplicate = hasDuplicateValue(trophiesContent.milestones, newTrophyMilestone.title, (item) => item.title);
+  const newTrophyResultDuplicate = hasDuplicateValue(selectedTrophySeason?.results || [], newTrophyResult.tournament, (result) => result.tournament);
 
   useEffect(() => {
     let ignore = false;
@@ -1910,6 +2036,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     };
   }, [canManageMembers]);
 
+  useEffect(() => {
+    if (!editorNotice.message) return undefined;
+    const timeoutId = window.setTimeout(() => setEditorNotice({ type: "", message: "" }), 2800);
+    return () => window.clearTimeout(timeoutId);
+  }, [editorNotice]);
+
   if (!auth) {
     return (
       <Page>
@@ -1940,6 +2072,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     setNotes(nextNotes);
     saveStoredNotes(nextNotes);
     insertNote(nextNote);
+    showEditorNotice("Meeting note published.");
     setSelectedNoteId(nextNote.id);
     setMeetingDate("");
     setMeetingTitle("");
@@ -1956,6 +2089,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     };
     setMeetingAnnouncement(nextContent);
     onMeetingsContentChange(nextContent);
+    showEditorNotice("Meeting announcement saved.");
   };
 
   const persistNoviceFaqs = (nextFaqs) => {
@@ -1963,6 +2097,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     const nextContent = { ...noviceContent, speechSteps: noviceSpeechSteps, faqs: nextFaqs };
     setNoviceFaqs(nextFaqs);
     onNoviceContentChange(nextContent);
+    showEditorNotice("Novice FAQ saved.");
   };
 
   const persistNoviceSpeechSteps = (nextSteps) => {
@@ -1971,6 +2106,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     const nextContent = { ...noviceContent, speechSteps: normalizedSteps, faqs: noviceFaqs };
     setNoviceSpeechSteps(normalizedSteps);
     onNoviceContentChange(nextContent);
+    showEditorNotice("Novice infographic saved.");
   };
 
   const handleNoviceFaqSubmit = (event) => {
@@ -1978,7 +2114,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     if (!canWriteNotes) return;
     const question = newNoviceFaq.question.trim();
     const answer = newNoviceFaq.answer.trim();
-    if (!question || !answer) return;
+    if (!question || !answer) {
+      showEditorNotice("Add both a question and an answer before saving.", "error");
+      return;
+    }
+    if (hasDuplicateValue(noviceFaqs, question, (faq) => faq.question)) {
+      showEditorNotice("That FAQ question already exists.", "error");
+      return;
+    }
     persistNoviceFaqs([
       ...noviceFaqs,
       { id: `faq-${Date.now()}`, question, answer },
@@ -2000,12 +2143,31 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     });
   };
 
+  const moveNoviceFaq = (index, direction) => {
+    const nextFaqs = moveArrayItem(noviceFaqs, index, index + direction);
+    persistNoviceFaqs(nextFaqs);
+  };
+
+  const dropNoviceFaq = (targetId) => {
+    if (dragItem?.collection !== "novice-faq" || dragItem.id === targetId) return;
+    persistNoviceFaqs(reorderArrayById(noviceFaqs, dragItem.id, targetId));
+    finishEditorDrag();
+  };
+
   const updateNoviceSpeechStep = (id, field, value) => {
     persistNoviceSpeechSteps(noviceSpeechSteps.map((step) => (
       step.id === id
         ? { ...step, [field]: field === "order" ? Number(value) : value }
         : step
     )));
+  };
+
+  const moveNoviceSpeechStep = (index, direction) => {
+    const nextSteps = moveArrayItem(noviceSpeechSteps, index, index + direction).map((step, stepIndex) => ({
+      ...step,
+      order: stepIndex + 1,
+    }));
+    persistNoviceSpeechSteps(nextSteps);
   };
 
   const handleAgendaSubmit = (event) => {
@@ -2201,6 +2363,37 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     saveStoredPrivateLinks(nextLinks);
     const updatedLink = nextLinks.find((link) => link.id === id);
     if (updatedLink) upsertPrivateLink(updatedLink);
+    showEditorNotice("Member resource link saved.");
+  };
+
+  const moveMemberLink = (id, direction, section) => {
+    if (!canEditMemberLinks) return;
+    const sectionLinks = memberLinks.filter((link) => getPrivateLinkSection(link) === section);
+    const currentSectionIndex = sectionLinks.findIndex((link) => link.id === id);
+    const nextSectionLinks = moveArrayItem(sectionLinks, currentSectionIndex, currentSectionIndex + direction);
+    let nextSectionIndex = 0;
+    const nextLinks = memberLinks.map((link) => (
+      getPrivateLinkSection(link) === section ? nextSectionLinks[nextSectionIndex++] : link
+    ));
+    setMemberLinks(nextLinks);
+    saveStoredPrivateLinks(nextLinks);
+    nextSectionLinks.forEach((link) => upsertPrivateLink(link));
+    showEditorNotice("Member resource order saved.");
+  };
+
+  const dropMemberLink = (targetId, section) => {
+    if (dragItem?.collection !== `member-link-${section}` || dragItem.id === targetId) return;
+    const sectionLinks = memberLinks.filter((link) => getPrivateLinkSection(link) === section);
+    const nextSectionLinks = reorderArrayById(sectionLinks, dragItem.id, targetId);
+    let nextSectionIndex = 0;
+    const nextLinks = memberLinks.map((link) => (
+      getPrivateLinkSection(link) === section ? nextSectionLinks[nextSectionIndex++] : link
+    ));
+    setMemberLinks(nextLinks);
+    saveStoredPrivateLinks(nextLinks);
+    nextSectionLinks.forEach((link) => upsertPrivateLink(link));
+    finishEditorDrag();
+    showEditorNotice("Member resource order saved.");
   };
 
   const requestDeleteConfirmation = ({ title, body, actionLabel, onConfirm }) => {
@@ -2213,6 +2406,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     const nextContent = typeof updater === "function" ? updater(currentContent) : updater;
     setEboardMembers(nextContent.members || []);
     onEboardContentChange(nextContent);
+    showEditorNotice("E-Board page saved.");
   };
 
   const updateEboardMember = (id, field, value) => {
@@ -2244,7 +2438,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const addEboardMember = (event) => {
     event.preventDefault();
-    if (!canWriteNotes || !newEboardMember.name.trim() || !newEboardMember.role.trim()) return;
+    if (!canWriteNotes || !newEboardMember.name.trim() || !newEboardMember.role.trim()) {
+      showEditorNotice("Add at least a name and role before saving an officer.", "error");
+      return;
+    }
+    if (hasDuplicateValue(eboardMembers, newEboardMember.name, (member) => member.name)) {
+      showEditorNotice("That e-board member already exists.", "error");
+      return;
+    }
     const nextMember = {
       id: `eboard-${Date.now()}`,
       name: newEboardMember.name.trim(),
@@ -2270,10 +2471,27 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     });
   };
 
+  const moveEboardMember = (index, direction) => {
+    persistEboardContent((content) => ({
+      ...content,
+      members: moveArrayItem(content.members, index, index + direction),
+    }));
+  };
+
+  const dropEboardMember = (targetId) => {
+    if (dragItem?.collection !== "eboard-member" || dragItem.id === targetId) return;
+    persistEboardContent((content) => ({
+      ...content,
+      members: reorderArrayById(content.members, dragItem.id, targetId),
+    }));
+    finishEditorDrag();
+  };
+
   const persistTrophiesContent = (updater) => {
     if (!canEditTrophies) return;
     const nextContent = typeof updater === "function" ? updater(trophiesContent) : updater;
     onTrophiesContentChange(nextContent);
+    showEditorNotice("Trophies page saved.");
   };
 
   const updateTrophyItem = (section, id, field, value) => {
@@ -2294,7 +2512,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const addTrophyStat = (event) => {
     event.preventDefault();
-    if (!newTrophyStat.value.trim() || !newTrophyStat.label.trim()) return;
+    if (!newTrophyStat.value.trim() || !newTrophyStat.label.trim()) {
+      showEditorNotice("Add both a stat value and label before saving.", "error");
+      return;
+    }
+    if (hasDuplicateValue(trophiesContent.stats, newTrophyStat.label, (stat) => stat.label)) {
+      showEditorNotice("That top stat already exists.", "error");
+      return;
+    }
     const nextStat = {
       id: `stat-${Date.now()}`,
       value: newTrophyStat.value.trim(),
@@ -2308,7 +2533,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const addTrophyAccomplishment = (event) => {
     event.preventDefault();
     const text = newTrophyAccomplishment.trim();
-    if (!text) return;
+    if (!text) {
+      showEditorNotice("Add accomplishment text before saving.", "error");
+      return;
+    }
+    if (hasDuplicateValue(trophiesContent.accomplishments, text, (item) => item.text)) {
+      showEditorNotice("That accomplishment already exists.", "error");
+      return;
+    }
     persistTrophiesContent((content) => ({
       ...content,
       accomplishments: [...content.accomplishments, { id: `accomplishment-${Date.now()}`, text }],
@@ -2318,7 +2550,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const addTrophyMilestone = (event) => {
     event.preventDefault();
-    if (!newTrophyMilestone.year.trim() || !newTrophyMilestone.title.trim()) return;
+    if (!newTrophyMilestone.year.trim() || !newTrophyMilestone.title.trim()) {
+      showEditorNotice("Add both a milestone year and title before saving.", "error");
+      return;
+    }
+    if (hasDuplicateValue(trophiesContent.milestones, newTrophyMilestone.title, (item) => item.title)) {
+      showEditorNotice("That milestone title already exists.", "error");
+      return;
+    }
     const nextMilestone = {
       id: `milestone-${Date.now()}`,
       year: newTrophyMilestone.year.trim(),
@@ -2332,9 +2571,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const addTrophyResult = (event) => {
     event.preventDefault();
     const highlights = newTrophyResult.highlights.split("\n").map((item) => item.trim()).filter(Boolean);
-    if (!selectedTrophySeasonIdValue || !newTrophyResult.date || !newTrophyResult.tournament.trim() || highlights.length === 0) return;
+    if (!selectedTrophySeasonIdValue || !newTrophyResult.date || !newTrophyResult.tournament.trim() || highlights.length === 0) {
+      showEditorNotice("Add a season, date, tournament name, and at least one highlight before saving.", "error");
+      return;
+    }
+    if (hasDuplicateValue(selectedTrophySeason?.results || [], newTrophyResult.tournament, (result) => result.tournament)) {
+      showEditorNotice("That tournament already exists in this season.", "error");
+      return;
+    }
     const nextResult = {
-      id: `result-${Date.now()}`,
+      id: `result-${Math.round(event.timeStamp)}`,
       date: newTrophyResult.date,
       tournament: newTrophyResult.tournament.trim(),
       highlights,
@@ -2350,13 +2596,33 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     setNewTrophyResult({ date: "", tournament: "", highlights: "" });
   };
 
+  const moveTrophyItem = (section, index, direction) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      [section]: moveArrayItem(content[section], index, index + direction),
+    }));
+  };
+
+  const dropTrophyItem = (section, targetId) => {
+    if (dragItem?.collection !== `trophy-${section}` || dragItem.id === targetId) return;
+    persistTrophiesContent((content) => ({
+      ...content,
+      [section]: reorderArrayById(content[section], dragItem.id, targetId),
+    }));
+    finishEditorDrag();
+  };
+
   const addTrophyResultSeason = (event) => {
     event.preventDefault();
     const seasonId = normalizeSeasonId(newTrophySeason);
-    if (!seasonId) return;
+    if (!seasonId) {
+      showEditorNotice("Use a season format like 2026-2027.", "error");
+      return;
+    }
     if (trophyResultSeasons.some((season) => season.id === seasonId)) {
       setSelectedTrophySeasonId(seasonId);
       setNewTrophySeason("");
+      showEditorNotice("That season already exists, so it was selected instead.", "error");
       return;
     }
 
@@ -2436,7 +2702,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     event.preventDefault();
     const name = newTrophyMember.name.trim();
     const achievement = newTrophyMember.achievement.trim();
-    if (!name || !achievement) return;
+    if (!name || !achievement) {
+      showEditorNotice("Choose a member and write an achievement before saving.", "error");
+      return;
+    }
     persistTrophiesContent((content) => {
       const existingMember = content.members.find((member) => member.name.toLowerCase() === name.toLowerCase());
       if (existingMember) {
@@ -2487,6 +2756,30 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     }));
   };
 
+  const moveTrophyResult = (resultId, direction) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: content.resultSeasons.map((season) => {
+        if (season.id !== selectedTrophySeasonIdValue) return season;
+        const index = season.results.findIndex((result) => result.id === resultId);
+        return { ...season, results: moveArrayItem(season.results, index, index + direction) };
+      }),
+    }));
+  };
+
+  const dropTrophyResult = (targetId) => {
+    if (dragItem?.collection !== "trophy-result" || dragItem.id === targetId) return;
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? { ...season, results: reorderArrayById(season.results, dragItem.id, targetId) }
+          : season
+      )),
+    }));
+    finishEditorDrag();
+  };
+
   const updateTrophyResultHighlight = (resultId, highlightIndex, value) => {
     persistTrophiesContent((content) => ({
       ...content,
@@ -2515,6 +2808,24 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             results: season.results.map((result) => (
               result.id === resultId
                 ? { ...result, highlights: result.highlights.filter((_, index) => index !== highlightIndex) }
+                : result
+            )),
+          }
+          : season
+      )),
+    }));
+  };
+
+  const moveTrophyResultHighlight = (resultId, highlightIndex, direction) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      resultSeasons: content.resultSeasons.map((season) => (
+        season.id === selectedTrophySeasonIdValue
+          ? {
+            ...season,
+            results: season.results.map((result) => (
+              result.id === resultId
+                ? { ...result, highlights: moveArrayItem(result.highlights, highlightIndex, highlightIndex + direction) }
                 : result
             )),
           }
@@ -2553,6 +2864,17 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     setMemberAccounts(nextAccounts);
     saveStoredMemberAccounts(nextAccounts);
     updateMemberAccountRole(id, role);
+  };
+
+  const moveTrophyMemberAchievement = (memberId, achievementIndex, direction) => {
+    persistTrophiesContent((content) => ({
+      ...content,
+      members: content.members.map((member) => (
+        member.id === memberId
+          ? { ...member, achievements: moveArrayItem(member.achievements, achievementIndex, achievementIndex + direction) }
+          : member
+      )),
+    }));
   };
 
   const updateMemberName = (id, name) => {
@@ -2703,6 +3025,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 Team documents, forms, calendars, and APDA guides for the season.
               </p>
             </div>
+            {canEditMemberLinks && (
+              <div className="mt-4">
+                <SaveNotice notice={editorNotice} />
+              </div>
+            )}
           </div>
           <div className="grid gap-7">
             {memberLinksBySection.map((group) => (
@@ -2719,7 +3046,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               >
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                   {group.links.map((link) => (
-                    <div key={link.id} className="group flex min-h-[16rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_16px_42px_rgba(45,41,38,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(45,41,38,0.11)] sm:min-h-[19rem] sm:p-5">
+                    <div
+                      key={link.id}
+                      draggable={canEditMemberLinks}
+                      onDragStart={() => startEditorDrag(`member-link-${group.section}`, link.id)}
+                      onDragOver={allowEditorDrop}
+                      onDrop={() => dropMemberLink(link.id, group.section)}
+                      onDragEnd={finishEditorDrag}
+                      className="group flex min-h-[16rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_16px_42px_rgba(45,41,38,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(45,41,38,0.11)] sm:min-h-[19rem] sm:p-5"
+                    >
                       <div className="mb-7">
                         <span className="inline-flex bg-[#CC0000] px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
                           {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : "Team Link"}
@@ -2759,16 +3094,27 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           Open link <ChevronRight className="transition group-hover:translate-x-1" size={18} />
                         </a>
                         {canEditMemberLinks && (
-                          <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
-                            Edit URL
-                            <input
-                              type="url"
-                              value={link.url}
-                              onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
-                              placeholder="https://..."
-                              className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                            />
-                          </label>
+                          <>
+                            <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
+                              Edit URL
+                              <input
+                                type="url"
+                                value={link.url}
+                                onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                                placeholder="https://..."
+                                className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                            <div className="flex items-center justify-between gap-2 border-t border-[#ded8d2] pt-3">
+                              <HelperText>Drag this tile or use buttons to reorder within the section.</HelperText>
+                              <ReorderButtons
+                                onMoveUp={() => moveMemberLink(link.id, -1, group.section)}
+                                onMoveDown={() => moveMemberLink(link.id, 1, group.section)}
+                                disabledUp={group.links.findIndex((item) => item.id === link.id) === 0}
+                                disabledDown={group.links.findIndex((item) => item.id === link.id) === group.links.length - 1}
+                              />
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
@@ -3148,6 +3494,18 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
       {visibleTab === "budsite" && isEboard && (
         <div className="grid gap-5">
+          <Card className="p-4 sm:p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <Eyebrow>Editing Guide</Eyebrow>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Change public pages without touching code.</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Open one module, make edits, and use preview links when available. Duplicate and required-field warnings are shown before new items are added.
+                </p>
+              </div>
+              <SaveNotice notice={editorNotice} />
+            </div>
+          </Card>
           <div className="grid">
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
               <button
@@ -3183,6 +3541,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     <div className="mt-5">
                   <form onSubmit={handleNoteSubmit} className="grid gap-4">
                     <fieldset disabled={!canWriteNotes} className="grid gap-4 disabled:opacity-55">
+                      <HelperText>Meeting notes publish to the public Meetings page. Use the formatting toolbar for links, lists, and emphasis.</HelperText>
                       <div className="grid gap-4 md:grid-cols-[0.6fr_1fr]">
                         <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                           Meeting Date
@@ -3290,6 +3649,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 >
                   <form onSubmit={handleAnnouncementSubmit} className="mt-5 grid gap-3">
                     <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                      <HelperText>This appears beside the meeting summary. Leave the body blank to show the default announcement message.</HelperText>
                       <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                         Announcement Title
                         <input
@@ -3351,8 +3711,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     className="overflow-hidden"
                   >
                     <div className="mt-5 grid gap-3">
-                      {noviceSpeechSteps.map((step) => (
+                      <HelperText>Order controls update the speech number automatically. Keep descriptions short enough to fit the public infographic.</HelperText>
+                      {noviceSpeechSteps.map((step, index) => (
                         <div key={step.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                          <div className="flex justify-end">
+                            <ReorderButtons onMoveUp={() => moveNoviceSpeechStep(index, -1)} onMoveDown={() => moveNoviceSpeechStep(index, 1)} disabledUp={index === 0} disabledDown={index === noviceSpeechSteps.length - 1} />
+                          </div>
                           <div className="grid gap-3 lg:grid-cols-[0.35fr_0.6fr_0.7fr_1.25fr]">
                             <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                               Order
@@ -3466,6 +3830,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <div className="mt-5 grid gap-4">
                     <form onSubmit={handleNoviceFaqSubmit} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                        <HelperText>Write basic, beginner-facing questions. Avoid duplicating a question that is already listed below.</HelperText>
                         <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                           Question
                           <input
@@ -3489,12 +3854,21 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
                           Add FAQ
                         </button>
+                        <FieldWarning>{newNoviceFaqDuplicate ? "This FAQ question already exists." : ""}</FieldWarning>
                       </fieldset>
                     </form>
 
                     <div className="grid gap-3">
-                      {noviceFaqs.map((faq) => (
-                        <div key={faq.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                      {noviceFaqs.map((faq, index) => (
+                        <div
+                          key={faq.id}
+                          draggable={canWriteNotes}
+                          onDragStart={() => startEditorDrag("novice-faq", faq.id)}
+                          onDragOver={allowEditorDrop}
+                          onDrop={() => dropNoviceFaq(faq.id)}
+                          onDragEnd={finishEditorDrag}
+                          className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3"
+                        >
                           <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                             <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                               Question
@@ -3513,6 +3887,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               <Trash2 size={16} />
                             </button>
                           </div>
+                          <ReorderButtons onMoveUp={() => moveNoviceFaq(index, -1)} onMoveDown={() => moveNoviceFaq(index, 1)} disabledUp={index === 0} disabledDown={index === noviceFaqs.length - 1} />
                           <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Answer
                             <textarea
@@ -3565,6 +3940,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <div className="mt-5 grid gap-4">
                     <form onSubmit={addEboardMember} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                        <HelperText>Recommended photos are square or portrait images under 2 MB. Name and role are required.</HelperText>
                         <div className="grid gap-3 lg:grid-cols-[0.65fr_0.65fr_1fr]">
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Name
@@ -3612,6 +3988,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             </button>
                           </div>
                         )}
+                        <FieldWarning>{newEboardMemberDuplicate ? "This e-board member already exists." : ""}</FieldWarning>
                         <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
                           Add Officer
                         </button>
@@ -3619,8 +3996,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     </form>
 
                     <div className="grid gap-4">
-                      {eboardMembers.map((member) => (
-                        <div key={member.id} className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[12rem_1fr_auto]">
+                      {eboardMembers.map((member, index) => (
+                        <div
+                          key={member.id}
+                          draggable={canWriteNotes}
+                          onDragStart={() => startEditorDrag("eboard-member", member.id)}
+                          onDragOver={allowEditorDrop}
+                          onDrop={() => dropEboardMember(member.id)}
+                          onDragEnd={finishEditorDrag}
+                          className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[12rem_1fr_auto]"
+                        >
                           <div className="grid gap-2">
                             <div className="aspect-[4/3] overflow-hidden bg-[#2D2926]">
                               {member.photo ? (
@@ -3679,6 +4064,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           >
                             <Trash2 size={16} />
                           </button>
+                          <div className="lg:col-start-3 lg:row-start-2">
+                            <ReorderButtons onMoveUp={() => moveEboardMember(index, -1)} onMoveDown={() => moveEboardMember(index, 1)} disabledUp={index === 0} disabledDown={index === eboardMembers.length - 1} />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -3733,6 +4121,26 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   className="overflow-hidden"
                 >
                   <div className="mt-5">
+                    <div className="mb-5 flex flex-wrap gap-2">
+                      {[
+                        ["stats", "Top Stats"],
+                        ["accomplishments", "Accomplishments"],
+                        ["milestones", "Milestones"],
+                        ["members", "Individual Achievements"],
+                        ["results", "Seasons / Results"],
+                        ["apda", "APDA Update"],
+                      ].map(([id, label]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setTrophyEditorSection(id)}
+                          className={`border px-3 py-2 text-xs font-black uppercase tracking-[0.08em] transition ${trophyEditorSection === id ? "border-[#CC0000] bg-[#CC0000] text-white" : "border-[#ded8d2] bg-white text-[#2D2926] hover:border-[#CC0000] hover:text-[#CC0000]"}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {trophyEditorSection === "apda" && (
                     <div className="mb-5 border border-[#ded8d2] bg-[#f6f4f2] p-4">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="max-w-3xl">
@@ -3853,68 +4261,118 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         </div>
                       )}
                     </div>
+                    )}
             <div className="columns-1 gap-5 xl:columns-2">
+              {trophyEditorSection === "stats" && (
               <SmoothDetails title="Top Stats" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
+                  <HelperText>Use short public stats. Labels that come from APDA may be overwritten by the APDA updater.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
                     <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyStat.detail} onChange={(event) => setNewTrophyStat((current) => ({ ...current, detail: event.target.value }))} placeholder="Detail" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                   </div>
+                  <FieldWarning>{newTrophyStatDuplicate ? "A top stat with this label already exists." : ""}</FieldWarning>
                 </form>
                 <div className="grid gap-2">
-                  {trophiesContent.stats.map((stat) => (
-                    <div key={stat.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[0.35fr_0.75fr_1fr_auto]">
+                  {trophiesContent.stats.map((stat, index) => (
+                    <div
+                      key={stat.id}
+                      draggable
+                      onDragStart={() => startEditorDrag("trophy-stats", stat.id)}
+                      onDragOver={allowEditorDrop}
+                      onDrop={() => dropTrophyItem("stats", stat.id)}
+                      onDragEnd={finishEditorDrag}
+                      className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[0.35fr_0.75fr_1fr_auto]"
+                    >
                       <input value={stat.value} onChange={(event) => updateTrophyItem("stats", stat.id, "value", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
                       <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
                       <input value={stat.detail} onChange={(event) => updateTrophyItem("stats", stat.id, "detail", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${stat.label}?`, body: "This stat will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("stats", stat.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${stat.label}`}><Trash2 size={16} /></button>
+                      <div className="flex items-center gap-2">
+                        <ReorderButtons onMoveUp={() => moveTrophyItem("stats", index, -1)} onMoveDown={() => moveTrophyItem("stats", index, 1)} disabledUp={index === 0} disabledDown={index === trophiesContent.stats.length - 1} />
+                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${stat.label}?`, body: "This stat will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("stats", stat.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${stat.label}`}><Trash2 size={16} /></button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </SmoothDetails>
+              )}
 
+              {trophyEditorSection === "accomplishments" && (
               <SmoothDetails title="Accomplishments List" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3 2xl:grid-cols-[1fr_auto]">
                   <input value={newTrophyAccomplishment} onChange={(event) => setNewTrophyAccomplishment(event.target.value)} placeholder="Add accomplishment line" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                  <div className="2xl:col-span-2">
+                    <HelperText>Keep these as short public bullet points. APDA-managed lines may be replaced when the updater runs.</HelperText>
+                    <FieldWarning>{newTrophyAccomplishmentDuplicate ? "This accomplishment already exists." : ""}</FieldWarning>
+                  </div>
                 </form>
                 <div className="grid gap-2">
-                  {trophiesContent.accomplishments.map((item) => (
-                    <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[1fr_auto]">
+                  {trophiesContent.accomplishments.map((item, index) => (
+                    <div
+                      key={item.id}
+                      draggable
+                      onDragStart={() => startEditorDrag("trophy-accomplishments", item.id)}
+                      onDragOver={allowEditorDrop}
+                      onDrop={() => dropTrophyItem("accomplishments", item.id)}
+                      onDragEnd={finishEditorDrag}
+                      className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[1fr_auto]"
+                    >
                       <input value={item.text} onChange={(event) => updateTrophyItem("accomplishments", item.id, "text", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => requestDeleteConfirmation({ title: "Delete this accomplishment?", body: item.text, onConfirm: () => removeTrophyItem("accomplishments", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
+                      <div className="flex items-center gap-2">
+                        <ReorderButtons onMoveUp={() => moveTrophyItem("accomplishments", index, -1)} onMoveDown={() => moveTrophyItem("accomplishments", index, 1)} disabledUp={index === 0} disabledDown={index === trophiesContent.accomplishments.length - 1} />
+                        <button type="button" onClick={() => requestDeleteConfirmation({ title: "Delete this accomplishment?", body: item.text, onConfirm: () => removeTrophyItem("accomplishments", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </SmoothDetails>
+              )}
 
+              {trophyEditorSection === "milestones" && (
               <SmoothDetails title="Milestone Cards" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
+                  <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                     <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                   </div>
                   <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                  <FieldWarning>{newTrophyMilestoneDuplicate ? "A milestone with this title already exists." : ""}</FieldWarning>
                 </form>
                 <div className="grid gap-2">
-                  {trophiesContent.milestones.map((item) => (
-                    <div key={item.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
+                  {trophiesContent.milestones.map((item, index) => (
+                    <div
+                      key={item.id}
+                      draggable
+                      onDragStart={() => startEditorDrag("trophy-milestones", item.id)}
+                      onDragOver={allowEditorDrop}
+                      onDrop={() => dropTrophyItem("milestones", item.id)}
+                      onDragEnd={finishEditorDrag}
+                      className="grid gap-2 border border-[#ded8d2] bg-white p-3"
+                    >
                       <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                         <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
                         <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
-                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
+                        <div className="flex items-center gap-2">
+                          <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === trophiesContent.milestones.length - 1} />
+                          <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
+                        </div>
                       </div>
                       <textarea value={item.copy} onChange={(event) => updateTrophyItem("milestones", item.id, "copy", event.target.value)} rows={2} className="resize-none border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     </div>
                   ))}
                 </div>
               </SmoothDetails>
+              )}
 
+              {trophyEditorSection === "members" && (
               <SmoothDetails title="Current Member Achievements" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
+                  <HelperText>Add one achievement at a time. Only administrators can create or rename member cards; e-board can add achievements to existing people.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
                     {isAdmin ? (
                       <input value={newTrophyMember.name} onChange={(event) => setNewTrophyMember((current) => ({ ...current, name: event.target.value }))} placeholder="Member name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -3932,25 +4390,41 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <textarea value={newTrophyMember.achievement} onChange={(event) => setNewTrophyMember((current) => ({ ...current, achievement: event.target.value }))} placeholder="Achievement to add to this member" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                 </form>
                 <div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
-                  {trophiesContent.members.map((member) => (
-                    <div key={member.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
+                  {trophiesContent.members.map((member, memberIndex) => (
+                    <div
+                      key={member.id}
+                      draggable
+                      onDragStart={() => startEditorDrag("trophy-members", member.id)}
+                      onDragOver={allowEditorDrop}
+                      onDrop={() => dropTrophyItem("members", member.id)}
+                      onDragEnd={finishEditorDrag}
+                      className="grid gap-2 border border-[#ded8d2] bg-white p-3"
+                    >
                       <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
                         <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} disabled={!isAdmin} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                         <input value={member.meta} onChange={(event) => updateTrophyItem("members", member.id, "meta", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${member.name}?`, body: "This member achievement card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("members", member.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
+                        <div className="flex items-center gap-2">
+                          <ReorderButtons onMoveUp={() => moveTrophyItem("members", memberIndex, -1)} onMoveDown={() => moveTrophyItem("members", memberIndex, 1)} disabledUp={memberIndex === 0} disabledDown={memberIndex === trophiesContent.members.length - 1} />
+                          <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${member.name}?`, body: "This member achievement card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("members", member.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${member.name}`}><Trash2 size={16} /></button>
+                        </div>
                       </div>
                       {member.achievements.map((achievement, index) => (
                         <div key={`${member.id}-${index}`} className="grid gap-2 2xl:grid-cols-[1fr_auto]">
                           <input value={achievement} onChange={(event) => updateTrophyMemberAchievement(member.id, index, event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                          <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete achievement for ${member.name}?`, body: achievement, onConfirm: () => removeTrophyMemberAchievement(member.id, index) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove achievement for ${member.name}`}><Trash2 size={16} /></button>
+                          <div className="flex items-center gap-2">
+                            <ReorderButtons onMoveUp={() => moveTrophyMemberAchievement(member.id, index, -1)} onMoveDown={() => moveTrophyMemberAchievement(member.id, index, 1)} disabledUp={index === 0} disabledDown={index === member.achievements.length - 1} />
+                            <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete achievement for ${member.name}?`, body: achievement, onConfirm: () => removeTrophyMemberAchievement(member.id, index) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove achievement for ${member.name}`}><Trash2 size={16} /></button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ))}
                 </div>
               </SmoothDetails>
+              )}
             </div>
 
+            {trophyEditorSection === "results" && (
             <SmoothDetails title="Tournament Results Timeline" className="mt-5 border border-[#ded8d2] bg-white p-3">
               <form onSubmit={addTrophyResultSeason} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
                 <input
@@ -3962,6 +4436,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <button type="submit" className="bg-[#2D2926] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">
                   Add Season
                 </button>
+                <div className="sm:col-span-2">
+                  <HelperText>Use seasons like 2026-2027. The most recent season should stay selected before using APDA update.</HelperText>
+                </div>
               </form>
               <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                 <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -3986,12 +4463,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 </button>
               </div>
               <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
+                <HelperText>Use one highlight per line. Keep wording consistent with the public Trophies page.</HelperText>
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                 </div>
                 <textarea value={newTrophyResult.highlights} onChange={(event) => setNewTrophyResult((current) => ({ ...current, highlights: event.target.value }))} placeholder="One highlight per line" rows={4} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                <FieldWarning>{newTrophyResultDuplicate ? "This tournament already exists in the selected season." : ""}</FieldWarning>
               </form>
               <div className="grid gap-2">
                 {(selectedTrophySeason?.results || []).length === 0 && (
@@ -3999,23 +4478,41 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     No results logged for this season yet.
                   </div>
                 )}
-                {[...(selectedTrophySeason?.results || [])].reverse().map((result) => (
-                  <div key={result.id} className="grid gap-2 border border-[#ded8d2] bg-white p-3">
+                {[...(selectedTrophySeason?.results || [])].reverse().map((result) => {
+                  const originalIndex = (selectedTrophySeason?.results || []).findIndex((item) => item.id === result.id);
+                  return (
+                  <div
+                    key={result.id}
+                    draggable
+                    onDragStart={() => startEditorDrag("trophy-result", result.id)}
+                    onDragOver={allowEditorDrop}
+                    onDrop={() => dropTrophyResult(result.id)}
+                    onDragEnd={finishEditorDrag}
+                    className="grid gap-2 border border-[#ded8d2] bg-white p-3"
+                  >
                     <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                       <input type="date" value={result.date} onChange={(event) => updateTrophyResult(result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                       <input value={result.tournament} onChange={(event) => updateTrophyResult(result.id, "tournament", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                      <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyResult(result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
+                      <div className="flex items-center gap-2">
+                        <ReorderButtons onMoveUp={() => moveTrophyResult(result.id, 1)} onMoveDown={() => moveTrophyResult(result.id, -1)} disabledUp={originalIndex === (selectedTrophySeason?.results || []).length - 1} disabledDown={originalIndex === 0} />
+                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyResult(result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
+                      </div>
                     </div>
                     {result.highlights.map((highlight, index) => (
                       <div key={`${result.id}-${index}`} className="grid gap-2 2xl:grid-cols-[1fr_auto]">
                         <input value={highlight} onChange={(event) => updateTrophyResultHighlight(result.id, index, event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                        <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete highlight from ${result.tournament}?`, body: highlight, onConfirm: () => removeTrophyResultHighlight(result.id, index) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove highlight from ${result.tournament}`}><Trash2 size={16} /></button>
+                        <div className="flex items-center gap-2">
+                          <ReorderButtons onMoveUp={() => moveTrophyResultHighlight(result.id, index, -1)} onMoveDown={() => moveTrophyResultHighlight(result.id, index, 1)} disabledUp={index === 0} disabledDown={index === result.highlights.length - 1} />
+                          <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete highlight from ${result.tournament}?`, body: highlight, onConfirm: () => removeTrophyResultHighlight(result.id, index) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove highlight from ${result.tournament}`}><Trash2 size={16} /></button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </SmoothDetails>
+            )}
                   </div>
                 </motion.div>
               )}
