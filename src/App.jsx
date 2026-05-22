@@ -2869,8 +2869,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <p className="mt-1 text-2xl font-black text-[#0b6b35]">+{formatCurrency(totalRevenue)}</p>
                 </div>
                 <div className="bg-[#f6f4f2] p-3">
-                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Effective Total</p>
-                  <p className="mt-1 text-2xl font-black text-[#2D2926]">{formatCurrency(effectiveBudget)}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Remaining Total</p>
+                  <p className="mt-1 text-2xl font-black text-[#2D2926]">{formatCurrency(remainingBudget)}</p>
                 </div>
               </div>
 
