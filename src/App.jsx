@@ -3771,13 +3771,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
-                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-1.5 py-1.5 text-[0.56rem] font-black uppercase tracking-[0.03em] text-[#2D2926]">
+                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} className="border border-[#ded8d2] bg-white px-1.5 py-1 text-[0.5rem] font-black uppercase leading-tight tracking-[0.02em] text-[#2D2926]">
                         {previewDraftId === item.id ? "Hide Preview" : "Preview Draft"}
                       </button>
-                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-1.5 py-1.5 text-[0.56rem] font-black uppercase tracking-[0.03em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
+                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} className="bg-[#CC0000] px-1.5 py-1 text-[0.5rem] font-black uppercase leading-tight tracking-[0.02em] text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
                         Publish
                       </button>
-                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-1.5 py-1.5 text-center text-[0.56rem] font-black uppercase tracking-[0.03em] text-[#2D2926]">
+                      <a href={item.href} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-1.5 py-1 text-center text-[0.5rem] font-black uppercase leading-tight tracking-[0.02em] text-[#2D2926]">
                         Live Page
                       </a>
                     </div>
