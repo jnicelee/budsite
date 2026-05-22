@@ -2,6 +2,7 @@ import {
   COMPLETED_AGENDA_RETENTION_MS,
   EBOARD_AGENDA_STORAGE_KEY,
   EBOARD_BUDGET_STORAGE_KEY,
+  EBOARD_CONTENT_STORAGE_KEY,
   EBOARD_NOTES_STORAGE_KEY,
   LOGIN_STORAGE_KEY,
   MEMBER_ACCOUNTS_STORAGE_KEY,
@@ -13,6 +14,7 @@ import {
 } from "../data/config";
 import {
   agendaItems,
+  defaultEboardContent,
   defaultNoviceContent,
   defaultTrophiesContent,
   defaultMeetingsContent,
@@ -177,6 +179,19 @@ export function saveStoredNoviceContent(content) {
   window.localStorage.setItem(NOVICE_CONTENT_STORAGE_KEY, JSON.stringify(normalizeNoviceContent(content)));
 }
 
+export function getStoredEboardContent() {
+  try {
+    const stored = window.localStorage.getItem(EBOARD_CONTENT_STORAGE_KEY);
+    return normalizeEboardContent(stored ? JSON.parse(stored) : defaultEboardContent);
+  } catch {
+    return normalizeEboardContent(defaultEboardContent);
+  }
+}
+
+export function saveStoredEboardContent(content) {
+  window.localStorage.setItem(EBOARD_CONTENT_STORAGE_KEY, JSON.stringify(normalizeEboardContent(content)));
+}
+
 export function normalizeMeetingsContent(content = defaultMeetingsContent) {
   const source = { ...defaultMeetingsContent, ...content };
   return {
@@ -203,6 +218,19 @@ export function normalizeNoviceContent(content = defaultNoviceContent) {
       id: item.id || `faq-${index}-${slugify(item.question || "item")}`,
       question: item.question || "",
       answer: item.answer || "",
+    })),
+  };
+}
+
+export function normalizeEboardContent(content = defaultEboardContent) {
+  const source = { ...defaultEboardContent, ...content };
+  return {
+    members: normalizeTrophyItems(source.members, (item, index) => ({
+      id: item.id || `eboard-${index}-${slugify(item.name || item.role || "member")}`,
+      name: item.name || "",
+      role: item.role || "",
+      bio: item.bio || "",
+      photo: item.photo || "",
     })),
   };
 }

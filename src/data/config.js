@@ -8,6 +8,7 @@ export const MEMBER_ACCOUNTS_STORAGE_KEY = "buds-member-accounts";
 export const TROPHIES_CONTENT_STORAGE_KEY = "buds-trophies-content";
 export const MEETINGS_CONTENT_STORAGE_KEY = "buds-meetings-content";
 export const NOVICE_CONTENT_STORAGE_KEY = "buds-novice-content";
+export const EBOARD_CONTENT_STORAGE_KEY = "buds-eboard-content";
 
 export const COMPLETED_AGENDA_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
 export const BUDGET_STATUSES = ["On Hold", "Approved", "Denied"];

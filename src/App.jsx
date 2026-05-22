@@ -11,6 +11,7 @@ import {
   ExternalLink,
   FileText,
   Gavel,
+  ImageIcon,
   Italic,
   Link2,
   List,
@@ -29,6 +30,7 @@ import {
   Trash2,
   Trophy,
   Underline,
+  Upload,
   X,
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
@@ -53,7 +55,6 @@ import {
 } from "./data/config";
 import {
   apdaSourceUrl,
-  board,
   getPrivateLinkSection,
   navItems,
   noviceResources,
@@ -72,6 +73,7 @@ import {
   findMemberAccountByEmail,
   insertMembershipRequest,
   insertNote,
+  loadEboardContent,
   loadMeetingsContent,
   loadDatabaseState,
   loadMemberAccounts,
@@ -87,6 +89,7 @@ import {
   upsertBudgetRevenueRow,
   upsertBudgetRow,
   upsertBudgetSettings,
+  upsertEboardContent,
   upsertMeetingsContent,
   upsertMemberAccount,
   upsertNoviceContent,
@@ -98,6 +101,7 @@ import {
   getStoredAgenda,
   getStoredAuth,
   getStoredBudget,
+  getStoredEboardContent,
   getStoredMemberAccounts,
   getStoredMeetingsContent,
   getStoredMembershipRequests,
@@ -108,6 +112,7 @@ import {
   saveStoredAgenda,
   saveStoredAuth,
   saveStoredBudget,
+  saveStoredEboardContent,
   saveStoredMemberAccounts,
   saveStoredMeetingsContent,
   saveStoredMembershipRequests,
@@ -1265,21 +1270,45 @@ function TrophiesPage({ trophiesContent }) {
   );
 }
 
-function EBoardPage() {
+function getInitials(name) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function EBoardPage({ eboardContent }) {
+  const members = eboardContent.members || [];
+
   return (
     <Page>
       <PageHeader eyebrow="People" title="Current E-Board.">
         Add photos, short bios, and clear contact paths for prospective members.
       </PageHeader>
-      <div className="grid gap-5 md:grid-cols-3">
-        {board.map((member) => (
-          <Card key={`${member.name}-${member.role}`}>
-            <div className="mb-6 flex h-36 items-end bg-[#2D2926] p-5">
-              <div className="h-16 w-16 border-4 border-white bg-[#CC0000]" />
+      <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {members.map((member) => (
+          <Card key={member.id || `${member.name}-${member.role}`} className="overflow-hidden p-0">
+            <div className="relative aspect-[4/3] overflow-hidden bg-[#2D2926]">
+              {member.photo ? (
+                <img src={member.photo} alt={`${member.name}, ${member.role}`} className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full place-items-center bg-[linear-gradient(135deg,#2D2926,#514944)]">
+                  <div className="grid h-24 w-24 place-items-center border-4 border-white bg-[#CC0000] text-3xl font-black text-white shadow-[0_16px_32px_rgba(0,0,0,0.24)]">
+                    {getInitials(member.name || member.role || "BU")}
+                  </div>
+                </div>
+              )}
+              <div className="absolute left-4 top-4 bg-white px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000] shadow-sm">
+                {member.role}
+              </div>
             </div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{member.role}</p>
-            <h2 className="mt-3 text-2xl font-black text-[#2D2926]">{member.name}</h2>
-            <p className="mt-3 text-sm leading-6 text-[#5b5450]">{member.bio}</p>
+            <div className="p-5">
+              <h2 className="text-2xl font-black leading-tight text-[#2D2926]">{member.name}</h2>
+              <p className="mt-3 text-sm leading-6 text-[#5b5450]">{member.bio}</p>
+            </div>
           </Card>
         ))}
       </div>
@@ -1747,7 +1776,7 @@ function LoginPage({ onLogin }) {
   );
 }
 
-function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onRequestConfirmation, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
@@ -1758,6 +1787,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceFaqs, setNoviceFaqs] = useState(noviceContent.faqs);
   const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(noviceContent.speechSteps || []);
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
+  const [eboardMembers, setEboardMembers] = useState(eboardContent.members || []);
+  const [newEboardMember, setNewEboardMember] = useState({ name: "", role: "", bio: "", photo: "" });
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
   const [newAgendaText, setNewAgendaText] = useState("");
@@ -1783,6 +1814,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false);
   const [noviceInfographicEditorOpen, setNoviceInfographicEditorOpen] = useState(false);
   const [noviceFaqEditorOpen, setNoviceFaqEditorOpen] = useState(false);
+  const [eboardEditorOpen, setEboardEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
@@ -1843,10 +1875,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         setNoviceSpeechSteps(databaseState.noviceContent.speechSteps || []);
         onNoviceContentChange(databaseState.noviceContent);
       }
+      if (databaseState.eboardContent) {
+        setEboardMembers(databaseState.eboardContent.members || []);
+        onEboardContentChange(databaseState.eboardContent);
+      }
       saveStoredAgenda(databaseState.agenda);
       saveStoredNotes(databaseState.notes);
       saveStoredBudget(databaseState.budget);
       saveStoredPrivateLinks(databaseState.privateLinks);
+      if (databaseState.eboardContent) saveStoredEboardContent(databaseState.eboardContent);
     }
 
     hydrateFromDatabase();
@@ -1854,7 +1891,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     return () => {
       ignore = true;
     };
-  }, [onMeetingsContentChange, onNoviceContentChange]);
+  }, [onEboardContentChange, onMeetingsContentChange, onNoviceContentChange]);
 
   useEffect(() => {
     let ignore = false;
@@ -2168,6 +2205,69 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const requestDeleteConfirmation = ({ title, body, actionLabel, onConfirm }) => {
     onRequestConfirmation({ title, body, actionLabel, onConfirm });
+  };
+
+  const persistEboardContent = (updater) => {
+    if (!canWriteNotes) return;
+    const currentContent = { ...eboardContent, members: eboardMembers };
+    const nextContent = typeof updater === "function" ? updater(currentContent) : updater;
+    setEboardMembers(nextContent.members || []);
+    onEboardContentChange(nextContent);
+  };
+
+  const updateEboardMember = (id, field, value) => {
+    persistEboardContent((content) => ({
+      ...content,
+      members: content.members.map((member) => (
+        member.id === id ? { ...member, [field]: value } : member
+      )),
+    }));
+  };
+
+  const handleEboardPhotoUpload = (id, file) => {
+    if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateEboardMember(id, "photo", typeof reader.result === "string" ? reader.result : "");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleNewEboardPhotoUpload = (file) => {
+    if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewEboardMember((current) => ({ ...current, photo: typeof reader.result === "string" ? reader.result : "" }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addEboardMember = (event) => {
+    event.preventDefault();
+    if (!canWriteNotes || !newEboardMember.name.trim() || !newEboardMember.role.trim()) return;
+    const nextMember = {
+      id: `eboard-${Date.now()}`,
+      name: newEboardMember.name.trim(),
+      role: newEboardMember.role.trim(),
+      bio: newEboardMember.bio.trim(),
+      photo: newEboardMember.photo,
+    };
+    persistEboardContent((content) => ({ ...content, members: [...content.members, nextMember] }));
+    setNewEboardMember({ name: "", role: "", bio: "", photo: "" });
+  };
+
+  const removeEboardMember = (member) => {
+    if (!canWriteNotes) return;
+    requestDeleteConfirmation({
+      title: `Delete ${member.name || "this e-board member"}?`,
+      body: "This will remove the person from the public E-Board page.",
+      onConfirm: () => {
+        persistEboardContent((content) => ({
+          ...content,
+          members: content.members.filter((item) => item.id !== member.id),
+        }));
+      },
+    });
   };
 
   const persistTrophiesContent = (updater) => {
@@ -3431,6 +3531,163 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </AnimatePresence>
           </Card>
 
+          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setEboardEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={eboardEditorOpen}
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="text-[#CC0000]" />
+                  <Eyebrow>Budsite Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">E-Board Page</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Edit the public officer cards and upload photos for each person.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {eboardEditorOpen ? "Close E-Board" : "Open E-Board"} <ChevronDown size={16} className={`transition ${eboardEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {eboardEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5 grid gap-4">
+                    <form onSubmit={addEboardMember} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
+                      <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                        <div className="grid gap-3 lg:grid-cols-[0.65fr_0.65fr_1fr]">
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Name
+                            <input
+                              type="text"
+                              value={newEboardMember.name}
+                              onChange={(event) => setNewEboardMember((current) => ({ ...current, name: event.target.value }))}
+                              placeholder="New officer name"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Role
+                            <input
+                              type="text"
+                              value={newEboardMember.role}
+                              onChange={(event) => setNewEboardMember((current) => ({ ...current, role: event.target.value }))}
+                              placeholder="President"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Photo
+                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                              <Upload size={16} /> Upload Photo
+                              <input type="file" accept="image/*" onChange={(event) => handleNewEboardPhotoUpload(event.target.files?.[0])} className="sr-only" />
+                            </span>
+                          </label>
+                        </div>
+                        <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Bio
+                          <textarea
+                            value={newEboardMember.bio}
+                            onChange={(event) => setNewEboardMember((current) => ({ ...current, bio: event.target.value }))}
+                            placeholder="Short public bio for this officer."
+                            rows={3}
+                            className="resize-none border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                        {newEboardMember.photo && (
+                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[8rem_1fr] sm:items-center">
+                            <img src={newEboardMember.photo} alt="New e-board member preview" className="aspect-[4/3] w-full object-cover" />
+                            <button type="button" onClick={() => setNewEboardMember((current) => ({ ...current, photo: "" }))} className="w-fit border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                              Remove Photo
+                            </button>
+                          </div>
+                        )}
+                        <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+                          Add Officer
+                        </button>
+                      </fieldset>
+                    </form>
+
+                    <div className="grid gap-4">
+                      {eboardMembers.map((member) => (
+                        <div key={member.id} className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[12rem_1fr_auto]">
+                          <div className="grid gap-2">
+                            <div className="aspect-[4/3] overflow-hidden bg-[#2D2926]">
+                              {member.photo ? (
+                                <img src={member.photo} alt={`${member.name} preview`} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="grid h-full place-items-center text-2xl font-black text-white">
+                                  {getInitials(member.name || member.role || "BU")}
+                                </div>
+                              )}
+                            </div>
+                            <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                              <Upload size={14} /> Change
+                              <input type="file" accept="image/*" onChange={(event) => handleEboardPhotoUpload(member.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
+                            </label>
+                            {member.photo && (
+                              <button type="button" onClick={() => updateEboardMember(member.id, "photo", "")} disabled={!canWriteNotes} className="border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] disabled:opacity-40">
+                                Remove Photo
+                              </button>
+                            )}
+                          </div>
+                          <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Name
+                                <input
+                                  value={member.name}
+                                  onChange={(event) => updateEboardMember(member.id, "name", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Role
+                                <input
+                                  value={member.role}
+                                  onChange={(event) => updateEboardMember(member.id, "role", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                            </div>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Bio
+                              <textarea
+                                value={member.bio}
+                                onChange={(event) => updateEboardMember(member.id, "bio", event.target.value)}
+                                rows={4}
+                                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                          </fieldset>
+                          <button
+                            type="button"
+                            onClick={() => removeEboardMember(member)}
+                            disabled={!canWriteNotes}
+                            className="grid h-10 w-10 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] disabled:opacity-40 lg:self-start"
+                            aria-label={`Remove ${member.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
               <button
@@ -3793,6 +4050,7 @@ export default function App() {
   const [trophiesContent, setTrophiesContent] = useState(() => getStoredTrophiesContent());
   const [meetingsContent, setMeetingsContent] = useState(() => getStoredMeetingsContent());
   const [noviceContent, setNoviceContent] = useState(() => getStoredNoviceContent());
+  const [eboardContent, setEboardContent] = useState(() => getStoredEboardContent());
   const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
@@ -3813,10 +4071,11 @@ export default function App() {
     let ignore = false;
 
     async function hydrateSiteContent() {
-      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent] = await Promise.all([
+      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent, databaseEboardContent] = await Promise.all([
         loadTrophiesContent(),
         loadMeetingsContent(),
         loadNoviceContent(),
+        loadEboardContent(),
       ]);
       if (ignore) return;
       if (databaseTrophiesContent) {
@@ -3830,6 +4089,10 @@ export default function App() {
       if (databaseNoviceContent) {
         setNoviceContent(databaseNoviceContent);
         saveStoredNoviceContent(databaseNoviceContent);
+      }
+      if (databaseEboardContent) {
+        setEboardContent(databaseEboardContent);
+        saveStoredEboardContent(databaseEboardContent);
       }
     }
 
@@ -3858,6 +4121,12 @@ export default function App() {
     upsertNoviceContent(nextContent);
   }, []);
 
+  const updateEboardContent = useCallback((nextContent) => {
+    setEboardContent(nextContent);
+    saveStoredEboardContent(nextContent);
+    upsertEboardContent(nextContent);
+  }, []);
+
   const requestConfirmation = useCallback(({ title, body, actionLabel = "Delete", onConfirm }) => {
     setConfirmation({ title, body, actionLabel, onConfirm });
   }, []);
@@ -3884,7 +4153,7 @@ export default function App() {
       case "/trophies":
         return <TrophiesPage trophiesContent={trophiesContent} />;
       case "/eboard":
-        return <EBoardPage />;
+        return <EBoardPage eboardContent={eboardContent} />;
       case "/contact":
         return <ContactPage />;
       case "/join":
@@ -3892,7 +4161,7 @@ export default function App() {
       case "/login":
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");
@@ -3900,7 +4169,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
+  }, [auth, calendarEmbedUrl, eboardContent, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateEboardContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#eeeae6] text-[#2D2926]">

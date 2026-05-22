@@ -552,6 +552,14 @@ export const board = [
   },
 ];
 
+export const defaultEboardContent = {
+  members: board.map((member, index) => ({
+    id: `eboard-${index}-${member.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`,
+    ...member,
+    photo: "",
+  })),
+};
+
 export const alumni = [
   {
     name: "Alumni Spotlight",
