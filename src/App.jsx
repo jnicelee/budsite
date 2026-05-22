@@ -472,6 +472,10 @@ function budgetNumberValue(value) {
   return value === "" ? 0 : Number(value) || 0;
 }
 
+function isBudgetInputValue(value) {
+  return /^\d*(?:\.\d{0,2})?$/.test(value);
+}
+
 function isApdaManagedStat(stat) {
   return stat.id?.startsWith("apda-") || /coty rank|coty contributors|current members/i.test(`${stat.label} ${stat.detail}`);
 }
@@ -2031,6 +2035,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const updateBudgetTotal = (total) => {
     if (!canEditWorkspace) return;
+    if (!isBudgetInputValue(total)) return;
     const nextBudget = { ...budget, total };
     updateBudget(nextBudget);
     upsertBudgetSettings(budgetNumberValue(total));
@@ -2038,6 +2043,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const updateBudgetRow = (id, field, value) => {
     if (!canEditWorkspace) return;
+    if ((field === "allocated" || field === "spent") && !isBudgetInputValue(value)) return;
     if (field === "status" && value === "Denied") {
       const row = budget.rows.find((budgetRow) => budgetRow.id === id);
       requestDeleteConfirmation({
@@ -2111,6 +2117,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     upsertBudgetRevenueRow(nextRow);
     setNewRevenueCategory("");
     setNewRevenueAmount("");
+  };
+
+  const updateNewRevenueAmount = (value) => {
+    if (!isBudgetInputValue(value)) return;
+    setNewRevenueAmount(value);
   };
 
   const removeBudgetRevenueRow = (id) => {
@@ -2858,6 +2869,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <input
                     type="number"
                     min="0"
+                    step="0.01"
                     value={budget.total}
                     onChange={(event) => updateBudgetTotal(event.target.value)}
                     disabled={!canEditWorkspace}
@@ -2900,6 +2912,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           <input
                             type="number"
                             min="0"
+                            step="0.01"
                             value={row.allocated}
                             onChange={(event) => updateBudgetRow(row.id, "allocated", event.target.value)}
                             disabled={!canEditWorkspace}
@@ -2910,6 +2923,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           <input
                             type="number"
                             min="0"
+                            step="0.01"
                             value={row.spent}
                             onChange={(event) => updateBudgetRow(row.id, "spent", event.target.value)}
                             disabled={!canEditWorkspace}
@@ -2972,8 +2986,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <input
                     type="number"
                     min="0"
+                    step="0.01"
                     value={newRevenueAmount}
-                    onChange={(event) => setNewRevenueAmount(event.target.value)}
+                    onChange={(event) => updateNewRevenueAmount(event.target.value)}
                     placeholder="Amount"
                     disabled={!canEditWorkspace}
                     className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
