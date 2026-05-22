@@ -4184,7 +4184,7 @@ export default function App() {
               className="h-14 w-14 shrink-0 rounded-sm object-cover shadow-sm transition group-hover:brightness-95"
             />
             <div className="min-w-0 border-l border-[#ded8d2] pl-3">
-              <p className="text-base font-black uppercase leading-none tracking-[0.18em] text-[#2D2926]">BUDS</p>
+              <p className="text-xl font-black uppercase leading-none tracking-[0.18em] text-[#2D2926]">BUDS</p>
               <p className="mt-1 hidden truncate text-sm font-medium text-[#6d6560] sm:block">Boston University Debate Society</p>
             </div>
           </SiteLink>
