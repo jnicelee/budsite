@@ -194,32 +194,46 @@ function HomePage() {
 }
 
 function ConfirmationModal({ confirmation, onCancel, onConfirm }) {
-  if (!confirmation) return null;
-
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md border border-[#ded8d2] bg-white p-6 shadow-[0_28px_80px_rgba(45,41,38,0.24)]">
-        <Eyebrow>Are you sure?</Eyebrow>
-        <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{confirmation.title}</h2>
-        <p className="mt-3 text-sm font-semibold leading-6 text-[#5b5450]">{confirmation.body}</p>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]"
+    <AnimatePresence>
+      {confirmation && (
+        <motion.div
+          className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <motion.div
+            className="w-full max-w-md border border-[#ded8d2] bg-white p-6 shadow-[0_28px_80px_rgba(45,41,38,0.24)]"
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white"
-          >
-            {confirmation.actionLabel || "Delete"}
-          </button>
-        </div>
-      </div>
-    </div>
+            <Eyebrow>Are you sure?</Eyebrow>
+            <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{confirmation.title}</h2>
+            <p className="mt-3 text-sm font-semibold leading-6 text-[#5b5450]">{confirmation.body}</p>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] transition duration-200 hover:border-[#2D2926] hover:bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-200 hover:bg-[#a90000]"
+              >
+                {confirmation.actionLabel || "Delete"}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
