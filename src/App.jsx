@@ -3951,7 +3951,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <div className="grid max-h-[5.5rem] min-h-[2.25rem] gap-1 overflow-y-auto pr-1">
                           {contentRevisions[item.id].map((revision) => (
                             <div key={revision.id} className="grid grid-cols-[1fr_auto] gap-1">
-                              <button type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.44rem] font-black uppercase tracking-normal text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
+                              <button type="button" onClick={() => restoreContentRevision(item.id, revision)} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left text-[0.65rem] font-black uppercase tracking-[0.04em] text-[#8f8781] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
                                 Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
                               </button>
                               <button type="button" onClick={() => deleteContentRevision(item.id, revision)} className="grid h-full min-h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff1f1]" aria-label={`Delete revision from ${formatMeetingDate(revision.createdAt.slice(0, 10))}`}>
