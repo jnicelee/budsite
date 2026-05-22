@@ -3705,7 +3705,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
       {visibleTab === "budsite" && isEboard && (
         <div className="grid gap-5">
-          <Card className="p-4">
+          <Card className="relative p-4">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <Eyebrow>Editing Guide</Eyebrow>
@@ -3714,7 +3714,35 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Draft changes stay private until you publish. Preview drafts here, then publish when the page looks right.
                 </p>
               </div>
-              <SaveNotice notice={editorNotice} />
+              <div className="flex items-start gap-3">
+                <SaveNotice notice={editorNotice} />
+                <div className="group relative">
+                  <button
+                    type="button"
+                    aria-label="Show editor manual"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ded8d2] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff7f7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#CC0000]"
+                  >
+                    <CircleHelp size={18} />
+                  </button>
+                  <div className="pointer-events-none absolute right-0 top-11 z-20 w-[min(22rem,calc(100vw-3rem))] rounded-md border border-[#ded8d2] bg-white p-4 text-left opacity-0 shadow-xl transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                    <p className="text-xs font-black uppercase tracking-[0.12em] text-[#CC0000]">Editor Manual</p>
+                    <div className="mt-3 grid gap-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                      <div>
+                        <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Publishing</p>
+                        <p className="mt-1">Public pages do not update until Publish is confirmed. Publishing saves the previous live version as a revision.</p>
+                      </div>
+                      <div>
+                        <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Restoring</p>
+                        <p className="mt-1">Restore puts an old version into draft only. Preview it, then publish if it should become live.</p>
+                      </div>
+                      <div>
+                        <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Photos and APDA</p>
+                        <p className="mt-1">E-board photos upload to Supabase Storage. APDA updates should be previewed before applying and publishing.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="mt-4 grid gap-3 border-y border-[#ded8d2] py-3 lg:grid-cols-3">
               <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
@@ -3729,24 +3757,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">3. Publish</p>
                 <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Review the change summary, confirm, then the live page updates.</p>
               </div>
-            </div>
-            <div className="mt-4 border border-[#ded8d2] bg-white p-3">
-              <SmoothDetails title="Editor Manual" className="text-sm">
-                <div className="grid gap-3 text-sm font-semibold leading-6 text-[#5b5450] lg:grid-cols-3">
-                  <div>
-                    <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Publishing</p>
-                    <p className="mt-1">Public pages do not update until Publish is confirmed. Publishing saves the previous live version as a revision.</p>
-                  </div>
-                  <div>
-                    <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Restoring</p>
-                    <p className="mt-1">Restore puts an old version into draft only. Preview it, then publish if it should become live.</p>
-                  </div>
-                  <div>
-                    <p className="font-black uppercase tracking-[0.08em] text-[#2D2926]">Photos and APDA</p>
-                    <p className="mt-1">E-board photos upload to Supabase Storage. APDA updates should be previewed before applying and publishing.</p>
-                  </div>
-                </div>
-              </SmoothDetails>
             </div>
             <div>
               <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Publishing Control</p>
