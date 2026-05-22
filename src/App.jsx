@@ -3982,191 +3982,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             )}
           </Card>
           <div className="border-b-4 border-[#CC0000] pb-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Landing Page</p>
-            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Homepage carousel photos and captions</h2>
-          </div>
-          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
-            <button
-              type="button"
-              onClick={() => setCarouselEditorOpen((current) => !current)}
-              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
-              aria-expanded={carouselEditorOpen}
-            >
-              <div>
-                <div className="flex items-center gap-3">
-                  <ImageIcon className="text-[#CC0000]" />
-                  <Eyebrow>Budsite Editor</Eyebrow>
-                </div>
-                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Landing Page Carousel</h2>
-                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
-                  Upload photos, edit captions, and reorder the homepage carousel.
-                </p>
-              </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
-                {carouselEditorOpen ? "Close Carousel" : "Open Carousel"} <ChevronDown size={16} className={`transition ${carouselEditorOpen ? "rotate-180" : ""}`} />
-              </span>
-            </button>
-
-            <AnimatePresence initial={false}>
-              {carouselEditorOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-5 grid gap-4">
-                    <form onSubmit={addCarouselSlide} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
-                      <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
-                        <HelperText>Upload a photo or paste an image URL. Captions are optional, but alt text keeps the carousel accessible.</HelperText>
-                        <div className="grid gap-3 lg:grid-cols-[0.75fr_1fr_1fr]">
-                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Photo
-                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
-                              <Upload size={16} /> Upload Photo
-                              <input type="file" accept="image/*" onChange={(event) => handleNewCarouselPhotoUpload(event.target.files?.[0])} className="sr-only" />
-                            </span>
-                          </label>
-                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Image URL
-                            <input
-                              type="url"
-                              value={newCarouselSlide.src}
-                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, src: event.target.value }))}
-                              placeholder="https://..."
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                            />
-                          </label>
-                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Label
-                            <input
-                              value={newCarouselSlide.kicker}
-                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
-                              placeholder="Tournament"
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                            />
-                          </label>
-                        </div>
-                        <div className="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
-                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Alt Text
-                            <input
-                              value={newCarouselSlide.alt}
-                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, alt: event.target.value }))}
-                              placeholder="Team members at a tournament"
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                            />
-                          </label>
-                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Caption
-                            <input
-                              value={newCarouselSlide.caption}
-                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, caption: event.target.value }))}
-                              placeholder="Short public caption"
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                            />
-                          </label>
-                        </div>
-                        {newCarouselSlide.src && (
-                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[10rem_1fr] sm:items-center">
-                            <img src={newCarouselSlide.src} alt="New carousel preview" className="aspect-[16/9] w-full object-cover" />
-                            <button type="button" onClick={() => setNewCarouselSlide((current) => ({ ...current, src: "" }))} className="w-fit border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]">
-                              Remove Photo
-                            </button>
-                          </div>
-                        )}
-                        <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
-                          Add Carousel Photo
-                        </button>
-                      </fieldset>
-                    </form>
-
-                    <div className="grid gap-4">
-                      {draftHomeContent.carouselSlides.map((slide, index) => (
-                        <div
-                          key={slide.id}
-                          draggable={canWriteNotes}
-                          onDragStart={() => startEditorDrag("home-carousel", slide.id)}
-                          onDragOver={allowEditorDrop}
-                          onDrop={() => dropCarouselSlide(slide.id)}
-                          onDragEnd={finishEditorDrag}
-                          className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[13rem_1fr_auto]"
-                        >
-                          <div className="grid gap-2">
-                            <div className="aspect-[16/9] overflow-hidden bg-[#2D2926]">
-                              {slide.src ? (
-                                <img src={slide.src} alt={slide.alt || slide.kicker || "Carousel preview"} className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="grid h-full place-items-center text-sm font-black uppercase tracking-[0.08em] text-white">No photo</div>
-                              )}
-                            </div>
-                            <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
-                              <Upload size={14} /> Change Photo
-                              <input type="file" accept="image/*" onChange={(event) => handleCarouselPhotoUpload(slide.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
-                            </label>
-                            <button type="button" onClick={() => updateCarouselSlide(slide.id, "src", "")} disabled={!canWriteNotes} className="border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] disabled:opacity-40">
-                              Remove Photo
-                            </button>
-                          </div>
-                          <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
-                            <div className="grid gap-3 md:grid-cols-2">
-                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                                Label
-                                <input
-                                  value={slide.kicker}
-                                  onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                                />
-                              </label>
-                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                                Image URL
-                                <input
-                                  value={slide.src}
-                                  onChange={(event) => updateCarouselSlide(slide.id, "src", event.target.value)}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                                />
-                              </label>
-                            </div>
-                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                              Alt Text
-                              <input
-                                value={slide.alt}
-                                onChange={(event) => updateCarouselSlide(slide.id, "alt", event.target.value)}
-                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                              />
-                            </label>
-                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                              Caption
-                              <textarea
-                                value={slide.caption}
-                                onChange={(event) => updateCarouselSlide(slide.id, "caption", event.target.value)}
-                                rows={3}
-                                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                              />
-                            </label>
-                          </fieldset>
-                          <button
-                            type="button"
-                            onClick={() => removeCarouselSlide(slide)}
-                            disabled={!canWriteNotes}
-                            className="grid h-10 w-10 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] disabled:opacity-40 lg:self-start"
-                            aria-label={`Remove ${slide.kicker || "carousel photo"}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                          <div className="lg:col-start-3 lg:row-start-2">
-                            <ReorderButtons onMoveUp={() => moveCarouselSlide(index, -1)} onMoveDown={() => moveCarouselSlide(index, 1)} disabledUp={index === 0} disabledDown={index === draftHomeContent.carouselSlides.length - 1} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
-          <div className="border-b-4 border-[#CC0000] pb-2">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Meeting Tools</p>
             <h2 className="mt-1 text-xl font-black text-[#2D2926]">Meeting notes and public announcements</h2>
           </div>
@@ -5192,6 +5007,191 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </div>
             </SmoothDetails>
             )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+          <div className="border-b-4 border-[#CC0000] pb-2">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Landing Page</p>
+            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Homepage carousel photos and captions</h2>
+          </div>
+          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setCarouselEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={carouselEditorOpen}
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="text-[#CC0000]" />
+                  <Eyebrow>Budsite Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Landing Page Carousel</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Upload photos, edit captions, and reorder the homepage carousel.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {carouselEditorOpen ? "Close Carousel" : "Open Carousel"} <ChevronDown size={16} className={`transition ${carouselEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {carouselEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5 grid gap-4">
+                    <form onSubmit={addCarouselSlide} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
+                      <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                        <HelperText>Upload a photo or paste an image URL. Captions are optional, but alt text keeps the carousel accessible.</HelperText>
+                        <div className="grid gap-3 lg:grid-cols-[0.75fr_1fr_1fr]">
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Photo
+                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                              <Upload size={16} /> Upload Photo
+                              <input type="file" accept="image/*" onChange={(event) => handleNewCarouselPhotoUpload(event.target.files?.[0])} className="sr-only" />
+                            </span>
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Image URL
+                            <input
+                              type="url"
+                              value={newCarouselSlide.src}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, src: event.target.value }))}
+                              placeholder="https://..."
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Label
+                            <input
+                              value={newCarouselSlide.kicker}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
+                              placeholder="Tournament"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                        <div className="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Alt Text
+                            <input
+                              value={newCarouselSlide.alt}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, alt: event.target.value }))}
+                              placeholder="Team members at a tournament"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Caption
+                            <input
+                              value={newCarouselSlide.caption}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, caption: event.target.value }))}
+                              placeholder="Short public caption"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                        {newCarouselSlide.src && (
+                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[10rem_1fr] sm:items-center">
+                            <img src={newCarouselSlide.src} alt="New carousel preview" className="aspect-[16/9] w-full object-cover" />
+                            <button type="button" onClick={() => setNewCarouselSlide((current) => ({ ...current, src: "" }))} className="w-fit border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                              Remove Photo
+                            </button>
+                          </div>
+                        )}
+                        <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+                          Add Carousel Photo
+                        </button>
+                      </fieldset>
+                    </form>
+
+                    <div className="grid gap-4">
+                      {draftHomeContent.carouselSlides.map((slide, index) => (
+                        <div
+                          key={slide.id}
+                          draggable={canWriteNotes}
+                          onDragStart={() => startEditorDrag("home-carousel", slide.id)}
+                          onDragOver={allowEditorDrop}
+                          onDrop={() => dropCarouselSlide(slide.id)}
+                          onDragEnd={finishEditorDrag}
+                          className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[13rem_1fr_auto]"
+                        >
+                          <div className="grid gap-2">
+                            <div className="aspect-[16/9] overflow-hidden bg-[#2D2926]">
+                              {slide.src ? (
+                                <img src={slide.src} alt={slide.alt || slide.kicker || "Carousel preview"} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="grid h-full place-items-center text-sm font-black uppercase tracking-[0.08em] text-white">No photo</div>
+                              )}
+                            </div>
+                            <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                              <Upload size={14} /> Change Photo
+                              <input type="file" accept="image/*" onChange={(event) => handleCarouselPhotoUpload(slide.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
+                            </label>
+                            <button type="button" onClick={() => updateCarouselSlide(slide.id, "src", "")} disabled={!canWriteNotes} className="border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] disabled:opacity-40">
+                              Remove Photo
+                            </button>
+                          </div>
+                          <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Label
+                                <input
+                                  value={slide.kicker}
+                                  onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Image URL
+                                <input
+                                  value={slide.src}
+                                  onChange={(event) => updateCarouselSlide(slide.id, "src", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                            </div>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Alt Text
+                              <input
+                                value={slide.alt}
+                                onChange={(event) => updateCarouselSlide(slide.id, "alt", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Caption
+                              <textarea
+                                value={slide.caption}
+                                onChange={(event) => updateCarouselSlide(slide.id, "caption", event.target.value)}
+                                rows={3}
+                                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                          </fieldset>
+                          <button
+                            type="button"
+                            onClick={() => removeCarouselSlide(slide)}
+                            disabled={!canWriteNotes}
+                            className="grid h-10 w-10 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] disabled:opacity-40 lg:self-start"
+                            aria-label={`Remove ${slide.kicker || "carousel photo"}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <div className="lg:col-start-3 lg:row-start-2">
+                            <ReorderButtons onMoveUp={() => moveCarouselSlide(index, -1)} onMoveDown={() => moveCarouselSlide(index, 1)} disabledUp={index === 0} disabledDown={index === draftHomeContent.carouselSlides.length - 1} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               )}
