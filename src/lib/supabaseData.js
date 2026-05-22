@@ -316,6 +316,22 @@ export async function loadMembershipRequests() {
   return data;
 }
 
+export async function findMembershipRequestByEmail(email) {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase
+    .from("membership_requests")
+    .select("id,name,email,status,created_at")
+    .eq("email", email)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("Supabase membership request lookup failed", error);
+    return null;
+  }
+  return data;
+}
+
 export async function insertMembershipRequest(request) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from("membership_requests").insert(request);

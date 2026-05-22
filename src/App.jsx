@@ -71,6 +71,7 @@ import {
   deleteNote,
   findMemberAccount,
   findMemberAccountByEmail,
+  findMembershipRequestByEmail,
   insertMembershipRequest,
   insertNote,
   loadContentRevisions,
@@ -1641,7 +1642,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
     };
   }, []);
 
-  const submitMembershipRequest = (event) => {
+  const submitMembershipRequest = async (event) => {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
@@ -1661,6 +1662,30 @@ function JoinPage({ auth, onRequestConfirmation }) {
     if (requestPassword.trim().length < 6) {
       setSubmitMessageType("error");
       setSubmitMessage("Please choose a password with at least 6 characters.");
+      return;
+    }
+
+    const existingLocalRequest = requests.find((request) => request.email.toLowerCase() === normalizedEmail);
+    if (existingLocalRequest) {
+      setSubmitMessageType("error");
+      setSubmitMessage("That email already has a membership request. Please wait for an administrator to review it.");
+      return;
+    }
+
+    const [existingDatabaseRequest, existingAccount] = await Promise.all([
+      findMembershipRequestByEmail(normalizedEmail),
+      findMemberAccountByEmail(normalizedEmail),
+    ]);
+
+    if (existingDatabaseRequest) {
+      setSubmitMessageType("error");
+      setSubmitMessage("That email already has a membership request. Please wait for an administrator to review it.");
+      return;
+    }
+
+    if (existingAccount) {
+      setSubmitMessageType("error");
+      setSubmitMessage("That email already has a member account. Please log in through the Hub.");
       return;
     }
 
