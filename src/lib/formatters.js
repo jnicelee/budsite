@@ -34,5 +34,5 @@ export function sortMeetingPosts(posts) {
 }
 
 export function getMemberLinkTitleValue(link) {
-  return link.id === "link-tournament-signups" ? "Tournament\nSign-Ups" : link.label;
+  return link.label;
 }

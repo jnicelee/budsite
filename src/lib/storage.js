@@ -217,7 +217,8 @@ export function normalizeBudsiteEditorSectionTitles(titles = defaultBudsiteEdito
         {
           eyebrow: title.eyebrow ?? defaults.eyebrow,
           title: title.title ?? defaults.title,
-          count: defaults.count,
+          ...(defaults.description ? { description: title.description ?? defaults.description } : {}),
+          ...(defaults.count ? { count: defaults.count } : {}),
         },
       ];
     })

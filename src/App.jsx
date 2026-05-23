@@ -396,6 +396,7 @@ function normalizeComparisonValue(value) {
 }
 
 const BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY = "buds-budsite-editor-section-titles";
+const LINK_TILE_DESCRIPTION_MAX_LENGTH = 95;
 
 function getStoredBudsiteEditorSectionTitles() {
   try {
@@ -416,6 +417,10 @@ function hasCustomBudsiteEditorSectionTitles(titles) {
   return Object.entries(normalizedTitles).some(([id, sectionTitle]) => (
     sectionTitle.eyebrow !== defaultTitles[id]?.eyebrow || sectionTitle.title !== defaultTitles[id]?.title
   ));
+}
+
+function limitLinkTileDescription(description) {
+  return String(description || "").slice(0, LINK_TILE_DESCRIPTION_MAX_LENGTH);
 }
 
 function hasDuplicateValue(items, value, selector = (item) => item, ignoreId = "") {
@@ -2154,6 +2159,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
   const canEditBudsiteTitles = isAdmin && (!isTitleEditingToggleAccount || adminControlSettings.titleEditingEnabledForYeon);
+  const canEditCasebookLinks = canEditMemberLinks && canEditBudsiteTitles;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -2261,6 +2267,75 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         )}
         <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{sectionCount}</span>
       </span>
+    );
+  };
+
+  const renderEditableDropdownTitle = (id, metaText = "") => {
+    const sectionTitle = budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id] || { title: id };
+    return (
+      <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
+        {canEditBudsiteTitles ? (
+          <input
+            value={sectionTitle.title}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+            onChange={(event) => updateBudsiteEditorSectionTitle(id, "title", event.target.value)}
+            className="min-w-0 flex-1 border border-transparent bg-transparent p-0 text-xl font-black text-[#2D2926] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1"
+            aria-label="Dropdown title"
+          />
+        ) : (
+          <span className="min-w-0 flex-1 text-xl font-black text-[#2D2926]">{sectionTitle.title}</span>
+        )}
+        {metaText && (
+          <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{metaText}</span>
+        )}
+      </span>
+    );
+  };
+
+  const renderEditablePrivatePageHeader = (id) => {
+    const sectionTitle = budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id] || {};
+    if (canEditBudsiteTitles) {
+      return (
+        <div className="flex flex-col gap-2">
+          <div className="min-w-0">
+            <input
+              value={sectionTitle.eyebrow || ""}
+              onChange={(event) => updateBudsiteEditorSectionTitle(id, "eyebrow", event.target.value)}
+              className="w-full border border-transparent bg-transparent p-0 text-xs font-black uppercase leading-none tracking-[0.18em] text-[#CC0000] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1"
+              aria-label="Page eyebrow"
+            />
+            <textarea
+              value={sectionTitle.title || ""}
+              onChange={(event) => updateBudsiteEditorSectionTitle(id, "title", event.target.value)}
+              rows={1}
+              className="mt-2 block h-[3.2rem] w-full resize-none overflow-hidden border border-transparent bg-transparent p-0 text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1 md:h-[3.45rem] md:text-5xl"
+              aria-label="Page title"
+            />
+          </div>
+          <textarea
+            value={sectionTitle.description || ""}
+            onChange={(event) => updateBudsiteEditorSectionTitle(id, "description", event.target.value)}
+            rows={1}
+            className="h-6 max-w-xl resize-none overflow-hidden border border-transparent bg-transparent p-0 text-sm font-semibold leading-6 text-[#5b5450] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1"
+            aria-label="Page description"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">{sectionTitle.eyebrow}</p>
+          <h1 className="mt-2 max-w-5xl text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-5xl">
+            {sectionTitle.title}
+          </h1>
+        </div>
+        <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+          {sectionTitle.description}
+        </p>
+      </div>
     );
   };
 
@@ -3556,7 +3631,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 className={`h-3 w-6 rounded-full border transition ${
                   adminControlSettings.titleEditingEnabledForYeon
                     ? "border-[#79c792] bg-[#a8e6ba]"
-                    : "border-[#8a0000] bg-[#fff1f1]"
+                    : "border-[#ded8d2] bg-[#f6f4f2]"
                 }`}
               >
                 <span
@@ -3626,17 +3701,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       {visibleTab === "member" && (
         <div>
           <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">Members Only</p>
-                <h1 className="mt-2 max-w-5xl text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-5xl">
-                  Private BUDS links and debate resources.
-                </h1>
-              </div>
-              <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
-                Team documents, calendars, and APDA guides for the season.
-              </p>
-            </div>
+            {renderEditablePrivatePageHeader("memberResourcesHero")}
             {canEditMemberLinks && (
               <div className="mt-4">
                 <SaveNotice notice={editorNotice} />
@@ -3649,16 +3714,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 key={group.section}
                 className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
                 defaultOpen={group.section === "BUDS Team Specific Links"}
-                title={(
-                  <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
-                    <span className="text-xl font-black text-[#2D2926]">{group.section}</span>
-                    <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{group.links.length} links</span>
-                  </span>
+                title={renderEditableDropdownTitle(
+                  group.section === "BUDS Casebook" ? "memberCasebook" : "memberTeamLinks",
+                  `${group.links.length} links`
                 )}
               >
                 {group.section === "BUDS Casebook" ? (
                   <div className="grid gap-2">
-                    {canEditMemberLinks && (
+                    {canEditCasebookLinks && (
                       <form onSubmit={addCasebookCase} className="mb-3 grid gap-2 border-2 border-dashed border-[#CC0000] bg-[#fffdfd] p-3">
                         <div className="grid gap-2 lg:grid-cols-[0.7fr_1.2fr_0.8fr_0.7fr_auto]">
                           <input
@@ -3703,7 +3766,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       >
                         <div className="min-w-0">
                           <div className="mb-1 flex flex-wrap gap-1">
-                            {canEditMemberLinks ? (
+                            {canEditCasebookLinks ? (
                               <input
                                 type="text"
                                 value={(link.topicTags || []).slice(0, 2).join(", ")}
@@ -3719,7 +3782,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               ))
                             )}
                           </div>
-                          {canEditMemberLinks ? (
+                          {canEditCasebookLinks ? (
                             <textarea
                               value={getMemberLinkTitleValue(link)}
                               onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
@@ -3733,7 +3796,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           )}
                         </div>
 
-                        {canEditMemberLinks ? (
+                        {canEditCasebookLinks ? (
                           <textarea
                             value={link.description}
                             onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
@@ -3748,7 +3811,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
                             Open <ChevronRight className="transition group-hover:translate-x-1" size={15} />
                           </a>
-                          {canEditMemberLinks && (
+                          {canEditCasebookLinks && (
                             <>
                               <input
                                 type="url"
@@ -3773,7 +3836,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     ))}
                   </div>
                 ) : (
-                  <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
                     {group.links.map((link) => (
                     <div
                       key={link.id}
@@ -3782,10 +3845,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       onDragOver={allowEditorDrop}
                       onDrop={() => dropMemberLink(link.id, group.section)}
                       onDragEnd={finishEditorDrag}
-                      className="group flex min-h-[16rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_16px_42px_rgba(45,41,38,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(45,41,38,0.11)] sm:min-h-[19rem] sm:p-5"
+                      className="group flex min-h-[12.5rem] flex-col border border-[#ded8d2] bg-white p-3 shadow-[0_10px_26px_rgba(45,41,38,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(45,41,38,0.09)]"
                     >
-                      <div className="mb-7">
-                        <span className="inline-flex bg-[#CC0000] px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
+                      <div className="mb-3">
+                        <span className="inline-flex bg-[#CC0000] px-2.5 py-1 text-[0.58rem] font-black uppercase tracking-[0.12em] text-white">
                           {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : group.section === "BUDS Casebook" ? "Case" : "Team Link"}
                         </span>
                       </div>
@@ -3794,44 +3857,45 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           <label className="grid gap-2">
                             <span className="sr-only">Link Name</span>
                             <textarea
-                              value={getMemberLinkTitleValue(link)}
-                              onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
-                              rows={2}
-                              className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
+                            value={getMemberLinkTitleValue(link)}
+                            onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
+                              rows={1}
+                              className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-lg font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
                             />
                           </label>
-                          <label className="mt-4 grid flex-1 gap-2">
+                          <label className="mt-2 grid flex-1 gap-2">
                             <span className="sr-only">Description</span>
                             <textarea
-                              value={link.description}
-                              onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                              rows={4}
-                              className="h-full min-h-24 resize-none border-0 bg-transparent p-0 text-base font-medium leading-7 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
+                              value={limitLinkTileDescription(link.description)}
+                              onChange={(event) => updateMemberLink(link.id, "description", limitLinkTileDescription(event.target.value))}
+                              rows={3}
+                              maxLength={LINK_TILE_DESCRIPTION_MAX_LENGTH}
+                              className="h-[3.75rem] resize-none overflow-hidden border-0 bg-transparent p-0 text-sm font-medium leading-5 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
                             />
                           </label>
                         </>
                       ) : (
                         <>
-                          <h3 className="break-words text-2xl font-black leading-tight tracking-normal text-[#2D2926]">
+                          <h3 className="break-words text-lg font-black leading-tight tracking-normal text-[#2D2926]">
                             <MemberLinkTitle link={link} />
                           </h3>
-                          <p className="mt-4 flex-1 text-sm font-medium leading-6 text-[#5b5450] sm:text-base sm:leading-7">{link.description}</p>
+                          <p className="mt-2 flex-1 text-sm font-medium leading-5 text-[#5b5450]">{limitLinkTileDescription(link.description)}</p>
                         </>
                       )}
-                      <div className="mt-5 grid gap-3">
-                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-sm sm:tracking-[0.14em]">
-                          Open link <ChevronRight className="transition group-hover:translate-x-1" size={18} />
+                      <div className="mt-3 grid gap-2">
+                        <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                          Open link <ChevronRight className="transition group-hover:translate-x-1" size={14} />
                         </a>
                         {canEditMemberLinks && (
                           <>
-                            <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
+                            <label className="grid gap-1 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">
                               Edit URL
                               <input
                                 type="url"
                                 value={link.url}
                                 onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
                                 placeholder="https://..."
-                                className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                                className="border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-[0.7rem] font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                               />
                             </label>
                           </>
@@ -3850,17 +3914,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       {visibleTab === "operations" && (
         <div>
           <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">Members Only</p>
-                <h1 className="mt-2 max-w-5xl text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-5xl">
-                  Club resources.
-                </h1>
-              </div>
-              <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
-                Forms, reimbursements, and day-to-day BUDS logistics for members.
-              </p>
-            </div>
+            {renderEditablePrivatePageHeader("clubResourcesHero")}
             {canEditMemberLinks && (
               <div className="mt-4">
                 <SaveNotice notice={editorNotice} />
@@ -3871,14 +3925,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           {nonCompetitiveFormLinks.length > 0 && (
             <SmoothDetails
               className="mb-5 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
-              title={(
-                <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
-                  <span className="text-xl font-black text-[#2D2926]">Forms</span>
-                  <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{nonCompetitiveFormLinks.length} links</span>
-                </span>
-              )}
+              title={renderEditableDropdownTitle("clubForms", `${nonCompetitiveFormLinks.length} links`)}
             >
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
                 {nonCompetitiveFormLinks.map((link) => (
                   <div
                     key={link.id}
@@ -3887,10 +3936,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     onDragOver={allowEditorDrop}
                     onDrop={() => dropMemberLink(link.id, "Forms")}
                     onDragEnd={finishEditorDrag}
-                    className="group flex min-h-[16rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_16px_42px_rgba(45,41,38,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(45,41,38,0.11)] sm:min-h-[19rem] sm:p-5"
+                    className="group flex min-h-[12.5rem] flex-col border border-[#ded8d2] bg-white p-3 shadow-[0_10px_26px_rgba(45,41,38,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(45,41,38,0.09)]"
                   >
-                    <div className="mb-7">
-                      <span className="inline-flex bg-[#CC0000] px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
+                    <div className="mb-3">
+                      <span className="inline-flex bg-[#CC0000] px-2.5 py-1 text-[0.58rem] font-black uppercase tracking-[0.12em] text-white">
                         Form
                       </span>
                     </div>
@@ -3901,42 +3950,43 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           <textarea
                             value={getMemberLinkTitleValue(link)}
                             onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
-                            rows={2}
-                            className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
+                            rows={1}
+                            className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-lg font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
                           />
                         </label>
-                        <label className="mt-4 grid flex-1 gap-2">
+                        <label className="mt-2 grid flex-1 gap-2">
                           <span className="sr-only">Description</span>
                           <textarea
-                            value={link.description}
-                            onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                            rows={4}
-                            className="h-full min-h-24 resize-none border-0 bg-transparent p-0 text-base font-medium leading-7 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
+                            value={limitLinkTileDescription(link.description)}
+                            onChange={(event) => updateMemberLink(link.id, "description", limitLinkTileDescription(event.target.value))}
+                            rows={3}
+                            maxLength={LINK_TILE_DESCRIPTION_MAX_LENGTH}
+                            className="h-[3.75rem] resize-none overflow-hidden border-0 bg-transparent p-0 text-sm font-medium leading-5 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
                           />
                         </label>
                       </>
                     ) : (
                       <>
-                        <h3 className="break-words text-2xl font-black leading-tight tracking-normal text-[#2D2926]">
+                        <h3 className="break-words text-lg font-black leading-tight tracking-normal text-[#2D2926]">
                           <MemberLinkTitle link={link} />
                         </h3>
-                        <p className="mt-4 flex-1 text-sm font-medium leading-6 text-[#5b5450] sm:text-base sm:leading-7">{link.description}</p>
+                        <p className="mt-2 flex-1 text-sm font-medium leading-5 text-[#5b5450]">{limitLinkTileDescription(link.description)}</p>
                       </>
                     )}
-                    <div className="mt-5 grid gap-3">
-                      <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-sm sm:tracking-[0.14em]">
-                        Open link <ChevronRight className="transition group-hover:translate-x-1" size={18} />
+                    <div className="mt-3 grid gap-2">
+                      <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                        Open link <ChevronRight className="transition group-hover:translate-x-1" size={14} />
                       </a>
                       {canEditMemberLinks && (
                         <>
-                          <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
+                          <label className="grid gap-1 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">
                             Edit URL
                             <input
                               type="url"
                               value={link.url}
                               onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
                               placeholder="https://..."
-                              className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                              className="border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-[0.7rem] font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                             />
                           </label>
                         </>
@@ -3950,12 +4000,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
           <SmoothDetails
             className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
-            title={(
-              <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
-                <span className="text-xl font-black text-[#2D2926]">Reimbursements</span>
-                <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Guide</span>
-              </span>
-            )}
+            title={renderEditableDropdownTitle("clubReimbursements", "Guide")}
           >
             <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <Card className="p-4">
@@ -5325,7 +5370,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     )}
             <div className="columns-1 gap-5 xl:columns-2">
               {trophyEditorSection === "stats" && (
-              <SmoothDetails title="Top Stats" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <SmoothDetails title={renderEditableDropdownTitle("trophyTopStats")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <HelperText>Use short public stats. Labels that come from APDA may be overwritten by the APDA updater.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
@@ -5361,7 +5406,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
 
               {trophyEditorSection === "accomplishments" && (
-              <SmoothDetails title="Accomplishments List" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <SmoothDetails title={renderEditableDropdownTitle("trophyAccomplishments")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3 2xl:grid-cols-[1fr_auto]">
                   <input value={newTrophyAccomplishment} onChange={(event) => setNewTrophyAccomplishment(event.target.value)} placeholder="Add accomplishment line" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
@@ -5393,7 +5438,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
 
               {trophyEditorSection === "milestones" && (
-              <SmoothDetails title="Milestone Cards" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <SmoothDetails title={renderEditableDropdownTitle("trophyMilestones")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
@@ -5431,7 +5476,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
 
               {trophyEditorSection === "members" && (
-              <SmoothDetails title="Current Member Achievements" className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <SmoothDetails title={renderEditableDropdownTitle("trophyMembers")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
                 <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <HelperText>Add one achievement at a time. Only administrators can create or rename member cards; e-board can add achievements to existing people.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
@@ -5486,7 +5531,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </div>
 
             {trophyEditorSection === "results" && (
-            <SmoothDetails title="Tournament Results Timeline" className="mt-5 border border-[#ded8d2] bg-white p-3">
+            <SmoothDetails title={renderEditableDropdownTitle("trophyResults")} className="mt-5 border border-[#ded8d2] bg-white p-3">
               <form onSubmit={addTrophyResultSeason} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
                 <input
                   value={newTrophySeason}
