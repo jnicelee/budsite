@@ -2092,7 +2092,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
   const canUsePrivateTabs = isEboard || canManageMembers;
-  const visibleTab = canUsePrivateTabs ? activeTab : "member";
+  const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
   const selectedNote = sortedNotes.find((note) => note.id === selectedNoteId) ?? sortedNotes[0];
   const trophyResultSeasons = sortResultSeasons(draftTrophiesContent.resultSeasons || []);
@@ -2112,6 +2112,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const displayName = auth?.name?.trim() || auth?.email?.split("@")[0] || "member";
   const hubTitle = visibleTab === "member"
     ? `Welcome, ${displayName}`
+    : visibleTab === "operations"
+      ? "Club Resources"
     : visibleTab === "members"
       ? "Members"
       : visibleTab === "budsite"
@@ -2120,7 +2122,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
     links: memberLinks.filter((link) => getPrivateLinkSection(link) === section),
-  })).filter((group) => group.links.length > 0);
+  })).filter((group) => group.links.length > 0 && group.section !== "Forms");
+  const nonCompetitiveFormLinks = memberLinks.filter((link) => getPrivateLinkSection(link) === "Forms");
   const contentDashboardItems = [
     { id: "home", title: "Landing Page", href: "/", draft: draftHomeContent, published: homeContent },
     { id: "trophies", title: "Trophies", href: "/trophies", draft: draftTrophiesContent, published: trophiesContent },
@@ -3374,6 +3377,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         >
           Member Resources
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("operations")}
+          className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "operations" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+        >
+          Club Resources
+        </button>
         {isEboard && (
           <>
             <button
@@ -3422,7 +3432,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 </h1>
               </div>
               <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
-                Team documents, forms, calendars, and APDA guides for the season.
+                Team documents, calendars, and APDA guides for the season.
               </p>
             </div>
             {canEditMemberLinks && (
@@ -3523,6 +3533,218 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </SmoothDetails>
             ))}
           </div>
+        </div>
+      )}
+
+      {visibleTab === "operations" && (
+        <div>
+          <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">Members Only</p>
+                <h1 className="mt-2 max-w-5xl text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] md:text-5xl">
+                  Club resources.
+                </h1>
+              </div>
+              <p className="max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+                Forms, reimbursements, and day-to-day BUDS logistics for members.
+              </p>
+            </div>
+            {canEditMemberLinks && (
+              <div className="mt-4">
+                <SaveNotice notice={editorNotice} />
+              </div>
+            )}
+          </div>
+
+          {nonCompetitiveFormLinks.length > 0 && (
+            <SmoothDetails
+              className="mb-5 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+              title={(
+                <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
+                  <span className="text-xl font-black text-[#2D2926]">Forms</span>
+                  <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{nonCompetitiveFormLinks.length} links</span>
+                </span>
+              )}
+            >
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                {nonCompetitiveFormLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    draggable={canEditMemberLinks}
+                    onDragStart={() => startEditorDrag("member-link-Forms", link.id)}
+                    onDragOver={allowEditorDrop}
+                    onDrop={() => dropMemberLink(link.id, "Forms")}
+                    onDragEnd={finishEditorDrag}
+                    className="group flex min-h-[16rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_16px_42px_rgba(45,41,38,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_58px_rgba(45,41,38,0.11)] sm:min-h-[19rem] sm:p-5"
+                  >
+                    <div className="mb-7">
+                      <span className="inline-flex bg-[#CC0000] px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
+                        Form
+                      </span>
+                    </div>
+                    {canEditMemberLinks ? (
+                      <>
+                        <label className="grid gap-2">
+                          <span className="sr-only">Link Name</span>
+                          <textarea
+                            value={getMemberLinkTitleValue(link)}
+                            onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
+                            rows={2}
+                            className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-2xl font-black leading-tight tracking-normal text-[#2D2926] outline-none focus:text-[#CC0000]"
+                          />
+                        </label>
+                        <label className="mt-4 grid flex-1 gap-2">
+                          <span className="sr-only">Description</span>
+                          <textarea
+                            value={link.description}
+                            onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
+                            rows={4}
+                            className="h-full min-h-24 resize-none border-0 bg-transparent p-0 text-base font-medium leading-7 tracking-normal text-[#5b5450] outline-none focus:text-[#2D2926]"
+                          />
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="break-words text-2xl font-black leading-tight tracking-normal text-[#2D2926]">
+                          <MemberLinkTitle link={link} />
+                        </h3>
+                        <p className="mt-4 flex-1 text-sm font-medium leading-6 text-[#5b5450] sm:text-base sm:leading-7">{link.description}</p>
+                      </>
+                    )}
+                    <div className="mt-5 grid gap-3">
+                      <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[#CC0000] sm:text-sm sm:tracking-[0.14em]">
+                        Open link <ChevronRight className="transition group-hover:translate-x-1" size={18} />
+                      </a>
+                      {canEditMemberLinks && (
+                        <>
+                          <label className="grid gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-[#8f8781]">
+                            Edit URL
+                            <input
+                              type="url"
+                              value={link.url}
+                              onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                              placeholder="https://..."
+                              className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <div className="flex items-center justify-between gap-2 border-t border-[#ded8d2] pt-3">
+                            <HelperText>Drag this tile or use buttons to reorder within the section.</HelperText>
+                            <ReorderButtons
+                              onMoveUp={() => moveMemberLink(link.id, -1, "Forms")}
+                              onMoveDown={() => moveMemberLink(link.id, 1, "Forms")}
+                              disabledUp={nonCompetitiveFormLinks.findIndex((item) => item.id === link.id) === 0}
+                              disabledDown={nonCompetitiveFormLinks.findIndex((item) => item.id === link.id) === nonCompetitiveFormLinks.length - 1}
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SmoothDetails>
+          )}
+
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={(
+              <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
+                <span className="text-xl font-black text-[#2D2926]">Reimbursements</span>
+                <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Guide</span>
+              </span>
+            )}
+          >
+            <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            <Card className="p-5">
+              <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <Eyebrow>Terrier Central</Eyebrow>
+                  <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">Requesting a Reimbursement</h2>
+                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#5b5450]">
+                    Use Terrier Central after you make an approved club purchase. Keep receipts and any event approval documentation ready before starting.
+                  </p>
+                </div>
+                <DollarSign className="shrink-0 text-[#CC0000]" size={34} />
+              </div>
+
+              <ol className="mt-5 grid gap-4">
+                {[
+                  {
+                    title: "Log in to Terrier Central",
+                    body: "Go to terriercentral.bu.edu and sign in with your BU email.",
+                  },
+                  {
+                    title: "Open the Student Reimbursement Request",
+                    body: "Go to Forms, choose Student Reimbursement Request, then scroll down and click Next.",
+                  },
+                  {
+                    title: "Select the BUDS account",
+                    body: "On page 1, select BU Debate Society - 1124.",
+                  },
+                  {
+                    title: "Choose Event or General Business",
+                    body: "Use Event for tournament-related reimbursement. Use General Business for other approved club purchases.",
+                  },
+                  {
+                    title: "Enter purchase and payee details",
+                    body: "Add the event name/date if applicable, your name, address, phone number, BU email, BU ID, purchase description, reimbursement amount, and receipts.",
+                  },
+                  {
+                    title: "Send it to the reviewer",
+                    body: "For reviewer, enter njsaxena@bu.edu and submit.",
+                  },
+                ].map((step, index) => (
+                  <li key={step.title} className="grid gap-3 border border-[#ded8d2] bg-white p-4 sm:grid-cols-[3rem_1fr]">
+                    <span className="grid h-10 w-10 place-items-center bg-[#2D2926] text-sm font-black text-white">{index + 1}</span>
+                    <div>
+                      <h3 className="text-lg font-black text-[#2D2926]">{step.title}</h3>
+                      <p className="mt-1 text-sm font-medium leading-6 text-[#5b5450]">{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <a href="https://terriercentral.bu.edu/" target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 bg-[#CC0000] px-5 py-3 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-[#a90000]">
+                Open Terrier Central <ExternalLink size={16} />
+              </a>
+            </Card>
+
+            <div className="grid gap-5">
+              <Card className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <Eyebrow>Timeline</Eyebrow>
+                    <h2 className="mt-2 text-2xl font-black text-[#2D2926]">What Happens Next</h2>
+                  </div>
+                  <FileText className="text-[#CC0000]" size={28} />
+                </div>
+                <div className="mt-5 grid gap-3">
+                  {[
+                    "You should receive an SAO email confirming the submission.",
+                    "Expect approval, denial, or a revision request in 3-5 business days.",
+                    "If approved, checks are usually ready in about 2 weeks at the GSU 2nd floor.",
+                  ].map((item) => (
+                    <p key={item} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-semibold leading-6 text-[#2D2926]">
+                      {item}
+                    </p>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <Eyebrow>Before You Submit</Eyebrow>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Have These Ready</h2>
+                <ul className="mt-5 grid gap-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                  <li className="border border-[#ded8d2] bg-white p-3">Receipt for each purchase.</li>
+                  <li className="border border-[#ded8d2] bg-white p-3">Event approval screenshot from SLIC for event/tournament requests.</li>
+                  <li className="border border-[#ded8d2] bg-white p-3">Your current mailing address, phone number, BU email, and BU ID.</li>
+                  <li className="border border-[#ded8d2] bg-white p-3">A short description of what the purchase was used for.</li>
+                </ul>
+              </Card>
+            </div>
+            </div>
+          </SmoothDetails>
         </div>
       )}
 
