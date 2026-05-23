@@ -1,6 +1,6 @@
 import { agendaItems, initialBudgetRevenueRows, initialBudgetRows, privateLinks } from "../data/content";
 import { isSupabaseConfigured, supabase } from "../supabaseClient";
-import { enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeEboardContent, normalizeHomeContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
+import { encodePrivateLinkForStorage, enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAgendaItems, normalizeEboardContent, normalizeHomeContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
 
 const contentNormalizers = {
   trophies: normalizeTrophiesContent,
@@ -298,7 +298,7 @@ export async function deleteNote(id) {
 
 export async function upsertPrivateLink(link) {
   if (!isSupabaseConfigured) return;
-  const { id, label, description, url } = link;
+  const { id, label, description, url } = encodePrivateLinkForStorage(link);
   const { error } = await supabase.from("private_links").upsert({ id, label, description, url });
   if (error) console.error("Supabase private link upsert failed", error);
 }

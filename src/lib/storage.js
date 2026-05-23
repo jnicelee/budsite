@@ -407,8 +407,61 @@ function slugify(value) {
     .slice(0, 48) || "item";
 }
 
+const CASEBOOK_TAGS_PATTERN = /\n*<!-- buds:topicTags=(.*?) -->\s*$/;
+
+function normalizeTopicTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags
+    .map((tag) => String(tag || "").trim())
+    .filter(Boolean)
+    .slice(0, 2);
+}
+
+function splitCasebookDescription(description) {
+  const text = String(description || "");
+  const match = text.match(CASEBOOK_TAGS_PATTERN);
+  if (!match) return { description: text, topicTags: [] };
+
+  try {
+    const topicTags = normalizeTopicTags(JSON.parse(match[1]));
+    return {
+      description: text.replace(CASEBOOK_TAGS_PATTERN, "").trimEnd(),
+      topicTags,
+    };
+  } catch {
+    return { description: text.replace(CASEBOOK_TAGS_PATTERN, "").trimEnd(), topicTags: [] };
+  }
+}
+
+export function encodePrivateLinkForStorage(link) {
+  if (getPrivateLinkSection(link) !== "BUDS Casebook") return link;
+  const cleanDescription = splitCasebookDescription(link.description).description;
+  const topicTags = normalizeTopicTags(link.topicTags);
+  return {
+    ...link,
+    description: topicTags.length
+      ? `${cleanDescription}\n<!-- buds:topicTags=${JSON.stringify(topicTags)} -->`
+      : cleanDescription,
+  };
+}
+
+function decodePrivateLinkFromStorage(link) {
+  if (getPrivateLinkSection(link) !== "BUDS Casebook") return link;
+  const parsed = splitCasebookDescription(link.description);
+  const topicTags = normalizeTopicTags(link.topicTags).length ? normalizeTopicTags(link.topicTags) : parsed.topicTags;
+  return {
+    ...link,
+    description: parsed.description,
+    topicTags,
+  };
+}
+
 export function enrichPrivateLinks(links) {
-  return links
+  const linksById = new Map(privateLinks.map((link) => [link.id, link]));
+  links.forEach((link) => linksById.set(link.id, { ...linksById.get(link.id), ...decodePrivateLinkFromStorage(link) }));
+
+  return Array.from(linksById.values())
+    .filter((link) => link.url !== "__deleted__")
     .map((link, index) => {
       const defaults = privateLinkDefaultsById[link.id];
       return {

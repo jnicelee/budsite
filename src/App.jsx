@@ -5,6 +5,8 @@ import {
   Bold,
   ChevronDown,
   ChevronRight,
+  ArrowUp,
+  ArrowDown,
   CircleHelp,
   ClipboardList,
   DollarSign,
@@ -273,18 +275,30 @@ function ConfirmationModal({ confirmation, onCancel, onConfirm }) {
 
 function SmoothDetails({ title, children, className = "", defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
+  const toggleOpen = () => setOpen((current) => !current);
 
   return (
     <section className={className}>
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-3 text-left text-lg font-black text-[#2D2926]"
-        aria-expanded={open}
-      >
-        <span>{title}</span>
-        <ChevronDown size={18} className={`shrink-0 transition duration-300 ${open ? "rotate-180" : ""}`} />
-      </button>
+      <div className="flex w-full items-center justify-between gap-3 text-left text-lg font-black text-[#2D2926]">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={toggleOpen}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggleOpen();
+            }
+          }}
+          className="min-w-0 flex-1"
+          aria-expanded={open}
+        >
+          {title}
+        </div>
+        <button type="button" onClick={toggleOpen} aria-label={open ? "Close section" : "Open section"}>
+          <ChevronDown size={18} className={`shrink-0 transition duration-300 ${open ? "rotate-180" : ""}`} />
+        </button>
+      </div>
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -322,15 +336,25 @@ function FieldWarning({ children }) {
 }
 
 function SaveNotice({ notice }) {
-  if (!notice?.message) return null;
   return (
-    <p className={`border-l-4 px-4 py-3 text-sm font-black ${
-      notice.type === "error"
-        ? "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
-        : "border-[#0b6b35] bg-[#e5f7ec] text-[#0b6b35]"
-    }`}>
-      {notice.message}
-    </p>
+    <AnimatePresence initial={false}>
+      {notice?.message && (
+        <motion.p
+          key={notice.message}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className={`rounded-lg border-l-4 px-4 py-3 text-sm font-black ${
+            notice.type === "error"
+              ? "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
+              : "border-[#0b6b35] bg-[#e5f7ec] text-[#0b6b35]"
+          }`}
+        >
+          {notice.message}
+        </motion.p>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -341,17 +365,21 @@ function ReorderButtons({ onMoveUp, onMoveDown, disabledUp = false, disabledDown
         type="button"
         onClick={onMoveUp}
         disabled={disabledUp}
-        className="border border-[#ded8d2] bg-white px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-35"
+        className="grid h-7 w-7 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-35"
+        aria-label="Move up"
+        title="Move up"
       >
-        Up
+        <ArrowUp size={14} />
       </button>
       <button
         type="button"
         onClick={onMoveDown}
         disabled={disabledDown}
-        className="border border-[#ded8d2] bg-white px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-35"
+        className="grid h-7 w-7 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-35"
+        aria-label="Move down"
+        title="Move down"
       >
-        Down
+        <ArrowDown size={14} />
       </button>
     </div>
   );
@@ -359,6 +387,32 @@ function ReorderButtons({ onMoveUp, onMoveDown, disabledUp = false, disabledDown
 
 function normalizeComparisonValue(value) {
   return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+const BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY = "buds-budsite-editor-section-titles";
+
+const defaultBudsiteEditorSectionTitles = {
+  meetings: { eyebrow: "Meeting Tools", title: "Meeting notes and public announcements", count: "2 editors" },
+  novice: { eyebrow: "Novice Hub Editors", title: "Beginner education and FAQ content", count: "2 editors" },
+  eboard: { eyebrow: "Public People", title: "Current e-board profiles and photos", count: "1 editor" },
+  trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
+  home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
+};
+
+function getStoredBudsiteEditorSectionTitles() {
+  try {
+    const stored = window.localStorage.getItem(BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY);
+    return {
+      ...defaultBudsiteEditorSectionTitles,
+      ...(stored ? JSON.parse(stored) : {}),
+    };
+  } catch {
+    return defaultBudsiteEditorSectionTitles;
+  }
+}
+
+function saveStoredBudsiteEditorSectionTitles(titles) {
+  window.localStorage.setItem(BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY, JSON.stringify(titles));
 }
 
 function hasDuplicateValue(items, value, selector = (item) => item, ignoreId = "") {
@@ -2045,6 +2099,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingNotes, setMeetingNotes] = useState("");
   const [meetingAnnouncement, setMeetingAnnouncement] = useState(draftMeetingsContent);
+  const [budsiteEditorSectionTitles, setBudsiteEditorSectionTitles] = useState(() => getStoredBudsiteEditorSectionTitles());
   const [noviceFaqs, setNoviceFaqs] = useState(draftNoviceContent.faqs);
   const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(draftNoviceContent.speechSteps || []);
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
@@ -2062,6 +2117,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [newRevenueCategory, setNewRevenueCategory] = useState("");
   const [newRevenueAmount, setNewRevenueAmount] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
+  const [newCasebookCase, setNewCasebookCase] = useState({ label: "", description: "", url: "", topicTags: "" });
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
   const [newTrophyStat, setNewTrophyStat] = useState({ value: "", label: "", detail: "" });
   const [newTrophyAccomplishment, setNewTrophyAccomplishment] = useState("");
@@ -2091,6 +2147,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canEditMemberLinks = isAdmin;
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
+  const canEditBudsiteTitles = isAdmin;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -2121,8 +2178,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         : "E-Board Workspace";
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
-    links: memberLinks.filter((link) => getPrivateLinkSection(link) === section),
-  })).filter((group) => group.links.length > 0 && group.section !== "Forms");
+    links: memberLinks
+      .filter((link) => getPrivateLinkSection(link) === section)
+      .sort((a, b) => (
+        section === "BUDS Casebook"
+          ? getMemberLinkTitleValue(a).localeCompare(getMemberLinkTitleValue(b), undefined, { sensitivity: "base" })
+          : 0
+      )),
+  })).filter((group) => group.links.length > 0 && !["Forms", "Debater Resources"].includes(group.section));
   const nonCompetitiveFormLinks = memberLinks.filter((link) => getPrivateLinkSection(link) === "Forms");
   const contentDashboardItems = [
     { id: "home", title: "Landing Page", href: "/", draft: draftHomeContent, published: homeContent },
@@ -2134,6 +2197,54 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const showEditorNotice = (message, type = "success") => {
     setEditorNotice({ type, message });
+  };
+
+  const updateBudsiteEditorSectionTitle = (id, field, value) => {
+    if (!canEditBudsiteTitles) return;
+    const nextTitles = {
+      ...budsiteEditorSectionTitles,
+      [id]: {
+        ...(budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id]),
+        [field]: value,
+      },
+    };
+    setBudsiteEditorSectionTitles(nextTitles);
+    saveStoredBudsiteEditorSectionTitles(nextTitles);
+  };
+
+  const renderBudsiteEditorSectionTitle = (id) => {
+    const sectionTitle = budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id];
+    const sectionCount = id === "novice" && !isAdmin ? "1 editor" : sectionTitle.count;
+    return (
+      <span className="flex w-full items-center justify-between gap-3 border-b-2 border-[#CC0000] pb-2">
+        {canEditBudsiteTitles ? (
+          <span
+            className="grid min-w-0 flex-1 gap-1"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <input
+              value={sectionTitle.eyebrow}
+              onChange={(event) => updateBudsiteEditorSectionTitle(id, "eyebrow", event.target.value)}
+              className="w-full border border-transparent bg-transparent p-0 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1"
+              aria-label="Dropdown eyebrow"
+            />
+            <input
+              value={sectionTitle.title}
+              onChange={(event) => updateBudsiteEditorSectionTitle(id, "title", event.target.value)}
+              className="w-full border border-transparent bg-transparent p-0 text-xl font-black text-[#2D2926] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1"
+              aria-label="Dropdown title"
+            />
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">{sectionTitle.eyebrow}</span>
+            <span className="mt-1 block text-xl font-black text-[#2D2926]">{sectionTitle.title}</span>
+          </span>
+        )}
+        <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{sectionCount}</span>
+      </span>
+    );
   };
 
   const startEditorDrag = (collection, id) => {
@@ -2688,19 +2799,60 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     showEditorNotice("Member resource link saved.");
   };
 
-  const moveMemberLink = (id, direction, section) => {
+  const addCasebookCase = (event) => {
+    event.preventDefault();
     if (!canEditMemberLinks) return;
-    const sectionLinks = memberLinks.filter((link) => getPrivateLinkSection(link) === section);
-    const currentSectionIndex = sectionLinks.findIndex((link) => link.id === id);
-    const nextSectionLinks = moveArrayItem(sectionLinks, currentSectionIndex, currentSectionIndex + direction);
-    let nextSectionIndex = 0;
-    const nextLinks = memberLinks.map((link) => (
-      getPrivateLinkSection(link) === section ? nextSectionLinks[nextSectionIndex++] : link
-    ));
+    const label = newCasebookCase.label.trim();
+    const description = newCasebookCase.description.trim();
+    const url = newCasebookCase.url.trim();
+    if (!label || !description || !url) {
+      showEditorNotice("Add a case title, case statement, and link before saving.", "error");
+      return;
+    }
+
+    const topicTags = newCasebookCase.topicTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 2);
+    const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "case";
+    const nextCase = {
+      id: `casebook-${slug}-${Date.now()}`,
+      section: "BUDS Casebook",
+      order: memberLinks.length + 1,
+      label,
+      description,
+      url,
+      topicTags,
+    };
+    const nextLinks = [...memberLinks, nextCase];
     setMemberLinks(nextLinks);
     saveStoredPrivateLinks(nextLinks);
-    nextSectionLinks.forEach((link) => upsertPrivateLink(link));
-    showEditorNotice("Member resource order saved.");
+    upsertPrivateLink(nextCase);
+    setNewCasebookCase({ label: "", description: "", url: "", topicTags: "" });
+    showEditorNotice("Casebook case added.");
+  };
+
+  const deleteCasebookCase = (caseLink) => {
+    if (!canEditMemberLinks) return;
+    requestDeleteConfirmation({
+      title: `Delete ${caseLink.label || "this case"}?`,
+      body: "This case will be removed from the BUDS Casebook list.",
+      actionLabel: "Delete Case",
+      onConfirm: () => {
+        const tombstone = {
+          ...caseLink,
+          label: caseLink.label || "Deleted case",
+          description: "__deleted__",
+          url: "__deleted__",
+        };
+        const nextLinks = memberLinks.filter((link) => link.id !== caseLink.id);
+        setMemberLinks(nextLinks);
+        saveStoredPrivateLinks([...nextLinks, tombstone]);
+        upsertPrivateLink(tombstone);
+        showEditorNotice("Casebook case deleted.");
+      },
+    });
   };
 
   const dropMemberLink = (targetId, section) => {
@@ -3454,8 +3606,125 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   </span>
                 )}
               >
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                  {group.links.map((link) => (
+                {group.section === "BUDS Casebook" ? (
+                  <div className="grid gap-2">
+                    {canEditMemberLinks && (
+                      <form onSubmit={addCasebookCase} className="mb-3 grid gap-2 border-2 border-dashed border-[#CC0000] bg-[#fffdfd] p-3">
+                        <div className="grid gap-2 lg:grid-cols-[0.7fr_1.2fr_0.8fr_0.7fr_auto]">
+                          <input
+                            type="text"
+                            value={newCasebookCase.label}
+                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, label: event.target.value }))}
+                            placeholder="Case title"
+                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          />
+                          <input
+                            type="text"
+                            value={newCasebookCase.description}
+                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, description: event.target.value }))}
+                            placeholder="Case statement"
+                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          />
+                          <input
+                            type="url"
+                            value={newCasebookCase.url}
+                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, url: event.target.value }))}
+                            placeholder="Google Doc URL"
+                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          />
+                          <input
+                            type="text"
+                            value={newCasebookCase.topicTags}
+                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, topicTags: event.target.value }))}
+                            placeholder="Tags, max 2"
+                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                          />
+                          <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#a90000]">
+                            Add
+                          </button>
+                        </div>
+                        <HelperText>Separate topic tags with commas. Casebook rows sort alphabetically by title.</HelperText>
+                      </form>
+                    )}
+                    {group.links.map((link) => (
+                      <div
+                        key={link.id}
+                        className="group grid gap-3 border border-[#ded8d2] bg-white p-3 transition hover:border-[#CC0000] hover:bg-[#fffafa] lg:grid-cols-[minmax(12rem,0.55fr)_minmax(18rem,1.35fr)_auto]"
+                      >
+                        <div className="min-w-0">
+                          <div className="mb-1 flex flex-wrap gap-1">
+                            {canEditMemberLinks ? (
+                              <input
+                                type="text"
+                                value={(link.topicTags || []).slice(0, 2).join(", ")}
+                                onChange={(event) => updateMemberLink(link.id, "topicTags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2))}
+                                placeholder="Tags, max 2"
+                                className="w-full border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1 text-[0.68rem] font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
+                              />
+                            ) : (
+                              (link.topicTags || ["Case"]).slice(0, 2).map((tag) => (
+                                <span key={tag} className="inline-flex bg-[#CC0000] px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.12em] text-white">
+                                  {tag}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                          {canEditMemberLinks ? (
+                            <textarea
+                              value={getMemberLinkTitleValue(link)}
+                              onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
+                              rows={1}
+                              className="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-base font-black leading-tight text-[#2D2926] outline-none focus:text-[#CC0000]"
+                            />
+                          ) : (
+                            <h3 className="break-words text-base font-black leading-tight text-[#2D2926]">
+                              <MemberLinkTitle link={link} />
+                            </h3>
+                          )}
+                        </div>
+
+                        {canEditMemberLinks ? (
+                          <textarea
+                            value={link.description}
+                            onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
+                            rows={2}
+                            className="min-h-12 w-full resize-none border-0 bg-transparent p-0 text-sm font-medium leading-5 text-[#5b5450] outline-none focus:text-[#2D2926]"
+                          />
+                        ) : (
+                          <p className="text-sm font-medium leading-5 text-[#5b5450]">{link.description}</p>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                          <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                            Open <ChevronRight className="transition group-hover:translate-x-1" size={15} />
+                          </a>
+                          {canEditMemberLinks && (
+                            <>
+                              <input
+                                type="url"
+                                value={link.url}
+                                onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                                placeholder="https://..."
+                                className="w-full min-w-40 border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000] lg:w-48"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => deleteCasebookCase(link)}
+                                className="grid h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
+                                aria-label={`Delete ${link.label || "case"}`}
+                                title="Delete case"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    {group.links.map((link) => (
                     <div
                       key={link.id}
                       draggable={canEditMemberLinks}
@@ -3467,7 +3736,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     >
                       <div className="mb-7">
                         <span className="inline-flex bg-[#CC0000] px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.18em] text-white">
-                          {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : "Team Link"}
+                          {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : group.section === "BUDS Casebook" ? "Case" : "Team Link"}
                         </span>
                       </div>
                       {canEditMemberLinks ? (
@@ -3515,21 +3784,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                               />
                             </label>
-                            <div className="flex items-center justify-between gap-2 border-t border-[#ded8d2] pt-3">
-                              <HelperText>Drag this tile or use buttons to reorder within the section.</HelperText>
-                              <ReorderButtons
-                                onMoveUp={() => moveMemberLink(link.id, -1, group.section)}
-                                onMoveDown={() => moveMemberLink(link.id, 1, group.section)}
-                                disabledUp={group.links.findIndex((item) => item.id === link.id) === 0}
-                                disabledDown={group.links.findIndex((item) => item.id === link.id) === group.links.length - 1}
-                              />
-                            </div>
                           </>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </SmoothDetails>
             ))}
           </div>
@@ -3628,15 +3889,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                             />
                           </label>
-                          <div className="flex items-center justify-between gap-2 border-t border-[#ded8d2] pt-3">
-                            <HelperText>Drag this tile or use buttons to reorder within the section.</HelperText>
-                            <ReorderButtons
-                              onMoveUp={() => moveMemberLink(link.id, -1, "Forms")}
-                              onMoveDown={() => moveMemberLink(link.id, 1, "Forms")}
-                              disabledUp={nonCompetitiveFormLinks.findIndex((item) => item.id === link.id) === 0}
-                              disabledDown={nonCompetitiveFormLinks.findIndex((item) => item.id === link.id) === nonCompetitiveFormLinks.length - 1}
-                            />
-                          </div>
                         </>
                       )}
                     </div>
@@ -3655,20 +3907,20 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </span>
             )}
           >
-            <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-            <Card className="p-5">
-              <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card className="p-4">
+              <div className="flex flex-col gap-3 border-b-2 border-[#CC0000] pb-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <Eyebrow>Terrier Central</Eyebrow>
-                  <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">Requesting a Reimbursement</h2>
-                  <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[#5b5450]">
+                  <h2 className="mt-1 text-2xl font-black leading-tight text-[#2D2926]">Requesting a Reimbursement</h2>
+                  <p className="mt-1 max-w-2xl text-sm font-semibold leading-5 text-[#5b5450]">
                     Use Terrier Central after you make an approved club purchase. Keep receipts and any event approval documentation ready before starting.
                   </p>
                 </div>
-                <DollarSign className="shrink-0 text-[#CC0000]" size={34} />
+                <DollarSign className="shrink-0 text-[#CC0000]" size={28} />
               </div>
 
-              <ol className="mt-5 grid gap-4">
+              <ol className="mt-4 grid gap-2">
                 {[
                   {
                     title: "Log in to Terrier Central",
@@ -3695,51 +3947,51 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     body: "For reviewer, enter njsaxena@bu.edu and submit.",
                   },
                 ].map((step, index) => (
-                  <li key={step.title} className="grid gap-3 border border-[#ded8d2] bg-white p-4 sm:grid-cols-[3rem_1fr]">
-                    <span className="grid h-10 w-10 place-items-center bg-[#2D2926] text-sm font-black text-white">{index + 1}</span>
+                  <li key={step.title} className="grid gap-3 border border-[#ded8d2] bg-white p-3 sm:grid-cols-[2.25rem_1fr]">
+                    <span className="grid h-8 w-8 place-items-center bg-[#2D2926] text-xs font-black text-white">{index + 1}</span>
                     <div>
-                      <h3 className="text-lg font-black text-[#2D2926]">{step.title}</h3>
-                      <p className="mt-1 text-sm font-medium leading-6 text-[#5b5450]">{step.body}</p>
+                      <h3 className="text-base font-black text-[#2D2926]">{step.title}</h3>
+                      <p className="mt-0.5 text-sm font-medium leading-5 text-[#5b5450]">{step.body}</p>
                     </div>
                   </li>
                 ))}
               </ol>
 
-              <a href="https://terriercentral.bu.edu/" target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-2 bg-[#CC0000] px-5 py-3 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-[#a90000]">
+              <a href="https://terriercentral.bu.edu/" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2.5 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-[#a90000]">
                 Open Terrier Central <ExternalLink size={16} />
               </a>
             </Card>
 
-            <div className="grid gap-5">
-              <Card className="p-5">
+            <div className="grid gap-4">
+              <Card className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Eyebrow>Timeline</Eyebrow>
-                    <h2 className="mt-2 text-2xl font-black text-[#2D2926]">What Happens Next</h2>
+                    <h2 className="mt-1 text-xl font-black text-[#2D2926]">What Happens Next</h2>
                   </div>
-                  <FileText className="text-[#CC0000]" size={28} />
+                  <FileText className="text-[#CC0000]" size={24} />
                 </div>
-                <div className="mt-5 grid gap-3">
+                <div className="mt-4 grid gap-2">
                   {[
                     "You should receive an SAO email confirming the submission.",
                     "Expect approval, denial, or a revision request in 3-5 business days.",
                     "If approved, checks are usually ready in about 2 weeks at the GSU 2nd floor.",
                   ].map((item) => (
-                    <p key={item} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-semibold leading-6 text-[#2D2926]">
+                    <p key={item} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2 text-sm font-semibold leading-5 text-[#2D2926]">
                       {item}
                     </p>
                   ))}
                 </div>
               </Card>
 
-              <Card className="p-5">
+              <Card className="p-4">
                 <Eyebrow>Before You Submit</Eyebrow>
-                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Have These Ready</h2>
-                <ul className="mt-5 grid gap-3 text-sm font-semibold leading-6 text-[#5b5450]">
-                  <li className="border border-[#ded8d2] bg-white p-3">Receipt for each purchase.</li>
-                  <li className="border border-[#ded8d2] bg-white p-3">Event approval screenshot from SLIC for event/tournament requests.</li>
-                  <li className="border border-[#ded8d2] bg-white p-3">Your current mailing address, phone number, BU email, and BU ID.</li>
-                  <li className="border border-[#ded8d2] bg-white p-3">A short description of what the purchase was used for.</li>
+                <h2 className="mt-1 text-xl font-black text-[#2D2926]">Have These Ready</h2>
+                <ul className="mt-4 grid gap-2 text-sm font-semibold leading-5 text-[#5b5450]">
+                  <li className="border border-[#ded8d2] bg-white p-2.5">Receipt for each purchase.</li>
+                  <li className="border border-[#ded8d2] bg-white p-2.5">Event approval screenshot from SLIC for event/tournament requests.</li>
+                  <li className="border border-[#ded8d2] bg-white p-2.5">Your mailing address, phone number, BU email, and BU ID.</li>
+                  <li className="border border-[#ded8d2] bg-white p-2.5">A short description of what the purchase was used for.</li>
                 </ul>
               </Card>
             </div>
@@ -4228,10 +4480,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </div>
             )}
           </Card>
-          <div className="border-b-4 border-[#CC0000] pb-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Meeting Tools</p>
-            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Meeting notes and public announcements</h2>
-          </div>
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("meetings")}
+          >
+          <div className="grid gap-5">
           <div className="grid">
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
               <button
@@ -4382,7 +4635,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           type="text"
                           value={meetingAnnouncement.announcementTitle}
                           onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementTitle: event.target.value }))}
-                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          disabled={!canEditBudsiteTitles}
+                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                         />
                       </label>
                       <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -4403,11 +4657,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
-
-          <div className="border-b-4 border-[#CC0000] pb-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Novice Hub Editors</p>
-            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Beginner education and FAQ content</h2>
           </div>
+          </SmoothDetails>
+
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("novice")}
+          >
+          <div className="grid gap-5">
 
           {isAdmin && (
             <Card className="flex min-h-0 flex-col p-4 sm:p-5">
@@ -4497,7 +4754,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             <input
                               value={step.title}
                               onChange={(event) => updateNoviceSpeechStep(step.id, "title", event.target.value)}
-                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              disabled={!canEditBudsiteTitles}
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                             />
                           </label>
                           <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -4569,7 +4827,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             value={newNoviceFaq.question}
                             onChange={(event) => setNewNoviceFaq((current) => ({ ...current, question: event.target.value }))}
                             placeholder="What is a tight call?"
-                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            disabled={!canEditBudsiteTitles}
+                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                           />
                         </label>
                         <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -4606,7 +4865,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               <input
                                 value={faq.question}
                                 onChange={(event) => updateNoviceFaq(faq.id, "question", event.target.value)}
-                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                disabled={!canEditBudsiteTitles}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                               />
                             </label>
                             <button
@@ -4636,11 +4896,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
-
-          <div className="border-b-4 border-[#CC0000] pb-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Public People</p>
-            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Current e-board profiles and photos</h2>
           </div>
+          </SmoothDetails>
+
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("eboard")}
+          >
+          <div className="grid gap-5">
 
           <Card className="flex min-h-0 flex-col p-4 sm:p-5">
             <button
@@ -4685,7 +4948,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               value={newEboardMember.name}
                               onChange={(event) => setNewEboardMember((current) => ({ ...current, name: event.target.value }))}
                               placeholder="New officer name"
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              disabled={!canEditBudsiteTitles}
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -4695,7 +4959,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               value={newEboardMember.role}
                               onChange={(event) => setNewEboardMember((current) => ({ ...current, role: event.target.value }))}
                               placeholder="President"
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              disabled={!canEditBudsiteTitles}
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -4769,7 +5034,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 <input
                                   value={member.name}
                                   onChange={(event) => updateEboardMember(member.id, "name", event.target.value)}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                  disabled={!canEditBudsiteTitles}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                                 />
                               </label>
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -4777,7 +5043,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 <input
                                   value={member.role}
                                   onChange={(event) => updateEboardMember(member.id, "role", event.target.value)}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                  disabled={!canEditBudsiteTitles}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                                 />
                               </label>
                             </div>
@@ -4811,11 +5078,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
-
-          <div className="border-b-4 border-[#CC0000] pb-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Trophies / APDA</p>
-            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Results, achievements, and standings updates</h2>
           </div>
+          </SmoothDetails>
+
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("trophies")}
+          >
+          <div className="grid gap-5">
 
           <Card className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
@@ -5010,7 +5280,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <HelperText>Use short public stats. Labels that come from APDA may be overwritten by the APDA updater.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
                     <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                    <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                     <input value={newTrophyStat.detail} onChange={(event) => setNewTrophyStat((current) => ({ ...current, detail: event.target.value }))} placeholder="Detail" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                   </div>
@@ -5028,7 +5298,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[0.35fr_0.75fr_1fr_auto]"
                     >
                       <input value={stat.value} onChange={(event) => updateTrophyItem("stats", stat.id, "value", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                      <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
+                      <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                       <input value={stat.detail} onChange={(event) => updateTrophyItem("stats", stat.id, "detail", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                       <div className="flex items-center gap-2">
                         <ReorderButtons onMoveUp={() => moveTrophyItem("stats", index, -1)} onMoveDown={() => moveTrophyItem("stats", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.stats.length - 1} />
@@ -5078,7 +5348,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                     <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                    <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                    <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                   </div>
                   <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -5097,7 +5367,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     >
                       <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                         <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                        <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000]" />
+                        <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                         <div className="flex items-center gap-2">
                           <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.milestones.length - 1} />
                           <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
@@ -5207,7 +5477,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <HelperText>Use one highlight per line. Keep wording consistent with the public Trophies page.</HelperText>
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                  <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                  <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                 </div>
                 <textarea value={newTrophyResult.highlights} onChange={(event) => setNewTrophyResult((current) => ({ ...current, highlights: event.target.value }))} placeholder="One highlight per line" rows={4} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -5233,7 +5503,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   >
                     <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                       <input type="date" value={result.date} onChange={(event) => updateTrophyResult(result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                      <input value={result.tournament} onChange={(event) => updateTrophyResult(result.id, "tournament", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                      <input value={result.tournament} onChange={(event) => updateTrophyResult(result.id, "tournament", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
                       <div className="flex items-center gap-2">
                         <ReorderButtons onMoveUp={() => moveTrophyResult(result.id, 1)} onMoveDown={() => moveTrophyResult(result.id, -1)} disabledUp={originalIndex === (selectedTrophySeason?.results || []).length - 1} disabledDown={originalIndex === 0} />
                         <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyResult(result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
@@ -5259,10 +5529,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
-          <div className="border-b-4 border-[#CC0000] pb-2">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Landing Page</p>
-            <h2 className="mt-1 text-xl font-black text-[#2D2926]">Homepage carousel photos and captions</h2>
           </div>
+          </SmoothDetails>
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("home")}
+          >
+          <div className="grid gap-5">
           <Card className="flex min-h-0 flex-col p-4 sm:p-5">
             <button
               type="button"
@@ -5322,7 +5595,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               value={newCarouselSlide.kicker}
                               onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
                               placeholder="Tournament"
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              disabled={!canEditBudsiteTitles}
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                             />
                           </label>
                         </div>
@@ -5394,7 +5668,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 <input
                                   value={slide.kicker}
                                   onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                  disabled={!canEditBudsiteTitles}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                                 />
                               </label>
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -5444,6 +5719,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
+          </div>
+          </SmoothDetails>
         </div>
       )}
         </motion.div>
