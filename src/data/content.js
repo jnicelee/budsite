@@ -9,6 +9,14 @@ export const navItems = [
   { label: "Contact", href: "/contact" },
 ];
 
+export const defaultBudsiteEditorSectionTitles = {
+  meetings: { eyebrow: "Meeting Tools", title: "Meeting notes and public announcements", count: "2 editors" },
+  novice: { eyebrow: "Novice Hub Editors", title: "Beginner education and FAQ content", count: "2 editors" },
+  eboard: { eyebrow: "Public People", title: "Current e-board profiles and photos", count: "1 editor" },
+  trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
+  home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
+};
+
 export const homeCarouselSlides = [
   {
     src: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1200&q=80",

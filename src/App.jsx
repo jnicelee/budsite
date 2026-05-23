@@ -54,9 +54,11 @@ import {
   MEMBER_MANAGER_EMAILS,
   MEMBERSHIP_REQUEST_STATUSES,
   RESERVED_ACCOUNT_EMAILS,
+  TITLE_EDITING_TOGGLE_EMAIL,
 } from "./data/config";
 import {
   apdaSourceUrl,
+  defaultBudsiteEditorSectionTitles,
   getPrivateLinkSection,
   navItems,
   noviceResources,
@@ -91,9 +93,11 @@ import {
   updateMemberAccountRole,
   updateMembershipRequestStatus,
   upsertAgendaItem,
+  upsertAdminControlSettings,
   upsertBudgetRevenueRow,
   upsertBudgetRow,
   upsertBudgetSettings,
+  upsertBudsiteEditorSectionTitles,
   upsertContentRevisions,
   upsertEboardContent,
   upsertHomeContent,
@@ -121,6 +125,8 @@ import {
   normalizeEboardContent,
   normalizeHomeContent,
   normalizeMeetingsContent,
+  normalizeBudsiteEditorSectionTitles,
+  normalizeAdminControlSettings,
   normalizeNoviceContent,
   normalizeTrophiesContent,
   saveStoredAgenda,
@@ -391,28 +397,25 @@ function normalizeComparisonValue(value) {
 
 const BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY = "buds-budsite-editor-section-titles";
 
-const defaultBudsiteEditorSectionTitles = {
-  meetings: { eyebrow: "Meeting Tools", title: "Meeting notes and public announcements", count: "2 editors" },
-  novice: { eyebrow: "Novice Hub Editors", title: "Beginner education and FAQ content", count: "2 editors" },
-  eboard: { eyebrow: "Public People", title: "Current e-board profiles and photos", count: "1 editor" },
-  trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
-  home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
-};
-
 function getStoredBudsiteEditorSectionTitles() {
   try {
     const stored = window.localStorage.getItem(BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY);
-    return {
-      ...defaultBudsiteEditorSectionTitles,
-      ...(stored ? JSON.parse(stored) : {}),
-    };
+    return normalizeBudsiteEditorSectionTitles(stored ? JSON.parse(stored) : defaultBudsiteEditorSectionTitles);
   } catch {
-    return defaultBudsiteEditorSectionTitles;
+    return normalizeBudsiteEditorSectionTitles(defaultBudsiteEditorSectionTitles);
   }
 }
 
 function saveStoredBudsiteEditorSectionTitles(titles) {
-  window.localStorage.setItem(BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY, JSON.stringify(titles));
+  window.localStorage.setItem(BUDSITE_EDITOR_SECTION_TITLE_STORAGE_KEY, JSON.stringify(normalizeBudsiteEditorSectionTitles(titles)));
+}
+
+function hasCustomBudsiteEditorSectionTitles(titles) {
+  const normalizedTitles = normalizeBudsiteEditorSectionTitles(titles);
+  const defaultTitles = normalizeBudsiteEditorSectionTitles(defaultBudsiteEditorSectionTitles);
+  return Object.entries(normalizedTitles).some(([id, sectionTitle]) => (
+    sectionTitle.eyebrow !== defaultTitles[id]?.eyebrow || sectionTitle.title !== defaultTitles[id]?.title
+  ));
 }
 
 function hasDuplicateValue(items, value, selector = (item) => item, ignoreId = "") {
@@ -2139,15 +2142,18 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [editorNotice, setEditorNotice] = useState({ type: "", message: "" });
   const [dragItem, setDragItem] = useState(null);
   const [previewDraftId, setPreviewDraftId] = useState("");
+  const [adminControlSettings, setAdminControlSettings] = useState(() => normalizeAdminControlSettings());
+  const initialBudsiteEditorSectionTitlesRef = useRef(budsiteEditorSectionTitles);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
+  const isTitleEditingToggleAccount = auth?.email?.toLowerCase() === TITLE_EDITING_TOGGLE_EMAIL;
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEditWorkspace = isEboard;
   const canEditMemberLinks = isAdmin;
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
-  const canEditBudsiteTitles = isAdmin;
+  const canEditBudsiteTitles = isAdmin && (!isTitleEditingToggleAccount || adminControlSettings.titleEditingEnabledForYeon);
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -2199,17 +2205,28 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     setEditorNotice({ type, message });
   };
 
+  const toggleTitleEditingForYeon = () => {
+    if (!isAdmin) return;
+    const nextSettings = normalizeAdminControlSettings({
+      ...adminControlSettings,
+      titleEditingEnabledForYeon: !adminControlSettings.titleEditingEnabledForYeon,
+    });
+    setAdminControlSettings(nextSettings);
+    upsertAdminControlSettings(nextSettings);
+  };
+
   const updateBudsiteEditorSectionTitle = (id, field, value) => {
     if (!canEditBudsiteTitles) return;
-    const nextTitles = {
+    const nextTitles = normalizeBudsiteEditorSectionTitles({
       ...budsiteEditorSectionTitles,
       [id]: {
         ...(budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id]),
         [field]: value,
       },
-    };
+    });
     setBudsiteEditorSectionTitles(nextTitles);
     saveStoredBudsiteEditorSectionTitles(nextTitles);
+    upsertBudsiteEditorSectionTitles(nextTitles);
   };
 
   const renderBudsiteEditorSectionTitle = (id) => {
@@ -2434,6 +2451,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         setDraftHomeContent((current) => current || databaseState.homeContent);
         onHomeContentChange(databaseState.homeContent);
       }
+      if (databaseState.budsiteEditorSectionTitles) {
+        setBudsiteEditorSectionTitles(databaseState.budsiteEditorSectionTitles);
+        saveStoredBudsiteEditorSectionTitles(databaseState.budsiteEditorSectionTitles);
+      } else if (isAdmin && hasCustomBudsiteEditorSectionTitles(initialBudsiteEditorSectionTitlesRef.current)) {
+        upsertBudsiteEditorSectionTitles(initialBudsiteEditorSectionTitlesRef.current);
+      }
+      if (databaseState.adminControlSettings) {
+        setAdminControlSettings(databaseState.adminControlSettings);
+      }
       saveStoredAgenda(databaseState.agenda);
       saveStoredNotes(databaseState.notes);
       saveStoredBudget(databaseState.budget);
@@ -2447,7 +2473,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     return () => {
       ignore = true;
     };
-  }, [onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
+  }, [isAdmin, onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
 
   useEffect(() => {
     let ignore = false;
@@ -3499,25 +3525,49 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             Log out <LogOut size={15} />
           </button>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-[#ded8d2] pt-3">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#ded8d2] pt-3">
           {isAdmin && (
-            <span className="bg-[#2D2926] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
+            <span className="inline-flex h-8 items-center bg-[#2D2926] px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-white">
               Administrator
             </span>
           )}
           {!isAdmin && auth?.role === "eboard" && (
-            <span className="bg-[#CC0000] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
+            <span className="inline-flex h-8 items-center bg-[#CC0000] px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-white">
               E-Board
             </span>
           )}
           {!isAdmin && canManageMembers && (
-            <span className="bg-[#CC0000] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] text-white">
+            <span className="inline-flex h-8 items-center bg-[#CC0000] px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-white">
               Member Manager
             </span>
           )}
-          <span className={`px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.1em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
+          <span className={`inline-flex h-8 items-center px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
             {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
           </span>
+          {isAdmin && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={adminControlSettings.titleEditingEnabledForYeon}
+              onClick={toggleTitleEditingForYeon}
+              className="inline-flex h-8 items-center gap-2 border border-[#ded8d2] bg-white px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] md:ml-auto"
+            >
+              <span
+                className={`h-3 w-6 rounded-full border transition ${
+                  adminControlSettings.titleEditingEnabledForYeon
+                    ? "border-[#79c792] bg-[#a8e6ba]"
+                    : "border-[#8a0000] bg-[#fff1f1]"
+                }`}
+              >
+                <span
+                  className={`block h-full w-1/2 rounded-full bg-white transition ${
+                    adminControlSettings.titleEditingEnabledForYeon ? "translate-x-full" : "translate-x-0"
+                  }`}
+                />
+              </span>
+              Edit Mode
+            </button>
+          )}
         </div>
       </div>
 

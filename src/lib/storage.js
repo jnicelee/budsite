@@ -15,6 +15,7 @@ import {
 } from "../data/config";
 import {
   agendaItems,
+  defaultBudsiteEditorSectionTitles,
   defaultEboardContent,
   defaultHomeContent,
   defaultNoviceContent,
@@ -205,6 +206,28 @@ export function getStoredHomeContent() {
 
 export function saveStoredHomeContent(content) {
   window.localStorage.setItem(HOME_CONTENT_STORAGE_KEY, JSON.stringify(normalizeHomeContent(content)));
+}
+
+export function normalizeBudsiteEditorSectionTitles(titles = defaultBudsiteEditorSectionTitles) {
+  return Object.fromEntries(
+    Object.entries(defaultBudsiteEditorSectionTitles).map(([id, defaults]) => {
+      const title = titles?.[id] || {};
+      return [
+        id,
+        {
+          eyebrow: title.eyebrow ?? defaults.eyebrow,
+          title: title.title ?? defaults.title,
+          count: defaults.count,
+        },
+      ];
+    })
+  );
+}
+
+export function normalizeAdminControlSettings(settings = {}) {
+  return {
+    titleEditingEnabledForYeon: settings.titleEditingEnabledForYeon !== false,
+  };
 }
 
 export function normalizeHomeContent(content = defaultHomeContent) {
