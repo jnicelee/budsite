@@ -364,6 +364,77 @@ function SaveNotice({ notice }) {
   );
 }
 
+function PrepOutModal({ open, prepOut, onChange, onCancel, onSubmit }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <motion.form
+            onSubmit={onSubmit}
+            className="w-full max-w-2xl border border-[#ded8d2] bg-white p-5 shadow-[0_28px_80px_rgba(45,41,38,0.24)]"
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Eyebrow>BUDS Prep Outs</Eyebrow>
+            <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">Add a Prep-Out</h2>
+            <div className="mt-5 grid gap-3">
+              <input
+                value={prepOut.label}
+                onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))}
+                placeholder="Case name"
+                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
+              />
+              <input
+                value={prepOut.topicTags}
+                onChange={(event) => onChange((current) => ({ ...current, topicTags: event.target.value }))}
+                placeholder="Team / institution tags, max 2"
+                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+              />
+              <textarea
+                value={prepOut.description}
+                onChange={(event) => onChange((current) => ({ ...current, description: event.target.value }))}
+                rows={4}
+                placeholder="Case statement / background"
+                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#2D2926] outline-none focus:border-[#CC0000]"
+              />
+              <input
+                type="url"
+                value={prepOut.url}
+                onChange={(event) => onChange((current) => ({ ...current, url: event.target.value }))}
+                placeholder="Google Doc URL"
+                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+              />
+            </div>
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] transition duration-200 hover:border-[#2D2926] hover:bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-200 hover:bg-[#a90000]"
+              >
+                Add Prep-Out
+              </button>
+            </div>
+          </motion.form>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function ReorderButtons({ onMoveUp, onMoveDown, disabledUp = false, disabledDown = false }) {
   return (
     <div className="flex gap-1">
@@ -2126,6 +2197,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [newRevenueAmount, setNewRevenueAmount] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
   const [newCasebookCase, setNewCasebookCase] = useState({ label: "", description: "", url: "", topicTags: "" });
+  const [newPrepOut, setNewPrepOut] = useState({ label: "", description: "", url: "", topicTags: "" });
+  const [prepOutModalOpen, setPrepOutModalOpen] = useState(false);
+  const [resourceSearches, setResourceSearches] = useState({});
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
   const [newTrophyStat, setNewTrophyStat] = useState({ value: "", label: "", detail: "" });
   const [newTrophyAccomplishment, setNewTrophyAccomplishment] = useState("");
@@ -2160,6 +2234,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canWriteNotes = isEboard;
   const canEditBudsiteTitles = isAdmin && (!isTitleEditingToggleAccount || adminControlSettings.titleEditingEnabledForYeon);
   const canEditCasebookLinks = canEditMemberLinks && canEditBudsiteTitles;
+  const canEditMemberLinkTileContent = canEditMemberLinks && canEditBudsiteTitles;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -2193,12 +2268,23 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     links: memberLinks
       .filter((link) => getPrivateLinkSection(link) === section)
       .sort((a, b) => (
-        section === "BUDS Casebook"
+        ["BUDS Casebook", "BUDS Prep Outs"].includes(section)
           ? getMemberLinkTitleValue(a).localeCompare(getMemberLinkTitleValue(b), undefined, { sensitivity: "base" })
           : 0
       )),
   })).filter((group) => group.links.length > 0 && !["Forms", "Debater Resources"].includes(group.section));
   const nonCompetitiveFormLinks = memberLinks.filter((link) => getPrivateLinkSection(link) === "Forms");
+  const prepOutRequestLink = memberLinks.find((link) => link.id === "link-prep-out");
+  const getFilteredResourceLinks = (group) => {
+    const query = (resourceSearches[group.section] || "").trim().toLowerCase();
+    if (!query) return group.links;
+    return group.links.filter((link) => [
+      getMemberLinkTitleValue(link),
+      link.description,
+      link.url,
+      ...(link.topicTags || []),
+    ].join(" ").toLowerCase().includes(query));
+  };
   const contentDashboardItems = [
     { id: "home", title: "Landing Page", href: "/", draft: draftHomeContent, published: homeContent },
     { id: "trophies", title: "Trophies", href: "/trophies", draft: draftTrophiesContent, published: trophiesContent },
@@ -2934,12 +3020,48 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     showEditorNotice("Casebook case added.");
   };
 
+  const addPrepOut = (event) => {
+    event.preventDefault();
+    if (!canEditMemberLinks) return;
+    const label = newPrepOut.label.trim();
+    const description = newPrepOut.description.trim();
+    const url = newPrepOut.url.trim();
+    if (!label || !description || !url) {
+      showEditorNotice("Add a prep-out title, case statement, and link before saving.", "error");
+      return;
+    }
+
+    const topicTags = newPrepOut.topicTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 2);
+    const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "prep-out";
+    const nextPrepOut = {
+      id: `prepout-${slug}-${Date.now()}`,
+      section: "BUDS Prep Outs",
+      order: memberLinks.length + 1,
+      label,
+      description,
+      url,
+      topicTags,
+    };
+    const nextLinks = [...memberLinks, nextPrepOut];
+    setMemberLinks(nextLinks);
+    saveStoredPrivateLinks(nextLinks);
+    upsertPrivateLink(nextPrepOut);
+    setNewPrepOut({ label: "", description: "", url: "", topicTags: "" });
+    setPrepOutModalOpen(false);
+    showEditorNotice("Prep-out added.");
+  };
+
   const deleteCasebookCase = (caseLink) => {
     if (!canEditMemberLinks) return;
+    const resourceLabel = getPrivateLinkSection(caseLink) === "BUDS Prep Outs" ? "prep out" : "case";
     requestDeleteConfirmation({
-      title: `Delete ${caseLink.label || "this case"}?`,
-      body: "This case will be removed from the BUDS Casebook list.",
-      actionLabel: "Delete Case",
+      title: `Delete ${caseLink.label || `this ${resourceLabel}`}?`,
+      body: `This ${resourceLabel} will be removed from the ${getPrivateLinkSection(caseLink)} list.`,
+      actionLabel: `Delete ${resourceLabel}`,
       onConfirm: () => {
         const tombstone = {
           ...caseLink,
@@ -3586,6 +3708,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
 
   return (
+    <>
     <Page className={isEboard ? "max-w-[98rem] py-4 md:py-5" : ""}>
       <div className="mb-3 border-b-4 border-[#CC0000] bg-white px-4 py-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:px-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -3715,13 +3838,34 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
                 defaultOpen={group.section === "BUDS Team Specific Links"}
                 title={renderEditableDropdownTitle(
-                  group.section === "BUDS Casebook" ? "memberCasebook" : "memberTeamLinks",
+                  group.section === "BUDS Casebook" ? "memberCasebook" : group.section === "BUDS Prep Outs" ? "memberPrepOuts" : "memberTeamLinks",
                   `${group.links.length} links`
                 )}
               >
-                {group.section === "BUDS Casebook" ? (
+                {["BUDS Casebook", "BUDS Prep Outs"].includes(group.section) ? (
                   <div className="grid gap-2">
-                    {canEditCasebookLinks && (
+                    {(() => {
+                      const filteredLinks = getFilteredResourceLinks(group);
+                      return (
+                        <>
+                    {group.section === "BUDS Prep Outs" && (
+                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                        <p>
+                          The purpose of this section is to make and collect pre-prepared LOCs for cases that come up frequently in the league. Some of the cases also have copies of the PMC or MG spikes and overview (if we have access to them) or potential ideas for MO ballots. Each of the prep outs should have a relatively standardized heading with the case name and which team wrote/runs the case. Everyone is welcome to add or request prep outs but we ask that you do your best to adhere to the headings so we have sources and clear labels for everything.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <a href={prepOutRequestLink?.url || "#"} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                            Prep-Out Request Form <ChevronRight size={14} />
+                          </a>
+                          {canEditMemberLinks && (
+                            <button type="button" onClick={() => setPrepOutModalOpen(true)} className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                              Add a Prep-Out <ChevronRight size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {group.section === "BUDS Casebook" && canEditCasebookLinks && (
                       <form onSubmit={addCasebookCase} className="mb-3 grid gap-2 border-2 border-dashed border-[#CC0000] bg-[#fffdfd] p-3">
                         <div className="grid gap-2 lg:grid-cols-[0.7fr_1.2fr_0.8fr_0.7fr_auto]">
                           <input
@@ -3759,81 +3903,102 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <HelperText>Separate topic tags with commas. Casebook rows sort alphabetically by title.</HelperText>
                       </form>
                     )}
-                    {group.links.map((link) => (
-                      <div
-                        key={link.id}
-                        className="group grid gap-3 border border-[#ded8d2] bg-white p-3 transition hover:border-[#CC0000] hover:bg-[#fffafa] lg:grid-cols-[minmax(12rem,0.55fr)_minmax(18rem,1.35fr)_auto]"
-                      >
-                        <div className="min-w-0">
-                          <div className="mb-1 flex flex-wrap gap-1">
-                            {canEditCasebookLinks ? (
-                              <input
-                                type="text"
-                                value={(link.topicTags || []).slice(0, 2).join(", ")}
-                                onChange={(event) => updateMemberLink(link.id, "topicTags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2))}
-                                placeholder="Tags, max 2"
-                                className="w-full border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1 text-[0.68rem] font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
-                              />
-                            ) : (
-                              (link.topicTags || ["Case"]).slice(0, 2).map((tag) => (
-                                <span key={tag} className="inline-flex bg-[#CC0000] px-2 py-1 text-[0.62rem] font-black uppercase tracking-[0.12em] text-white">
-                                  {tag}
-                                </span>
-                              ))
-                            )}
+                    <div className="mb-2 grid gap-1">
+                      <label className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]" htmlFor={`resource-search-${group.section.replace(/\s+/g, "-").toLowerCase()}`}>
+                        Search {group.section}
+                      </label>
+                      <input
+                        id={`resource-search-${group.section.replace(/\s+/g, "-").toLowerCase()}`}
+                        type="search"
+                        value={resourceSearches[group.section] || ""}
+                        onChange={(event) => setResourceSearches((current) => ({ ...current, [group.section]: event.target.value }))}
+                        placeholder="Search by case, statement, tag, or link"
+                        className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-semibold text-[#2D2926] outline-none transition focus:border-[#CC0000]"
+                      />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                      {filteredLinks.map((link) => (
+                        <div
+                          key={link.id}
+                          className="group flex min-h-[12rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.045)] transition hover:border-[#CC0000] hover:bg-[#fffafa] hover:shadow-[0_18px_40px_rgba(45,41,38,0.09)]"
+                        >
+                          <div className="mb-3 flex flex-wrap gap-1.5">
+                              {canEditCasebookLinks ? (
+                                <input
+                                  type="text"
+                                  value={(link.topicTags || []).slice(0, 2).join(", ")}
+                                  onChange={(event) => updateMemberLink(link.id, "topicTags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2))}
+                                  placeholder="Tags, max 2"
+                                  className="w-full border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1 text-[0.68rem] font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
+                                />
+                              ) : (
+                                (link.topicTags || ["Case"]).slice(0, 2).map((tag) => (
+                                  <span key={tag} className="inline-flex bg-[#CC0000] px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.1em] text-white">
+                                    {tag}
+                                  </span>
+                                ))
+                              )}
                           </div>
                           {canEditCasebookLinks ? (
                             <textarea
                               value={getMemberLinkTitleValue(link)}
                               onChange={(event) => updateMemberLink(link.id, "label", event.target.value)}
                               rows={1}
-                              className="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-base font-black leading-tight text-[#2D2926] outline-none focus:text-[#CC0000]"
+                              className="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-xl font-black leading-tight text-[#2D2926] outline-none focus:text-[#CC0000]"
                             />
                           ) : (
-                            <h3 className="break-words text-base font-black leading-tight text-[#2D2926]">
+                            <h3 className="break-words text-xl font-black leading-tight text-[#2D2926]">
                               <MemberLinkTitle link={link} />
                             </h3>
                           )}
-                        </div>
 
-                        {canEditCasebookLinks ? (
-                          <textarea
-                            value={link.description}
-                            onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
-                            rows={2}
-                            className="min-h-12 w-full resize-none border-0 bg-transparent p-0 text-sm font-medium leading-5 text-[#5b5450] outline-none focus:text-[#2D2926]"
-                          />
-                        ) : (
-                          <p className="text-sm font-medium leading-5 text-[#5b5450]">{link.description}</p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                          <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
-                            Open <ChevronRight className="transition group-hover:translate-x-1" size={15} />
-                          </a>
-                          {canEditCasebookLinks && (
-                            <>
-                              <input
-                                type="url"
-                                value={link.url}
-                                onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
-                                placeholder="https://..."
-                                className="w-full min-w-40 border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000] lg:w-48"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => deleteCasebookCase(link)}
-                                className="grid h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
-                                aria-label={`Delete ${link.label || "case"}`}
-                                title="Delete case"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </>
+                          {canEditCasebookLinks ? (
+                            <textarea
+                              value={link.description}
+                              onChange={(event) => updateMemberLink(link.id, "description", event.target.value)}
+                              rows={3}
+                              className="mt-3 min-h-16 w-full flex-1 resize-none overflow-hidden border-0 bg-transparent p-0 text-sm font-medium leading-5 text-[#5b5450] outline-none focus:text-[#2D2926]"
+                            />
+                          ) : (
+                            <p className="mt-3 flex-1 text-sm font-medium leading-5 text-[#5b5450]">{link.description}</p>
                           )}
+
+                          <div className="mt-4 flex flex-wrap items-center border-t border-[#ded8d2] pt-3 gap-2">
+                            <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                              Open <ChevronRight className="transition group-hover:translate-x-1" size={12} />
+                            </a>
+                            {canEditCasebookLinks && (
+                              <>
+                                <input
+                                  type="url"
+                                  value={link.url}
+                                  onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                                  placeholder="https://..."
+                                  className="min-w-0 flex-1 border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => deleteCasebookCase(link)}
+                                  className="grid h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
+                                  aria-label={`Delete ${link.label || (group.section === "BUDS Prep Outs" ? "prep out" : "case")}`}
+                                  title={group.section === "BUDS Prep Outs" ? "Delete prep out" : "Delete case"}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    {filteredLinks.length === 0 && (
+                      <p className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-4 text-sm font-bold text-[#6d6560]">
+                        No matching resources.
+                      </p>
+                    )}
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
@@ -3852,7 +4017,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           {group.section === "Forms" ? "Form" : group.section === "Debater Resources" ? "Resource" : group.section === "BUDS Casebook" ? "Case" : "Team Link"}
                         </span>
                       </div>
-                      {canEditMemberLinks ? (
+                      {canEditMemberLinkTileContent ? (
                         <>
                           <label className="grid gap-2">
                             <span className="sr-only">Link Name</span>
@@ -3886,7 +4051,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#CC0000]">
                           Open link <ChevronRight className="transition group-hover:translate-x-1" size={14} />
                         </a>
-                        {canEditMemberLinks && (
+                        {canEditMemberLinkTileContent && (
                           <>
                             <label className="grid gap-1 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">
                               Edit URL
@@ -3943,7 +4108,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         Form
                       </span>
                     </div>
-                    {canEditMemberLinks ? (
+                    {canEditMemberLinkTileContent ? (
                       <>
                         <label className="grid gap-2">
                           <span className="sr-only">Link Name</span>
@@ -3977,7 +4142,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <a href={link.url || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[0.7rem] font-black uppercase tracking-[0.1em] text-[#CC0000]">
                         Open link <ChevronRight className="transition group-hover:translate-x-1" size={14} />
                       </a>
-                      {canEditMemberLinks && (
+                      {canEditMemberLinkTileContent && (
                         <>
                           <label className="grid gap-1 text-[0.58rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">
                             Edit URL
@@ -5821,6 +5986,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         </motion.div>
       </AnimatePresence>
     </Page>
+    <PrepOutModal
+      open={prepOutModalOpen}
+      prepOut={newPrepOut}
+      onChange={setNewPrepOut}
+      onCancel={() => setPrepOutModalOpen(false)}
+      onSubmit={addPrepOut}
+    />
+    </>
   );
 }
 

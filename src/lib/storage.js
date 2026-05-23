@@ -458,7 +458,7 @@ function splitCasebookDescription(description) {
 }
 
 export function encodePrivateLinkForStorage(link) {
-  if (getPrivateLinkSection(link) !== "BUDS Casebook") return link;
+  if (!["BUDS Casebook", "BUDS Prep Outs"].includes(getPrivateLinkSection(link))) return link;
   const cleanDescription = splitCasebookDescription(link.description).description;
   const topicTags = normalizeTopicTags(link.topicTags);
   return {
@@ -470,7 +470,7 @@ export function encodePrivateLinkForStorage(link) {
 }
 
 function decodePrivateLinkFromStorage(link) {
-  if (getPrivateLinkSection(link) !== "BUDS Casebook") return link;
+  if (!["BUDS Casebook", "BUDS Prep Outs"].includes(getPrivateLinkSection(link))) return link;
   const parsed = splitCasebookDescription(link.description);
   const topicTags = normalizeTopicTags(link.topicTags).length ? normalizeTopicTags(link.topicTags) : parsed.topicTags;
   return {
