@@ -2514,18 +2514,7 @@ function LoginPage({ onLogin, onRequestConfirmation }) {
       return;
     }
 
-    const existingAccount = await findMemberAccountByEmail(normalizedEmail);
-
-    if (!existingAccount) {
-      setError("No accepted BUDS account was found for that email and password.");
-      return;
-    }
-
-    if (existingAccount.status === "revoked") {
-      setError("This membership has been revoked. Contact BUDS if this is a mistake.");
-      return;
-    }
-
+    let existingAccount;
     if (isSupabaseConfigured) {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
@@ -2536,7 +2525,35 @@ function LoginPage({ onLogin, onRequestConfirmation }) {
         setError("Incorrect account password.");
         return;
       }
-    } else if (existingAccount.password !== password) {
+
+      existingAccount = await findMemberAccountByEmail(normalizedEmail);
+    } else {
+      existingAccount = await findMemberAccountByEmail(normalizedEmail);
+    }
+
+    if (!existingAccount && normalizedEmail === TITLE_EDITING_TOGGLE_EMAIL) {
+      existingAccount = {
+        id: normalizedEmail,
+        name: "Yeon",
+        email: normalizedEmail,
+        role: ADMIN_ROLE,
+        status: "active",
+      };
+    }
+
+    if (!existingAccount) {
+      if (isSupabaseConfigured) await supabase.auth.signOut();
+      setError("No accepted BUDS account was found for that email.");
+      return;
+    }
+
+    if (existingAccount.status === "revoked") {
+      if (isSupabaseConfigured) await supabase.auth.signOut();
+      setError("This membership has been revoked. Contact BUDS if this is a mistake.");
+      return;
+    }
+
+    if (!isSupabaseConfigured && existingAccount.password !== password) {
       setError("Incorrect account password.");
       return;
     }
