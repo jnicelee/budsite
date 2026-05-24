@@ -1685,7 +1685,7 @@ function EBoardPage({ eboardContent }) {
   return (
     <Page>
       <PageHeader eyebrow="People" title="Current E-Board.">
-        Add photos, short bios, and clear contact paths for prospective members.
+        Contact an eboard member via email or messenger!
       </PageHeader>
       <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
         {members.map((member) => (
@@ -1707,6 +1707,19 @@ function EBoardPage({ eboardContent }) {
             <div className="p-5">
               <h2 className="text-2xl font-black leading-tight text-[#2D2926]">{member.name}</h2>
               <p className="mt-3 text-sm leading-6 text-[#5b5450]">{member.bio}</p>
+              <div className="mt-3 text-sm font-bold text-[#CC0000]">
+                {member.email ? (
+                  <a href={`mailto:${member.email}`} className="inline-flex min-w-0 items-center gap-1.5 transition hover:text-[#CC0000]">
+                    <Mail size={13} className="shrink-0" />
+                    <span className="truncate">{member.email}</span>
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mail size={13} />
+                    Email coming soon
+                  </span>
+                )}
+              </div>
             </div>
           </Card>
         ))}
@@ -2231,7 +2244,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(draftNoviceContent.speechSteps || []);
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
   const [eboardMembers, setEboardMembers] = useState(draftEboardContent.members || []);
-  const [newEboardMember, setNewEboardMember] = useState({ name: "", role: "", bio: "", photo: "" });
+  const [newEboardMember, setNewEboardMember] = useState({ name: "", role: "", email: "", bio: "", photo: "" });
   const [newCarouselSlide, setNewCarouselSlide] = useState({ src: "", alt: "", kicker: "", caption: "" });
   const [agenda, setAgenda] = useState(() => getStoredAgenda());
   const [lastDeletedAgendaItem, setLastDeletedAgendaItem] = useState(null);
@@ -3268,11 +3281,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       id: `eboard-${Date.now()}`,
       name: newEboardMember.name.trim(),
       role: newEboardMember.role.trim(),
+      email: newEboardMember.email.trim(),
       bio: newEboardMember.bio.trim(),
       photo: newEboardMember.photo,
     };
     persistEboardContent((content) => ({ ...content, members: [...content.members, nextMember] }));
-    setNewEboardMember({ name: "", role: "", bio: "", photo: "" });
+    setNewEboardMember({ name: "", role: "", email: "", bio: "", photo: "" });
   };
 
   const removeEboardMember = (member) => {
@@ -5402,7 +5416,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     <form onSubmit={addEboardMember} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                         <HelperText>Recommended photos are square or portrait images under 2 MB. Name and role are required.</HelperText>
-                        <div className="grid gap-3 lg:grid-cols-[0.65fr_0.65fr_1fr]">
+                        <div className="grid gap-3 lg:grid-cols-[0.65fr_0.65fr_0.8fr_1fr]">
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Name
                             <input
@@ -5423,6 +5437,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               placeholder="President"
                               disabled={!canEditBudsiteTitles}
                               className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                            />
+                          </label>
+                          <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Email
+                            <input
+                              type="email"
+                              value={newEboardMember.email}
+                              onChange={(event) => setNewEboardMember((current) => ({ ...current, email: event.target.value }))}
+                              placeholder="name@bu.edu"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -5490,7 +5514,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             )}
                           </div>
                           <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
-                            <div className="grid gap-3 md:grid-cols-2">
+                            <div className="grid gap-3 md:grid-cols-3">
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                                 Name
                                 <input
@@ -5507,6 +5531,16 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                   onChange={(event) => updateEboardMember(member.id, "role", event.target.value)}
                                   disabled={!canEditBudsiteTitles}
                                   className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                                />
+                              </label>
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Email
+                                <input
+                                  type="email"
+                                  value={member.email || ""}
+                                  onChange={(event) => updateEboardMember(member.id, "email", event.target.value)}
+                                  placeholder="name@bu.edu"
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                                 />
                               </label>
                             </div>

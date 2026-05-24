@@ -281,6 +281,7 @@ export function normalizeEboardContent(content = defaultEboardContent) {
       id: item.id || `eboard-${index}-${slugify(item.name || item.role || "member")}`,
       name: item.name || "",
       role: item.role || "",
+      email: item.email || "",
       bio: item.bio || "",
       photo: item.photo || "",
     })),
