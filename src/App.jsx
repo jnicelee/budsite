@@ -1782,23 +1782,6 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
 }
 
 function HistoryPage({ trophiesContent }) {
-  const historyTimeline = [
-    {
-      year: "Founded",
-      title: "A Home for Parliamentary Debate at BU",
-      copy: "Add the founding year, early leadership, and the story of how BUDS became a competitive APDA team.",
-    },
-    {
-      year: "Growth",
-      title: "Practices, tournaments, and institutional memory",
-      copy: "Use this section to track team traditions, regular meetings, major tournaments, and shifts in team culture.",
-    },
-    {
-      year: "Today",
-      title: "A competitive and welcoming debate community",
-      copy: "Feature current priorities, novice development, team goals, and the strongest recent accomplishments.",
-    },
-  ];
   const historyAccomplishments = [
     "Tournament wins and finals appearances",
     "Speaker awards and novice breaks",
@@ -1824,15 +1807,6 @@ function HistoryPage({ trophiesContent }) {
       <div className="mb-6 grid gap-5 md:grid-cols-3">
         {trophiesContent.milestones.map((item) => (
           <Card key={item.id || item.year} className="border-t-8 border-t-[#CC0000]">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
-            <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-5 md:grid-cols-3">
-        {historyTimeline.map((item) => (
-          <Card key={item.year} className="border-t-8 border-t-[#CC0000]">
             <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
             <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
             <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
