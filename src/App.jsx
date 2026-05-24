@@ -716,6 +716,9 @@ function getPublishChangeSummary(id, draft, published) {
       summarizeArrayChanges("Member achievement cards", draft.members, published.members),
     ].filter(Boolean).join("; ") || "Trophies page content changed.";
   }
+  if (id === "history") {
+    return summarizeArrayChanges("History milestone cards", draft.milestones, published.milestones) || "History page milestones changed.";
+  }
   return "Draft content changed.";
 }
 
@@ -2754,6 +2757,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceGlossaryManagerSearch, setNoviceGlossaryManagerSearch] = useState("");
   const [eboardEditorOpen, setEboardEditorOpen] = useState(false);
   const [carouselEditorOpen, setCarouselEditorOpen] = useState(false);
+  const [historyEditorOpen, setHistoryEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
   const [trophyEditorSection, setTrophyEditorSection] = useState("stats");
   const notesEditorCardRef = useAutoScrollOnOpen(notesEditorOpen);
@@ -2762,6 +2766,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const noviceInfographicEditorCardRef = useAutoScrollOnOpen(noviceInfographicEditorOpen);
   const noviceFaqEditorCardRef = useAutoScrollOnOpen(noviceFaqEditorOpen);
   const eboardEditorCardRef = useAutoScrollOnOpen(eboardEditorOpen);
+  const historyEditorCardRef = useAutoScrollOnOpen(historyEditorOpen);
   const trophyEditorCardRef = useAutoScrollOnOpen(trophyEditorOpen);
   const carouselEditorCardRef = useAutoScrollOnOpen(carouselEditorOpen);
   const [editorNotice, setEditorNotice] = useState({ type: "", message: "" });
@@ -2839,6 +2844,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
   const contentDashboardItems = [
     { id: "home", title: "Landing Page", href: "/", draft: draftHomeContent, published: homeContent },
+    { id: "history", title: "History", href: "/history", draft: { milestones: draftTrophiesContent.milestones }, published: { milestones: trophiesContent.milestones }, publishId: "history", revisionId: "trophies", previewId: "history" },
     { id: "trophies", title: "Trophies", href: "/trophies", draft: draftTrophiesContent, published: trophiesContent },
     { id: "meetings", title: "Meetings Announcement", href: "/meetings", draft: draftMeetingsContent, published: meetingsContent },
     { id: "novice", title: "Novice Hub", href: "/novice-hub", draft: draftNoviceContent, published: noviceContent },
@@ -3035,6 +3041,18 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         draft: draftTrophiesContent,
         normalizer: normalizeTrophiesContent,
         publish: onTrophiesContentChange,
+        storageId: "trophies",
+        revisionId: "trophies",
+      },
+      history: {
+        label: "History page milestones",
+        published: trophiesContent,
+        draft: { ...trophiesContent, milestones: draftTrophiesContent.milestones },
+        normalizer: normalizeTrophiesContent,
+        publish: onTrophiesContentChange,
+        setDraft: setDraftTrophiesContent,
+        storageId: "trophies",
+        revisionId: "trophies",
       },
       meetings: {
         label: "Meetings page announcement",
@@ -3042,6 +3060,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         draft: draftMeetingsContent,
         normalizer: normalizeMeetingsContent,
         publish: onMeetingsContentChange,
+        storageId: "meetings",
+        revisionId: "meetings",
       },
       novice: {
         label: "Novice Hub",
@@ -3049,6 +3069,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         draft: draftNoviceContent,
         normalizer: normalizeNoviceContent,
         publish: onNoviceContentChange,
+        storageId: "novice",
+        revisionId: "novice",
       },
       eboard: {
         label: "E-Board page",
@@ -3056,6 +3078,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         draft: draftEboardContent,
         normalizer: normalizeEboardContent,
         publish: onEboardContentChange,
+        storageId: "eboard",
+        revisionId: "eboard",
       },
       home: {
         label: "Landing page",
@@ -3063,6 +3087,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         draft: draftHomeContent,
         normalizer: normalizeHomeContent,
         publish: onHomeContentChange,
+        storageId: "home",
+        revisionId: "home",
       },
     };
     const target = publishMap[id];
@@ -3076,9 +3102,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       actionLabel: "Publish",
       onConfirm: () => {
         const revision = createContentRevision(normalizedPublished, `${target.label} before publish`);
-        updateRevisionList(id, revision);
+        updateRevisionList(target.revisionId || id, revision);
         target.publish(normalizedDraft);
-        saveStoredDraftContent(id, normalizedDraft);
+        target.setDraft?.(normalizedDraft);
+        saveStoredDraftContent(target.storageId || id, normalizedDraft);
         showEditorNotice(`${target.label} published.`);
       },
     });
@@ -5526,6 +5553,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
               {contentDashboardItems.map((item) => {
                 const isDirty = JSON.stringify(item.draft) !== JSON.stringify(item.published);
+                const previewKey = item.previewId || item.id;
+                const publishKey = item.publishId || item.id;
+                const revisionKey = item.revisionId || item.id;
                 return (
                   <div key={item.id} className="grid w-[16rem] shrink-0 gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
                     <div>
@@ -5533,10 +5563,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
                     </div>
                     <div className="grid grid-cols-3 gap-1">
-                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === item.id ? "" : item.id)} style={{ fontSize: "0.58rem", fontWeight: 900, letterSpacing: "0" }} className="border border-[#ded8d2] bg-white px-1.5 py-1 uppercase leading-tight text-[#2D2926]">
-                        {previewDraftId === item.id ? "Hide Preview" : "Preview Draft"}
+                      <button type="button" onClick={() => setPreviewDraftId(previewDraftId === previewKey ? "" : previewKey)} style={{ fontSize: "0.58rem", fontWeight: 900, letterSpacing: "0" }} className="border border-[#ded8d2] bg-white px-1.5 py-1 uppercase leading-tight text-[#2D2926]">
+                        {previewDraftId === previewKey ? "Hide Preview" : "Preview Draft"}
                       </button>
-                      <button type="button" onClick={() => publishContentDraft(item.id)} disabled={!isDirty} style={{ fontSize: "0.58rem", fontWeight: 900, letterSpacing: "0" }} className="bg-[#CC0000] px-1.5 py-1 uppercase leading-tight text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
+                      <button type="button" onClick={() => publishContentDraft(publishKey)} disabled={!isDirty} style={{ fontSize: "0.58rem", fontWeight: 900, letterSpacing: "0" }} className="bg-[#CC0000] px-1.5 py-1 uppercase leading-tight text-white disabled:cursor-not-allowed disabled:bg-[#bdb6b0]">
                         Publish
                       </button>
                       <a href={item.href} style={{ fontSize: "0.58rem", fontWeight: 900, letterSpacing: "0" }} className="inline-flex items-center justify-center border border-[#ded8d2] bg-white px-1.5 py-1 text-center uppercase leading-tight text-[#2D2926]">
@@ -5545,14 +5575,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     </div>
                     <div className="border-t border-[#ded8d2] pt-2">
                       <p className="mb-2 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#6d6560]">Revision History</p>
-                      {(contentRevisions[item.id] || []).length > 0 ? (
+                      {(contentRevisions[revisionKey] || []).length > 0 ? (
                         <div className="grid max-h-[5.5rem] min-h-[2.25rem] gap-1 overflow-y-auto pr-1">
-                          {contentRevisions[item.id].map((revision) => (
+                          {contentRevisions[revisionKey].map((revision) => (
                             <div key={revision.id} className="grid grid-cols-[1fr_auto] gap-1">
-                              <button type="button" onClick={() => restoreContentRevision(item.id, revision)} style={{ fontSize: "0.65rem", fontWeight: 900, letterSpacing: "0.04em" }} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left uppercase text-[#8f8781] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
+                              <button type="button" onClick={() => restoreContentRevision(revisionKey, revision)} style={{ fontSize: "0.65rem", fontWeight: 900, letterSpacing: "0.04em" }} className="border border-[#ded8d2] bg-white px-2 py-1.5 text-left uppercase text-[#8f8781] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]">
                                 Restore {formatMeetingDate(revision.createdAt.slice(0, 10))}
                               </button>
-                              <button type="button" onClick={() => deleteContentRevision(item.id, revision)} className="grid h-full min-h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff1f1]" aria-label={`Delete revision from ${formatMeetingDate(revision.createdAt.slice(0, 10))}`}>
+                              <button type="button" onClick={() => deleteContentRevision(revisionKey, revision)} className="grid h-full min-h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff1f1]" aria-label={`Delete revision from ${formatMeetingDate(revision.createdAt.slice(0, 10))}`}>
                                 <Trash2 size={14} />
                               </button>
                             </div>
@@ -5571,6 +5601,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             {previewDraftId && (
               <div className="mt-5 max-h-[32rem] overflow-y-auto border border-[#ded8d2] bg-white p-4">
                 <p className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Draft Preview</p>
+                {previewDraftId === "history" && <HistoryPage trophiesContent={draftTrophiesContent} />}
                 {previewDraftId === "trophies" && <TrophiesPage trophiesContent={draftTrophiesContent} />}
                 {previewDraftId === "meetings" && <MeetingsPage auth={auth} meetingsContent={draftMeetingsContent} onRequestConfirmation={onRequestConfirmation} />}
                 {previewDraftId === "novice" && <NoviceHubPage noviceContent={draftNoviceContent} />}
@@ -6380,6 +6411,104 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
           <SmoothDetails
             className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("history")}
+          >
+          <div className="grid gap-5">
+          <Card ref={historyEditorCardRef} className="budsite-editor-card p-4 sm:p-5">
+            <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
+              <button
+                type="button"
+                onClick={() => setHistoryEditorOpen((current) => !current)}
+                className="min-w-0 flex-1 text-left"
+                aria-expanded={historyEditorOpen}
+              >
+                <div className="flex items-center gap-3">
+                  <ScrollText className="text-[#CC0000]" />
+                  <Eyebrow>History Page Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Add and Update Timeline Milestones</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Changes save to the public History page. Use milestones for longer historical cards that should not be overwritten by APDA updates.
+                </p>
+              </button>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                <a
+                  href="/history"
+                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                >
+                  Preview <ExternalLink size={14} />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setHistoryEditorOpen((current) => !current)}
+                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                  aria-expanded={historyEditorOpen}
+                >
+                  {historyEditorOpen ? "Close Editor" : "Open Editor"} <ChevronDown size={16} className={`transition ${historyEditorOpen ? "rotate-180" : ""}`} />
+                </button>
+              </div>
+            </div>
+
+            <AnimatePresence initial={false}>
+              {historyEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5 grid justify-items-center gap-5">
+                    <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
+                      {renderEditableDropdownTitle("trophyMilestones")}
+                      <div className="mt-3 grid gap-3">
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Milestone</p>
+                      <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
+                        <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
+                        <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
+                          <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                          <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                          <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
+                        </div>
+                        <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                        <FieldWarning>{newTrophyMilestoneDuplicate ? "A milestone with this title already exists." : ""}</FieldWarning>
+                      </form>
+                      <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Milestones</p>
+                      <div className="grid gap-2">
+                        {draftTrophiesContent.milestones.map((item, index) => (
+                          <div
+                            key={item.id}
+                            draggable
+                            onDragStart={() => startEditorDrag("trophy-milestones", item.id)}
+                            onDragOver={allowEditorDrop}
+                            onDrop={() => dropTrophyItem("milestones", item.id)}
+                            onDragEnd={finishEditorDrag}
+                            className="grid gap-2 border border-[#ded8d2] bg-white p-3"
+                          >
+                            <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
+                              <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
+                              <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                              <div className="flex items-center gap-2">
+                                <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.milestones.length - 1} />
+                                <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public History page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
+                              </div>
+                            </div>
+                            <textarea value={item.copy} onChange={(event) => updateTrophyItem("milestones", item.id, "copy", event.target.value)} rows={2} className="resize-none border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
+                          </div>
+                        ))}
+                      </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+          </div>
+          </SmoothDetails>
+
+          <SmoothDetails
+            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("trophies")}
           >
           <div className="grid gap-5">
@@ -6433,7 +6562,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       {[
                         ["stats", "Top Stats"],
                         ["accomplishments", "Accomplishments"],
-                        ["milestones", "Milestones"],
                         ["members", "Individual Achievements"],
                         ["results", "Seasons / Results"],
                         ["apda", "APDA Update"],
@@ -6642,49 +6770,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <ReorderButtons onMoveUp={() => moveTrophyItem("accomplishments", index, -1)} onMoveDown={() => moveTrophyItem("accomplishments", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.accomplishments.length - 1} />
                         <button type="button" onClick={() => requestDeleteConfirmation({ title: "Delete this accomplishment?", body: item.text, onConfirm: () => removeTrophyItem("accomplishments", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.text}`}><Trash2 size={16} /></button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                </div>
-              </div>
-              )}
-
-              {trophyEditorSection === "milestones" && (
-              <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
-                {renderEditableDropdownTitle("trophyMilestones")}
-                <div className="mt-3 grid gap-3">
-                <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Milestone</p>
-                <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
-                  <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
-                  <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
-                    <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                    <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
-                    <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
-                  </div>
-                  <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                  <FieldWarning>{newTrophyMilestoneDuplicate ? "A milestone with this title already exists." : ""}</FieldWarning>
-                </form>
-                <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Milestones</p>
-                <div className="grid gap-2">
-                  {draftTrophiesContent.milestones.map((item, index) => (
-                    <div
-                      key={item.id}
-                      draggable
-                      onDragStart={() => startEditorDrag("trophy-milestones", item.id)}
-                      onDragOver={allowEditorDrop}
-                      onDrop={() => dropTrophyItem("milestones", item.id)}
-                      onDragEnd={finishEditorDrag}
-                      className="grid gap-2 border border-[#ded8d2] bg-white p-3"
-                    >
-                      <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
-                        <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                        <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
-                        <div className="flex items-center gap-2">
-                          <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.milestones.length - 1} />
-                          <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public Trophies page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
-                        </div>
-                      </div>
-                      <textarea value={item.copy} onChange={(event) => updateTrophyItem("milestones", item.id, "copy", event.target.value)} rows={2} className="resize-none border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     </div>
                   ))}
                 </div>

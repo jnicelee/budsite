@@ -13,6 +13,7 @@ export const defaultBudsiteEditorSectionTitles = {
   meetings: { eyebrow: "Meeting Tools", title: "Meeting notes and public announcements", count: "2 editors" },
   novice: { eyebrow: "Novice Hub Editors", title: "Beginner education and FAQ content", count: "2 editors" },
   eboard: { eyebrow: "Public People", title: "Current e-board profiles and photos", count: "1 editor" },
+  history: { eyebrow: "History Page", title: "Timeline milestone cards", count: "1 editor" },
   trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
   home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
   memberTeamLinks: { title: "BUDS Team Specific Links" },
@@ -26,7 +27,7 @@ export const defaultBudsiteEditorSectionTitles = {
   clubReimbursements: { title: "Reimbursements" },
   trophyTopStats: { title: "Top Stats" },
   trophyAccomplishments: { title: "Accomplishments List" },
-  trophyMilestones: { title: "Milestone Cards" },
+  trophyMilestones: { title: "History Milestone Cards" },
   trophyMembers: { title: "Current Member Achievements" },
   trophyResults: { title: "Tournament Results Timeline" },
 };
