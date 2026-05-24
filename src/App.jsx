@@ -1530,30 +1530,43 @@ function NoviceHubPage({ noviceContent }) {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2">
+      <div className="relative mt-5 grid gap-3 before:absolute before:left-4 before:top-0 before:h-full before:w-1 before:bg-[#ded8d2]">
         {apdaSpeechSteps.map((step) => {
           const Icon = speechIconMap[step.icon] || Mic2;
           const isGov = step.side === "gov";
           return (
-            <article key={step.order} className={`grid grid-cols-[2rem_1fr] gap-3 border p-3 ${
-              isGov ? "border-[#a9c7f5] bg-[#f4f8ff]" : "border-[#f0b7b7] bg-[#fff6f6]"
-            }`}>
-              <div className={`grid h-8 w-8 place-items-center text-xs font-black text-white ${isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"}`}>
-                {step.order}
+            <div key={step.order} className="relative grid grid-cols-[2.25rem_1fr] gap-3">
+              <div className="relative z-10 grid h-8 w-8 place-items-center self-start border-4 border-white text-xs font-black text-white shadow-[0_8px_18px_rgba(45,41,38,0.12)]">
+                <span className={`grid h-full w-full place-items-center ${isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"}`}>
+                  {step.order}
+                </span>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Icon size={16} className={isGov ? "text-[#1d67c4]" : "text-[#CC0000]"} />
-                  <h3 className="text-sm font-black leading-tight text-[#202020]">{step.title}</h3>
+              <article className={`grid gap-2 border bg-white p-3 shadow-[0_10px_24px_rgba(45,41,38,0.06)] ${
+                isGov
+                  ? "border-[#a9c7f5] bg-[#f4f8ff]"
+                  : "border-[#f0b7b7] bg-[#fff6f6]"
+              }`}>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Icon size={16} className={isGov ? "text-[#1d67c4]" : "text-[#CC0000]"} />
+                    <h3 className="text-sm font-black leading-tight text-[#202020]">{step.title}</h3>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <p className={`inline-flex px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-[0.08em] ${
+                      isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
+                    }`}>
+                      {isGov ? "Government" : "Opposition"}
+                    </p>
+                    <p className={`inline-flex px-2 py-0.5 text-[0.58rem] font-black ${
+                      isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
+                    }`}>
+                      {step.time}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-[#403a36]">{step.copy}</p>
                 </div>
-                <p className={`mt-1 inline-flex px-2 py-0.5 text-[0.62rem] font-black ${
-                  isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
-                }`}>
-                  {step.time}
-                </p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-[#403a36]">{step.copy}</p>
-              </div>
-            </article>
+              </article>
+            </div>
           );
         })}
       </div>
@@ -4287,9 +4300,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               Member Manager
             </span>
           )}
-          <span className={`inline-flex h-8 items-center px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
-            {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
-          </span>
+          {isEboard && (
+            <span className={`inline-flex h-8 items-center px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
+              {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
+            </span>
+          )}
           {!isAdmin && auth?.role === "eboard" && (
             <button
               type="button"
