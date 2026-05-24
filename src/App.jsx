@@ -1781,7 +1781,7 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
   );
 }
 
-function HistoryPage() {
+function HistoryPage({ trophiesContent }) {
   const historyTimeline = [
     {
       year: "Founded",
@@ -1821,6 +1821,15 @@ function HistoryPage() {
       <PageHeader eyebrow="History" title="A Timeline That Can Grow with the Team.">
         Add each year once you have records, photos, e-board names, and major results.
       </PageHeader>
+      <div className="mb-6 grid gap-5 md:grid-cols-3">
+        {trophiesContent.milestones.map((item) => (
+          <Card key={item.id || item.year} className="border-t-8 border-t-[#CC0000]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
+            <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
+          </Card>
+        ))}
+      </div>
       <div className="grid gap-5 md:grid-cols-3">
         {historyTimeline.map((item) => (
           <Card key={item.year} className="border-t-8 border-t-[#CC0000]">
@@ -1879,16 +1888,6 @@ function TrophiesPage({ trophiesContent }) {
             <p className="text-4xl font-black leading-none text-[#CC0000]">{stat.value}</p>
             <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-[#2D2926]">{stat.label}</p>
             <p className="mt-2 text-sm font-semibold leading-6 text-[#5b5450]">{stat.detail}</p>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-5 md:grid-cols-3">
-        {trophiesContent.milestones.map((item) => (
-          <Card key={item.id || item.year} className="border-t-8 border-t-[#CC0000]">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
-            <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
           </Card>
         ))}
       </div>
@@ -7268,7 +7267,7 @@ export default function App() {
       case "/meetings":
         return <MeetingsPage auth={auth} meetingsContent={meetingsContent} onRequestConfirmation={requestConfirmation} />;
       case "/history":
-        return <HistoryPage />;
+        return <HistoryPage trophiesContent={trophiesContent} />;
       case "/trophies":
         return <TrophiesPage trophiesContent={trophiesContent} />;
       case "/eboard":
