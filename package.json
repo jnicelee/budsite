@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "migrate:auth-passwords": "node scripts/migrate-passwords-to-supabase-auth.mjs",
+    "reset:approved-login": "node scripts/reset-approved-login.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
