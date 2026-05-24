@@ -103,3 +103,52 @@ a {
 .rich-note div {
   margin: 0.5rem 0;
 }
+
+.budsite-editor-card {
+  width: 100%;
+  margin-inline: auto;
+  background: #f8f6f3;
+}
+
+.budsite-editor-card > .overflow-hidden > :first-child {
+  width: 100%;
+  margin-inline: auto;
+  border: 1px solid #ede7e2;
+  background: rgba(246, 244, 242, 0.78);
+  padding: 0.875rem;
+}
+
+.budsite-trophy-editor-card > .overflow-hidden {
+  overflow-x: visible;
+}
+
+.budsite-trophy-editor-card > .overflow-hidden > :first-child {
+  display: grid;
+  justify-items: center;
+}
+
+.budsite-trophy-editor-card > .overflow-hidden > :first-child > * {
+  width: 100%;
+  max-width: 72rem;
+}
+
+@media (min-width: 768px) {
+  .budsite-editor-card {
+    width: calc(100% - 2rem);
+  }
+
+  .budsite-editor-card > .overflow-hidden > :first-child {
+    width: calc(100% - 2rem);
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .budsite-editor-card {
+    width: calc(100% - 3rem);
+  }
+
+  .budsite-editor-card > .overflow-hidden > :first-child {
+    width: calc(100% - 3rem);
+  }
+}

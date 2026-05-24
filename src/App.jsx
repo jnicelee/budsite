@@ -279,12 +279,36 @@ function ConfirmationModal({ confirmation, onCancel, onConfirm }) {
   );
 }
 
-function SmoothDetails({ title, children, className = "", defaultOpen = false }) {
+function SmoothDetails({ title, children, className = "", defaultOpen = false, scrollOffset = 96, scrollTargetRef = null }) {
   const [open, setOpen] = useState(defaultOpen);
-  const toggleOpen = () => setOpen((current) => !current);
+  const sectionRef = useRef(null);
+  const openedByUserRef = useRef(false);
+  const toggleOpen = () => {
+    openedByUserRef.current = true;
+    setOpen((current) => !current);
+  };
+
+  useEffect(() => {
+    if (!open || !openedByUserRef.current || typeof window === "undefined") return undefined;
+    const scrollAnimationRef = { current: null };
+    const timeoutId = window.setTimeout(() => {
+      const targetElement = scrollTargetRef?.current || sectionRef.current;
+      scrollElementIntoComfortView(targetElement, scrollAnimationRef, {
+        offset: scrollOffset,
+        lowerBoundRatio: 0.42,
+        duration: 620,
+      });
+    }, 180);
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (scrollAnimationRef.current) {
+        window.cancelAnimationFrame(scrollAnimationRef.current);
+      }
+    };
+  }, [open, scrollOffset, scrollTargetRef]);
 
   return (
-    <section className={className}>
+    <section ref={sectionRef} className={className}>
       <div className="flex w-full items-center justify-between gap-3 text-left text-lg font-black text-[#2D2926]">
         <div
           role="button"
@@ -322,6 +346,49 @@ function SmoothDetails({ title, children, className = "", defaultOpen = false })
       </AnimatePresence>
     </section>
   );
+}
+
+function scrollElementIntoComfortView(element, animationRef, { offset = 96, lowerBoundRatio = 0.42, duration = 620 } = {}) {
+  if (!element || typeof window === "undefined") return;
+  const rect = element.getBoundingClientRect();
+  const comfortableLowerBound = window.innerHeight * lowerBoundRatio;
+  if (rect.top >= offset && rect.top <= comfortableLowerBound) return;
+  if (animationRef.current) {
+    window.cancelAnimationFrame(animationRef.current);
+  }
+  const startTop = window.scrollY;
+  const targetTop = Math.max(startTop + rect.top - offset, 0);
+  const distance = targetTop - startTop;
+  const startTime = window.performance.now();
+  const easeOutCubic = (progress) => 1 - ((1 - progress) ** 3);
+  const animateScroll = (time) => {
+    const progress = Math.min((time - startTime) / duration, 1);
+    window.scrollTo(0, startTop + distance * easeOutCubic(progress));
+    if (progress < 1) {
+      animationRef.current = window.requestAnimationFrame(animateScroll);
+    }
+  };
+  animationRef.current = window.requestAnimationFrame(animateScroll);
+}
+
+function useAutoScrollOnOpen(open, { delay = 140, offset = 96, lowerBoundRatio = 0.42, duration = 620 } = {}) {
+  const elementRef = useRef(null);
+
+  useEffect(() => {
+    if (!open || !elementRef.current || typeof window === "undefined") return undefined;
+    const scrollAnimationRef = { current: null };
+    const timeoutId = window.setTimeout(() => {
+      scrollElementIntoComfortView(elementRef.current, scrollAnimationRef, { offset, lowerBoundRatio, duration });
+    }, delay);
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (scrollAnimationRef.current) {
+        window.cancelAnimationFrame(scrollAnimationRef.current);
+      }
+    };
+  }, [open, delay, offset, lowerBoundRatio, duration]);
+
+  return elementRef;
 }
 
 function HelperText({ children }) {
@@ -632,6 +699,7 @@ function getPublishChangeSummary(id, draft, published) {
     return [
       summarizeArrayChanges("Speech infographic", draft.speechSteps, published.speechSteps),
       summarizeArrayChanges("FAQ", draft.faqs, published.faqs),
+      summarizeArrayChanges("APDA glossary", draft.glossaryTerms, published.glossaryTerms),
     ].filter(Boolean).join("; ") || "Novice Hub content changed.";
   }
   if (id === "eboard") {
@@ -1162,14 +1230,347 @@ function AboutPage() {
   );
 }
 
-function NoviceHubPage({ noviceContent }) {
-  const speechIconMap = {
-    file: FileText,
-    help: CircleHelp,
-    mic: Mic2,
-    scroll: ScrollText,
+const apdaSpeakerScaleResource = { label: "Speaker Scale", url: "https://docs.google.com/document/d/1yptW79G1oL9mNDhCPcuZf0zwibPtz05-Xg6qjGjC9FU/edit?tab=t.0" };
+const apdaStandingsResource = { label: "APDA Standings", url: "https://apda.online/coty-standings-temporary/" };
+const apdaGuideResource = { label: "APDA Guide", url: "https://apda.online/about/guide-to-apda/" };
+const apdaNoviceGuidesResource = { label: "APDA Novice Guides", url: "https://apda.online/category/nm-guides/" };
+const speechIconMap = {
+  file: FileText,
+  help: CircleHelp,
+  mic: Mic2,
+  scroll: ScrollText,
+};
+const defaultApdaGlossaryTerms = [
+  { term: "APDA", category: "League", definition: "American Parliamentary Debate Association, the college parliamentary debate league BUDS competes in.", resources: [apdaGuideResource, apdaNoviceGuidesResource] },
+  { term: "Burn", category: "League", definition: "To tell other people about someone else's case without permission. This is against league norms unless the case-writer says it is okay." },
+  { term: "COTY", category: "League", definition: "Club of the Year points, earned when members win or break at tournaments.", resources: [apdaStandingsResource, apdaGuideResource] },
+  { term: "SOTY", category: "League", definition: "Speaker of the Year points, earned by speaking highly at tournaments.", resources: [apdaStandingsResource, apdaSpeakerScaleResource] },
+  { term: "TOTY", category: "League", definition: "Team of the Year points, earned by winning or breaking at tournaments.", resources: [apdaStandingsResource, apdaGuideResource] },
+  { term: "Dinos", category: "League", definition: "Alumni who have graduated and return to judge, and sometimes compete at open tournaments." },
+  { term: "Northern Schools", category: "Geography", definition: "Schools above New York, such as Harvard, Brown, Northeastern, or the University of Chicago." },
+  { term: "Southern Schools", category: "Geography", definition: "Schools below New Jersey, such as GW, Georgetown, UMD, or UVA." },
+  { term: "Central Schools", category: "Geography", definition: "The in-between region including Pennsylvania, New York, and New Jersey schools." },
+  { term: "Novice", category: "League", definition: "A debater in their first year of APDA competition.", resources: [apdaNoviceGuidesResource] },
+  { term: "Owning Souls", category: "League", definition: "Beating the same person or team three times in a row." },
+  { term: "Pround", category: "League", definition: "A practice round." },
+  { term: "Reaffiliation", category: "League", definition: "When someone leaves one school's team to join another under extreme circumstances. The bar is high and judging affiliations still matter." },
+  { term: "Varsity", category: "League", definition: "A debater who has completed at least one year on APDA." },
+  { term: "All Up / Down One", category: "Tournament", definition: "Phrases that describe a team's current win-loss record and therefore the bracket they are in." },
+  { term: "Bracket", category: "Tournament", definition: "The win-loss or speaker-point group used to determine who you hit next." },
+  { term: "Break", category: "Tournament", definition: "To do well enough in prelims to advance to outrounds like quarters, semis, or finals." },
+  { term: "Bubble", category: "Tournament", definition: "A round where both teams usually need to win in order to break." },
+  { term: "Calibrate", category: "Tournament", definition: "Before some tournaments, judges watch a practice round and give an RFD so tab can place them into rooms that fit their judging level." },
+  { term: "Cases Tournament", category: "Tournament", definition: "A tournament where government chooses and presents the case for the round. Also called a loose-link tournament." },
+  { term: "Civil War", category: "Tournament", definition: "When two teams from the same school or affiliation hit each other in a round." },
+  { term: "EO / EOF", category: "Tournament", definition: "Equity officers or equity opportunity facilitators. They handle equity concerns, scratches, accommodations, and good tournament practices." },
+  { term: "Gender Minority Tournament", category: "Tournament", definition: "A tournament only open to women and gender minorities. It can count for COTY and Nationals qualifying, but not every OTY category." },
+  { term: "General Assembly", category: "Tournament", definition: "The tournament gathering space between rounds, usually used for check-in, announcements, food, and hanging out." },
+  { term: "Hitting", category: "Tournament", definition: "Debating against another team." },
+  { term: "Hybrid", category: "Tournament", definition: "A team made of debaters from different schools. The team must choose which school protection to take." },
+  { term: "Iron", category: "Tournament", definition: "When only one person debates on one side of the round." },
+  { term: "Judge-Screw", category: "Tournament", definition: "A claim that a judge made a bad call. Use this very sparingly and be kind to judges." },
+  { term: "Justify", category: "Judging", definition: "Speaker scores at or beyond a tournament's justification bar, often very high or very low scores, must be explained to tab.", resources: [apdaSpeakerScaleResource] },
+  { term: "Motions Tournament", category: "Tournament", definition: "A tournament where the CA team releases topics shortly before the round and both teams prep from that motion. Also called a tight-link tournament." },
+  { term: "Nationals", category: "Tournament", definition: "APDA's national championship. Teams qualify through qual points or a school's free seed." },
+  { term: "NorthAms", category: "Tournament", definition: "A tournament hosted in Canada and the United States in alternating years, mixing APDA and CUSID formats." },
+  { term: "Novice Tournament", category: "Tournament", definition: "A tournament only novices can compete in. It usually does not count for Nationals qualifying or OTY points." },
+  { term: "Running", category: "Tournament", definition: "Government choosing and debating a case." },
+  { term: "Open Tournament", category: "Tournament", definition: "A tournament where alumni can compete. Semi-open means alumni can compete but not as dino-dino teams; closed means no alumni competitors." },
+  { term: "Paradigm", category: "Judging", definition: "A document where a judge explains their judging style and preferences." },
+  { term: "Pick Up", category: "Judging", definition: "To win the round." },
+  { term: "Post-Round", category: "Judging", definition: "Keeping the judge after the round to ask questions about the RFD. Clarification is fine; debating the judge is not." },
+  { term: "Prelims / In-Rounds", category: "Tournament", definition: "The preliminary rounds of a tournament, usually rounds 1-5, or 1-7 at Nationals." },
+  { term: "Pro-Am", category: "Tournament", definition: "A tournament pairing that combines a varsity debater and a novice debater." },
+  { term: "Protection", category: "Tournament", definition: "Tournament pairing protection that prevents teams from the same affiliation from hitting each other." },
+  { term: "Pull Up", category: "Tournament", definition: "When an uneven bracket causes the lowest-speaking team from the bracket below to be paired up into the bracket above." },
+  { term: "Punt", category: "Tournament", definition: "When a team concedes before the round starts, giving everyone average speaks and ranks." },
+  { term: "Qual", category: "Tournament", definition: "To qualify for Nationals, usually by breaking at tournaments." },
+  { term: "Ranks", category: "Judging", definition: "The 1-4 rank assigned to each debater based on how much they contributed to the round. Lower ranks are better.", resources: [apdaSpeakerScaleResource] },
+  { term: "RFD", category: "Judging", definition: "Reason for decision: the judge's explanation of who won and why." },
+  { term: "Scratches", category: "Tournament", definition: "A form submitted to tab or equity listing judges you believe cannot judge you equitably because of relationship, history, or similar concerns." },
+  { term: "Seeding", category: "Tournament", definition: "Pairing status based on how many people on a team are qualified, affecting round-one pairings." },
+  { term: "Full Seed", category: "Tournament", definition: "A team where both members are qualified." },
+  { term: "Half Seed", category: "Tournament", definition: "A team where one member is qualified." },
+  { term: "Free Seed", category: "Tournament", definition: "Each club can designate one unseeded team as a free seed, placing them just above unseeded teams for round-one pairing." },
+  { term: "Unseeded", category: "Tournament", definition: "A team where no one is qualified." },
+  { term: "Slot", category: "Tournament", definition: "Choosing a case because it is outside the opposing team's topic strengths." },
+  { term: "Speaks", category: "Judging", definition: "Speaker points given to each debater based on individual contribution to the round. They are scored out of 40, usually around 25-35.", resources: [apdaSpeakerScaleResource] },
+  { term: "Spreading", category: "Tournament", definition: "Speed-reading so quickly that it becomes incomprehensible. It is less common in APDA and should be avoided." },
+  { term: "Tab", category: "Tournament", definition: "The tournament staff in charge of pairings and results, usually with tournament software." },
+  { term: "Techy", category: "Tournament", definition: "A technical round with lots of theory or advanced debate terminology, usually involving debaters with strong conceptual familiarity." },
+  { term: "TO", category: "Tournament", definition: "Tab observer, who oversees tab and helps ensure pairings are done equitably." },
+  { term: "Actor Case", category: "Round", definition: "A case argued from the perspective of a specific person, institution, or actor, requiring attention to that actor's interests and values." },
+  { term: "Ballot / Voting Issues", category: "Round", definition: "The issues the judge should vote on: where your side is winning and why." },
+  { term: "Call", category: "Round", definition: "A judge's decision." },
+  { term: "Case Construct / Background", category: "Round", definition: "The construct is the topic; the background is the information needed to debate it." },
+  { term: "Caveat", category: "Round", definition: "A condition in background that makes something true for the round or limits what opposition can do." },
+  { term: "Clash", category: "Round", definition: "The key part of the round both teams focus on and fight over." },
+  { term: "Collapse", category: "Round", definition: "In rebuttals, the argument your team goes for or makes most important to the judge." },
+  { term: "Flow", category: "Round", definition: "A written record of speeches, arguments, and responses used to track how arguments interact." },
+  { term: "Gov", category: "Round", definition: "Government: the team presenting and defending the case." },
+  { term: "Impact", category: "Round", definition: "What your argument leads to and why it matters." },
+  { term: "IPs", category: "Round", definition: "Independent points: standalone arguments with claims, warrants, and impacts. Similar to contentions." },
+  { term: "Line-by-Line", category: "Round", definition: "Responding to each argument individually in order." },
+  { term: "Link Chain", category: "Round", definition: "A sequence of warrants explaining how one thing leads to your impact." },
+  { term: "Mishandled / Dropped", category: "Round", definition: "An argument that is poorly answered or not answered at all." },
+  { term: "Off-Case", category: "Round", definition: "Arguments from, or responding to, the opposition case." },
+  { term: "On-Case", category: "Round", definition: "Arguments from, or responding to, the government case." },
+  { term: "Opp", category: "Round", definition: "Opposition: the team opposing the government case." },
+  { term: "Opp Choice", category: "Round", definition: "A case format where opposition chooses which side to argue." },
+  { term: "Opp Block", category: "Speech", definition: "The back-to-back MO and LOR speeches, giving opposition a long stretch before PMR." },
+  { term: "POC", category: "Round", definition: "Point of clarification: the pre-speech time when opposition asks government questions about the case and prepares arguments." },
+  { term: "POI", category: "Round", definition: "Point of inquiry: a question about information presented in a speech. Speech time does not pause." },
+  { term: "POO", category: "Round", definition: "Point of order: calling out new material in rebuttal speeches. Time pauses while it is addressed." },
+  { term: "Pref Squo", category: "Round", definition: "A case that says it is preferable to the status quo, meaning opposition can only defend the way things currently are." },
+  { term: "Road Map", category: "Speech", definition: "A quick preview of the order your speech will follow, such as on-case, off-case, framing, then weighing." },
+  { term: "This House", category: "Round", definition: "A case-statement starter like This House Believes, This House Opposes, or This House Supports." },
+  { term: "Timespace", category: "Round", definition: "A constraint that limits what information can be used to a specific time, preventing hindsight or future events." },
+  { term: "Weighing", category: "Round", definition: "Explaining why your arguments or impacts matter more than the other side's, such as through probability or magnitude." },
+  { term: "A Priori", category: "Theory", definition: "An argument that comes before another argument, often a philosophical obligation that matters before consequences." },
+  { term: "Countercase", category: "Theory", definition: "An opposition strategy that says the government's idea is bad and offers a better alternative rather than just defending the status quo." },
+  { term: "Counterfactual", category: "Theory", definition: "The alternative to a case or argument." },
+  { term: "Cross App", category: "Theory", definition: "Applying an argument or warrant from a previous point to a new one so you do not have to re-explain everything." },
+  { term: "Deont", category: "Theory", definition: "Shorthand for deontology." },
+  { term: "Downstream", category: "Theory", definition: "An impact that happens after another impact." },
+  { term: "Equity Shell", category: "Theory", definition: "Theory arguing that the other side made an inequitable argument or constructed the case inequitably, affecting engagement and scores." },
+  { term: "Fiat", category: "Theory", definition: "Government's power to make its advocacy true for the debate, so opposition cannot simply say the policy would never pass." },
+  { term: "Knife", category: "Theory", definition: "A contradiction or double bind that forces the other side to choose which argument they stand by." },
+  { term: "Nonunique", category: "Theory", definition: "An impact that happens on either side of the debate." },
+  { term: "Normative Case", category: "Theory", definition: "A case based on overall benefit to society as defined by the winning framework." },
+  { term: "Open", category: "Theory", definition: "A case that is very oppable; the opposite of tight." },
+  { term: "Phil", category: "Theory", definition: "Shorthand for philosophy." },
+  { term: "Prag", category: "Theory", definition: "Pragmatic impacts: real-world harms or benefits to specific people." },
+  { term: "Pre-Fiat", category: "Theory", definition: "Arguments that come before the case statement, such as equity issues, Ks, or theory shells." },
+  { term: "Revealed Preference", category: "Theory", definition: "An actor's values shown through past choices." },
+  { term: "Skep", category: "Theory", definition: "Shorthand for skepticism." },
+  { term: "Moral Skep", category: "Theory", definition: "Skepticism about morality itself or a general conception of morality." },
+  { term: "Snug", category: "Theory", definition: "A case that is not tight, but close enough that it may still sometimes be tight-called." },
+  { term: "Spec", category: "Theory", definition: "Theory claiming the case requires specific knowledge not included in background, hurting opposition's ability to debate." },
+  { term: "Straight Opp", category: "Theory", definition: "When opposition does not tight-call and instead gives a normal opposition speech." },
+  { term: "Squo", category: "Theory", definition: "Status quo: what is happening right now or what actually happened. Cases cannot be the squo." },
+  { term: "Tabula Rasa", category: "Theory", definition: "Blank slate judging: the judge evaluates only what happens in the round, not real-life truth value." },
+  { term: "Theory", category: "Theory", definition: "Arguments about what the debate itself should look like." },
+  { term: "Tight", category: "Theory", definition: "A case that opposition claims is unbeatable or unfairly hard to oppose." },
+  { term: "Beat Case", category: "Theory", definition: "A tight-call standard where opposition says government must beat the case themselves to prove it is not tight." },
+  { term: "Path to Victory", category: "Theory", definition: "A tight-call standard where government says it only needs to show a possible path opposition could use to win." },
+  { term: "Tight Block", category: "Theory", definition: "A prewritten response to being tight-called." },
+  { term: "Turn", category: "Theory", definition: "An argument that says the other side's point actually helps your side." },
+  { term: "Upstream", category: "Theory", definition: "Something necessary for another impact to happen." },
+  { term: "Util", category: "Theory", definition: "Shorthand for utilitarianism." },
+  { term: "Role Fulfillment", category: "Speaker Scale", definition: "How well a speaker performs the job of their speech, including responses, weighing, and strategic choices.", resources: [apdaSpeakerScaleResource] },
+  { term: "Argument Quality", category: "Speaker Scale", definition: "The quality of a speech's warrants, impacts, weighing, and rebuttal. Judges assess the strengths and weaknesses holistically.", resources: [apdaSpeakerScaleResource] },
+  { term: "Low-Point Win", category: "Speaker Scale", definition: "A result APDA speaker-scale guidance avoids: the winning team should not have fewer total speaks than the losing team.", resources: [apdaSpeakerScaleResource] },
+];
+
+function createGlossaryId(term = "term", index = Date.now()) {
+  return `glossary-${index}-${term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 36) || "term"}`;
+}
+
+function normalizeGlossaryTermForEditor(item, index) {
+  return {
+    id: item.id || createGlossaryId(item.term, index),
+    term: item.term || "",
+    category: item.category || "",
+    definition: item.definition || "",
+    resources: Array.isArray(item.resources)
+      ? item.resources.map((resource) => ({
+        label: resource.label || "",
+        url: resource.url || "",
+      })).filter((resource) => resource.label || resource.url)
+      : [],
   };
+}
+
+function getInitialNoviceGlossaryTerms(content = {}) {
+  const source = content.glossaryTerms?.length > 0 ? content.glossaryTerms : defaultApdaGlossaryTerms;
+  return source.map(normalizeGlossaryTermForEditor);
+}
+
+function NoviceHubPage({ noviceContent }) {
+  const [glossarySearch, setGlossarySearch] = useState("");
+  const [selectedGlossaryTerm, setSelectedGlossaryTerm] = useState("APDA");
+  const noviceFaqSectionRef = useRef(null);
   const apdaSpeechSteps = noviceContent.speechSteps || [];
+  const apdaGlossaryTerms = getInitialNoviceGlossaryTerms(noviceContent);
+  const filteredGlossaryTerms = apdaGlossaryTerms.filter((item) => {
+    const query = glossarySearch.trim().toLowerCase();
+    if (!query) return true;
+    return `${item.term} ${item.category} ${item.definition}`.toLowerCase().includes(query);
+  });
+  const displayedGlossaryTerm = filteredGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
+    || apdaGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
+    || filteredGlossaryTerms[0]
+    || apdaGlossaryTerms[0];
+  const noviceFaqSection = (
+    <section ref={noviceFaqSectionRef} className="mt-6">
+      <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <Eyebrow>Novice FAQ</Eyebrow>
+          <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Common First-Round Questions</h2>
+        </div>
+      </div>
+      <div className="columns-1 gap-3 md:columns-2">
+        {noviceContent.faqs.map((faq, index) => (
+          <SmoothDetails
+            key={faq.id}
+            title={faq.question}
+            defaultOpen={index === 0}
+            className="mb-3 break-inside-avoid border border-[#ded8d2] bg-white p-4 shadow-[0_14px_38px_rgba(45,41,38,0.06)]"
+            scrollTargetRef={noviceFaqSectionRef}
+          >
+            <p className="text-sm font-semibold leading-6 text-[#5b5450]">{faq.answer}</p>
+          </SmoothDetails>
+        ))}
+      </div>
+    </section>
+  );
+  const apdaGlossarySection = (
+    <section className="flex flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-6">
+      <div className="border-b-4 border-[#CC0000] pb-4">
+        <div>
+          <Eyebrow>APDA Glossary</Eyebrow>
+          <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">Common APDA Terms</h2>
+          <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#5b5450]">
+            Quick definitions for league shorthand, round mechanics, and speaker-scale language novices will hear at practice and tournaments.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 h-[38rem] min-h-0 overflow-hidden border border-[#ded8d2] bg-[#f6f4f2] lg:grid lg:grid-cols-[17rem_1fr]">
+        <div className="flex h-full min-h-0 flex-col border-b border-[#ded8d2] bg-white p-3 lg:border-b-0 lg:border-r">
+          <label className="grid gap-1">
+            <span className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">Search terms</span>
+            <input
+              type="search"
+              value={glossarySearch}
+              onChange={(event) => setGlossarySearch(event.target.value)}
+              placeholder="Try POC, speaks, break..."
+              className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-semibold text-[#2D2926] outline-none transition focus:border-[#CC0000] focus:bg-white"
+            />
+          </label>
+          <div className="mt-3 h-0 min-h-0 flex-1 overflow-y-auto border-t border-[#ded8d2] pt-1">
+              {filteredGlossaryTerms.map((item) => (
+                <button
+                  key={item.term}
+                  type="button"
+                  onClick={() => setSelectedGlossaryTerm(item.term)}
+                  className={`flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-sm font-black transition ${
+                    displayedGlossaryTerm?.term === item.term
+                      ? "text-[#CC0000]"
+                      : "text-[#2D2926] hover:text-[#CC0000]"
+                  }`}
+                >
+                  <span>{item.term}</span>
+                  <span className={`text-[0.58rem] uppercase tracking-[0.1em] ${
+                    displayedGlossaryTerm?.term === item.term ? "text-[#CC0000]" : "text-[#8f8781]"
+                  }`}>
+                    {item.category}
+                  </span>
+                </button>
+              ))}
+              {filteredGlossaryTerms.length === 0 && (
+                <p className="px-3 py-4 text-sm font-bold text-[#6d6560]">
+                  No matching terms.
+                </p>
+              )}
+          </div>
+        </div>
+        <div className="h-full overflow-y-auto bg-[#f6f4f2] p-4 lg:p-5">
+          {displayedGlossaryTerm ? (
+            <>
+              <span className="inline-flex bg-[#CC0000] px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.12em] text-white">
+                {displayedGlossaryTerm.category}
+              </span>
+              <h3 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{displayedGlossaryTerm.term}</h3>
+              <p className="mt-3 max-w-2xl text-base font-semibold leading-7 text-[#5b5450]">
+                {displayedGlossaryTerm.definition}
+              </p>
+              {displayedGlossaryTerm.resources?.length > 0 && (
+                <div className="mt-4 border-t border-[#ded8d2] pt-3">
+                  <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">Helpful resources</p>
+                  <ul className="mt-2 grid gap-1">
+                    {displayedGlossaryTerm.resources.map((resource) => (
+                      <li key={resource.url} className="flex items-center gap-2 text-[#CC0000]">
+                        <span className="h-1.5 w-1.5 shrink-0 bg-[#CC0000]" />
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[0.68rem] font-black uppercase tracking-[0.06em] transition hover:text-[#2D2926]"
+                        >
+                          {resource.label} <ExternalLink size={10} />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-sm font-bold text-[#6d6560]">Search for a term to see its definition.</p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+  const apdaBasicsSection = (
+    <section className="overflow-hidden border border-[#ded8d2] bg-white p-5 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-6">
+      <div className="border-b-4 border-[#CC0000] pb-4">
+        <Eyebrow>APDA Basics</Eyebrow>
+        <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">APDA Speech Order</h2>
+        <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+          A quick map of who speaks when in a standard APDA cases round.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-2 border border-[#b7cff8] bg-[#eef5ff] px-3 py-1.5 text-xs font-black text-[#135fbe]">
+            <span className="h-2.5 w-2.5 bg-[#1d67c4]" /> Government
+          </span>
+          <span className="inline-flex items-center gap-2 border border-[#f0b7b7] bg-[#fff1f1] px-3 py-1.5 text-xs font-black text-[#b31313]">
+            <span className="h-2.5 w-2.5 bg-[#CC0000]" /> Opposition
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2">
+        {apdaSpeechSteps.map((step) => {
+          const Icon = speechIconMap[step.icon] || Mic2;
+          const isGov = step.side === "gov";
+          return (
+            <article key={step.order} className={`grid grid-cols-[2rem_1fr] gap-3 border p-3 ${
+              isGov ? "border-[#a9c7f5] bg-[#f4f8ff]" : "border-[#f0b7b7] bg-[#fff6f6]"
+            }`}>
+              <div className={`grid h-8 w-8 place-items-center text-xs font-black text-white ${isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"}`}>
+                {step.order}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Icon size={16} className={isGov ? "text-[#1d67c4]" : "text-[#CC0000]"} />
+                  <h3 className="text-sm font-black leading-tight text-[#202020]">{step.title}</h3>
+                </div>
+                <p className={`mt-1 inline-flex px-2 py-0.5 text-[0.62rem] font-black ${
+                  isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
+                }`}>
+                  {step.time}
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#403a36]">{step.copy}</p>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex items-start gap-3 border border-[#f1d38a] bg-[#fff8df] p-3 text-[#2D2926]">
+        <div className="grid h-9 w-9 shrink-0 place-items-center bg-[#f1aa1d] text-white">
+          <Gavel size={20} />
+        </div>
+        <div>
+          <h3 className="text-base font-black">The Judge Decides</h3>
+          <p className="mt-1 text-xs font-semibold leading-5 text-[#5b5450]">
+            After the round, both teams leave the room while the judge deliberates and prepares the RFD.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 
   return (
     <Page>
@@ -1193,104 +1594,11 @@ function NoviceHubPage({ noviceContent }) {
           </Card>
         ))}
       </div>
-      <section className="mt-6 overflow-hidden border border-[#ded8d2] bg-white p-5 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-7 md:p-9">
-        <div className="mx-auto max-w-5xl text-center">
-          <Eyebrow>APDA Basics</Eyebrow>
-          <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926] md:text-5xl">APDA Speech Order</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-6 text-[#5b5450] md:text-base md:leading-7">
-            A quick map of who speaks when in a standard APDA cases round.
-          </p>
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-            <span className="inline-flex items-center justify-center gap-2 border border-[#b7cff8] bg-[#eef5ff] px-4 py-2 text-sm font-black text-[#135fbe]">
-              <span className="h-3 w-3 bg-[#1d67c4]" /> Government: prepared case
-            </span>
-            <span className="inline-flex items-center justify-center gap-2 border border-[#f0b7b7] bg-[#fff1f1] px-4 py-2 text-sm font-black text-[#b31313]">
-              <span className="h-3 w-3 bg-[#CC0000]" /> Opposition: no prep
-            </span>
-          </div>
-        </div>
-
-        <div className="relative mx-auto mt-8 grid max-w-6xl gap-4 md:mt-10 md:gap-6">
-          <div className="pointer-events-none absolute left-8 top-0 hidden h-full border-l-2 border-dashed border-[#cfd5dd] md:left-1/2 md:block" />
-          {apdaSpeechSteps.map((step) => {
-            const Icon = speechIconMap[step.icon] || Mic2;
-            const isGov = step.side === "gov";
-            const speechCard = (
-              <article className={`relative grid min-h-full gap-3 border p-4 shadow-[0_12px_34px_rgba(45,41,38,0.06)] sm:grid-cols-[3.5rem_1fr] sm:p-5 ${
-                isGov ? "border-[#a9c7f5] bg-[#f4f8ff]" : "border-[#f0b7b7] bg-[#fff6f6]"
-              }`}>
-                <span className={`absolute right-3 top-3 grid h-8 w-8 place-items-center text-sm font-black text-white md:hidden ${isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"}`}>
-                  {step.order}
-                </span>
-                <div className={`grid h-12 w-12 place-items-center self-start ${
-                  isGov ? "bg-[#1d67c4] text-white" : "bg-[#CC0000] text-white"
-                }`}>
-                  <Icon size={24} />
-                </div>
-                <div className="pr-9 md:pr-0">
-                  <h3 className="text-lg font-black leading-tight text-[#202020]">{step.title}</h3>
-                  <p className={`mt-2 inline-flex px-3 py-1 text-xs font-black ${
-                    isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
-                  }`}>
-                    {step.time}
-                  </p>
-                  <p className="mt-3 text-sm font-semibold leading-6 text-[#403a36]">{step.copy}</p>
-                  {step.note && (
-                    <p className="mt-3 border border-[#f4d690] bg-[#fff5d6] px-3 py-2 text-xs font-black text-[#6d4a00]">
-                      {step.note}
-                    </p>
-                  )}
-                </div>
-              </article>
-            );
-            return (
-              <div key={step.order} className="grid gap-3 md:grid-cols-[1fr_4rem_1fr] md:items-center">
-                <div>{isGov ? speechCard : null}</div>
-                <div className="hidden items-center justify-center md:col-start-2 md:flex">
-                  <span className={`relative z-10 grid h-11 w-11 place-items-center border-4 border-white text-lg font-black text-white shadow-[0_10px_25px_rgba(45,41,38,0.16)] ${
-                    isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"
-                  }`}>
-                    {step.order}
-                  </span>
-                </div>
-                <div>{isGov ? null : speechCard}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mx-auto mt-5 flex max-w-6xl items-start gap-4 border border-[#f1d38a] bg-[#fff8df] p-4 text-[#2D2926] sm:items-center sm:p-5">
-          <div className="grid h-11 w-11 shrink-0 place-items-center bg-[#f1aa1d] text-white">
-            <Gavel size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-black">The Judge Decides</h3>
-            <p className="mt-1 text-sm font-semibold leading-6 text-[#5b5450]">
-              After the round, both teams leave the room to let the judge deliberate on which side gave the more convincing, better supported, and better weighed reasons.
-            </p>
-          </div>
-        </div>
-      </section>
-      <section className="mt-6">
-        <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <Eyebrow>Novice FAQ</Eyebrow>
-            <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Common First-Round Questions</h2>
-          </div>
-        </div>
-        <div className="columns-1 gap-3 md:columns-2">
-          {noviceContent.faqs.map((faq, index) => (
-            <SmoothDetails
-              key={faq.id}
-              title={faq.question}
-              defaultOpen={index === 0}
-              className="mb-3 break-inside-avoid border border-[#ded8d2] bg-white p-4 shadow-[0_14px_38px_rgba(45,41,38,0.06)]"
-            >
-              <p className="text-sm font-semibold leading-6 text-[#5b5450]">{faq.answer}</p>
-            </SmoothDetails>
-          ))}
-        </div>
-      </section>
+      {noviceFaqSection}
+      <div className="mt-6 grid gap-5 xl:grid-cols-[1.12fr_0.88fr] xl:items-start">
+        {apdaGlossarySection}
+        {apdaBasicsSection}
+      </div>
       <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
@@ -1652,6 +1960,7 @@ function TrophiesPage({ trophiesContent }) {
               <SmoothDetails
                 title="Achievements"
                 className="mt-4 border-t border-[#ded8d2] pt-3"
+                scrollOffset={190}
               >
                 <ul className="grid gap-2">
                   {member.achievements.map((achievement) => (
@@ -2243,6 +2552,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceFaqs, setNoviceFaqs] = useState(draftNoviceContent.faqs);
   const [noviceSpeechSteps, setNoviceSpeechSteps] = useState(draftNoviceContent.speechSteps || []);
   const [newNoviceFaq, setNewNoviceFaq] = useState({ question: "", answer: "" });
+  const [noviceGlossaryTerms, setNoviceGlossaryTerms] = useState(() => getInitialNoviceGlossaryTerms(draftNoviceContent));
+  const [selectedEditorGlossaryTermId, setSelectedEditorGlossaryTermId] = useState("");
+  const [newGlossaryTerm, setNewGlossaryTerm] = useState({ term: "", category: "", definition: "", resourcesText: "" });
   const [eboardMembers, setEboardMembers] = useState(draftEboardContent.members || []);
   const [newEboardMember, setNewEboardMember] = useState({ name: "", role: "", email: "", bio: "", photo: "" });
   const [newCarouselSlide, setNewCarouselSlide] = useState({ src: "", alt: "", kicker: "", caption: "" });
@@ -2272,16 +2584,27 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [selectedTrophySeasonId, setSelectedTrophySeasonId] = useState("");
   const [newTrophySeason, setNewTrophySeason] = useState("");
   const [newTrophyMember, setNewTrophyMember] = useState({ name: "", meta: "", achievement: "" });
+  const [trophyMemberSearch, setTrophyMemberSearch] = useState("");
   const [apdaUpdatePreview, setApdaUpdatePreview] = useState(null);
   const [apdaUpdateStatus, setApdaUpdateStatus] = useState({ state: "idle", message: "" });
   const [notesEditorOpen, setNotesEditorOpen] = useState(false);
   const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false);
   const [noviceInfographicEditorOpen, setNoviceInfographicEditorOpen] = useState(false);
   const [noviceFaqEditorOpen, setNoviceFaqEditorOpen] = useState(false);
+  const [noviceGlossaryEditorOpen, setNoviceGlossaryEditorOpen] = useState(false);
+  const [noviceGlossaryManagerSearch, setNoviceGlossaryManagerSearch] = useState("");
   const [eboardEditorOpen, setEboardEditorOpen] = useState(false);
   const [carouselEditorOpen, setCarouselEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
   const [trophyEditorSection, setTrophyEditorSection] = useState("stats");
+  const notesEditorCardRef = useAutoScrollOnOpen(notesEditorOpen);
+  const announcementEditorCardRef = useAutoScrollOnOpen(announcementEditorOpen);
+  const noviceGlossaryEditorCardRef = useAutoScrollOnOpen(noviceGlossaryEditorOpen);
+  const noviceInfographicEditorCardRef = useAutoScrollOnOpen(noviceInfographicEditorOpen);
+  const noviceFaqEditorCardRef = useAutoScrollOnOpen(noviceFaqEditorOpen);
+  const eboardEditorCardRef = useAutoScrollOnOpen(eboardEditorOpen);
+  const trophyEditorCardRef = useAutoScrollOnOpen(trophyEditorOpen);
+  const carouselEditorCardRef = useAutoScrollOnOpen(carouselEditorOpen);
   const [editorNotice, setEditorNotice] = useState({ type: "", message: "" });
   const [dragItem, setDragItem] = useState(null);
   const [previewDraftId, setPreviewDraftId] = useState("");
@@ -2297,10 +2620,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEditWorkspace = isEboard;
-  const canEditMemberLinks = isAdmin || (auth?.role === "eboard" && resourceEditModeEnabled);
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
   const canEditBudsiteTitles = isAdmin && (!isTitleEditingToggleAccount || adminControlSettings.titleEditingEnabledForYeon);
+  const canEditMemberLinks = canEditBudsiteTitles || (auth?.role === "eboard" && resourceEditModeEnabled);
   const canEditCasebookLinks = canEditMemberLinks;
   const canEditMemberLinkTileContent = canEditMemberLinks;
   const canDeleteCasebookLinks = canEditMemberLinks;
@@ -2617,6 +2940,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     if (id === "novice") {
       setNoviceFaqs(restoredContent.faqs);
       setNoviceSpeechSteps(restoredContent.speechSteps || []);
+      const restoredGlossaryTerms = getInitialNoviceGlossaryTerms(restoredContent);
+      setNoviceGlossaryTerms(restoredGlossaryTerms);
+      setSelectedEditorGlossaryTermId(restoredGlossaryTerms[0]?.id || "");
     }
     if (id === "eboard") setEboardMembers(restoredContent.members || []);
     saveStoredDraftContent(id, restoredContent);
@@ -2676,6 +3002,24 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const newTrophyAccomplishmentDuplicate = hasDuplicateValue(draftTrophiesContent.accomplishments, newTrophyAccomplishment, (item) => item.text);
   const newTrophyMilestoneDuplicate = hasDuplicateValue(draftTrophiesContent.milestones, newTrophyMilestone.title, (item) => item.title);
   const newTrophyResultDuplicate = hasDuplicateValue(selectedTrophySeason?.results || [], newTrophyResult.tournament, (result) => result.tournament);
+  const selectedEditorGlossaryTerm = noviceGlossaryTerms.find((term) => term.id === selectedEditorGlossaryTermId);
+  const normalizedGlossaryManagerSearch = noviceGlossaryManagerSearch.trim().toLowerCase();
+  const visibleNoviceGlossaryTerms = normalizedGlossaryManagerSearch
+    ? noviceGlossaryTerms.filter((term) => (
+      term.term.toLowerCase().includes(normalizedGlossaryManagerSearch)
+      || term.category.toLowerCase().includes(normalizedGlossaryManagerSearch)
+      || term.definition.toLowerCase().includes(normalizedGlossaryManagerSearch)
+    ))
+    : noviceGlossaryTerms;
+  const normalizedTrophyMemberSearch = trophyMemberSearch.trim().toLowerCase();
+  const visibleTrophyMembers = draftTrophiesContent.members
+    .map((member, index) => ({ member, index }))
+    .filter(({ member }) => (
+      !normalizedTrophyMemberSearch
+      || member.name.toLowerCase().includes(normalizedTrophyMemberSearch)
+      || member.meta.toLowerCase().includes(normalizedTrophyMemberSearch)
+      || member.achievements.some((achievement) => achievement.toLowerCase().includes(normalizedTrophyMemberSearch))
+    ));
 
   useEffect(() => {
     let ignore = false;
@@ -2697,6 +3041,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         setDraftNoviceContent((current) => current || databaseState.noviceContent);
         setNoviceFaqs((current) => current.length > 0 ? current : databaseState.noviceContent.faqs);
         setNoviceSpeechSteps((current) => current.length > 0 ? current : databaseState.noviceContent.speechSteps || []);
+        setNoviceGlossaryTerms((current) => current.length > 0 ? current : getInitialNoviceGlossaryTerms(databaseState.noviceContent));
         onNoviceContentChange(databaseState.noviceContent);
       }
       if (databaseState.eboardContent) {
@@ -2808,7 +3153,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const persistNoviceFaqs = (nextFaqs) => {
     if (!canWriteNotes) return;
-    const nextContent = { ...draftNoviceContent, speechSteps: noviceSpeechSteps, faqs: nextFaqs };
+    const nextContent = { ...draftNoviceContent, speechSteps: noviceSpeechSteps, faqs: nextFaqs, glossaryTerms: noviceGlossaryTerms };
     setDraftNoviceContent(nextContent);
     setNoviceFaqs(nextFaqs);
     saveStoredDraftContent("novice", nextContent);
@@ -2818,11 +3163,22 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const persistNoviceSpeechSteps = (nextSteps) => {
     if (!isAdmin) return;
     const normalizedSteps = [...nextSteps].sort((a, b) => Number(a.order) - Number(b.order));
-    const nextContent = { ...draftNoviceContent, speechSteps: normalizedSteps, faqs: noviceFaqs };
+    const nextContent = { ...draftNoviceContent, speechSteps: normalizedSteps, faqs: noviceFaqs, glossaryTerms: noviceGlossaryTerms };
     setDraftNoviceContent(nextContent);
     setNoviceSpeechSteps(normalizedSteps);
     saveStoredDraftContent("novice", nextContent);
     showEditorNotice("Novice infographic draft saved. Publish it when ready.");
+  };
+
+  const persistNoviceGlossaryTerms = (nextTerms, nextSelectedId = selectedEditorGlossaryTermId) => {
+    if (!canWriteNotes) return;
+    const normalizedTerms = nextTerms.map(normalizeGlossaryTermForEditor).filter((term) => term.term.trim());
+    const nextContent = { ...draftNoviceContent, speechSteps: noviceSpeechSteps, faqs: noviceFaqs, glossaryTerms: normalizedTerms };
+    setDraftNoviceContent(nextContent);
+    setNoviceGlossaryTerms(normalizedTerms);
+    setSelectedEditorGlossaryTermId(nextSelectedId || normalizedTerms[0]?.id || "");
+    saveStoredDraftContent("novice", nextContent);
+    showEditorNotice("APDA glossary draft saved. Publish it when ready.");
   };
 
   const handleNoviceFaqSubmit = (event) => {
@@ -2868,6 +3224,62 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     if (dragItem?.collection !== "novice-faq" || dragItem.id === targetId) return;
     persistNoviceFaqs(reorderArrayById(noviceFaqs, dragItem.id, targetId));
     finishEditorDrag();
+  };
+
+  const parseGlossaryResources = (resourcesText = "") => resourcesText
+    .split("\n")
+    .map((line) => {
+      const [label = "", ...urlParts] = line.split("|");
+      return { label: label.trim(), url: urlParts.join("|").trim() };
+    })
+    .filter((resource) => resource.label && resource.url);
+
+  const formatGlossaryResources = (resources = []) => resources.map((resource) => `${resource.label} | ${resource.url}`).join("\n");
+
+  const addGlossaryTerm = (event) => {
+    event.preventDefault();
+    const term = newGlossaryTerm.term.trim();
+    const definition = newGlossaryTerm.definition.trim();
+    if (!term || !definition) {
+      showEditorNotice("Add a term and definition before saving.", "error");
+      return;
+    }
+    if (hasDuplicateValue(noviceGlossaryTerms, term, (item) => item.term)) {
+      showEditorNotice("That glossary term already exists.", "error");
+      return;
+    }
+    const nextTerm = normalizeGlossaryTermForEditor({
+      id: createGlossaryId(term),
+      term,
+      category: newGlossaryTerm.category.trim() || "General",
+      definition,
+      resources: parseGlossaryResources(newGlossaryTerm.resourcesText),
+    });
+    persistNoviceGlossaryTerms([...noviceGlossaryTerms, nextTerm], nextTerm.id);
+    setNewGlossaryTerm({ term: "", category: "", definition: "", resourcesText: "" });
+  };
+
+  const updateGlossaryTerm = (id, field, value) => {
+    persistNoviceGlossaryTerms(noviceGlossaryTerms.map((item) => (
+      item.id === id
+        ? {
+          ...item,
+          [field]: field === "resources" ? parseGlossaryResources(value) : value,
+        }
+        : item
+    )), id);
+  };
+
+  const deleteGlossaryTerm = (term) => {
+    if (!term) return;
+    requestDeleteConfirmation({
+      title: `Delete "${term.term}"?`,
+      body: "This term will be removed from the public APDA Glossary after the Novice Hub draft is published.",
+      onConfirm: () => {
+        const nextTerms = noviceGlossaryTerms.filter((item) => item.id !== term.id);
+        persistNoviceGlossaryTerms(nextTerms, nextTerms[0]?.id || "");
+      },
+    });
   };
 
   const updateNoviceSpeechStep = (id, field, value) => {
@@ -3884,7 +4296,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               role="switch"
               aria-checked={resourceEditModeEnabled}
               onClick={toggleResourceEditMode}
-              className="inline-flex h-8 items-center gap-2 border border-[#ded8d2] bg-white px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] md:ml-auto"
+              className="inline-flex h-8 items-center gap-2 border border-[#ded8d2] bg-white px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-[#2D2926] transition hover:border-[#2D2926] md:ml-auto"
             >
               <span
                 className={`h-3 w-6 rounded-full border transition ${
@@ -3908,7 +4320,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               role="switch"
               aria-checked={adminControlSettings.titleEditingEnabledForYeon}
               onClick={toggleTitleEditingForYeon}
-              className="inline-flex h-8 items-center gap-2 border border-[#ded8d2] bg-white px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] md:ml-auto"
+              className="inline-flex h-8 items-center gap-2 border border-[#ded8d2] bg-white px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-[#2D2926] transition hover:border-[#2D2926] md:ml-auto"
             >
               <span
                 className={`h-3 w-6 rounded-full border transition ${
@@ -3985,11 +4397,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         <div className="pt-2">
           <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
             {renderEditablePrivatePageHeader("memberResourcesHero")}
-            {canEditMemberLinks && (
-              <div className="mt-4">
+              <div className={`overflow-hidden transition-all ${canEditMemberLinks ? "mt-3 max-h-16 opacity-100" : "mt-0 max-h-0 pointer-events-none opacity-0"}`}>
                 <SaveNotice notice={editorNotice} />
               </div>
-            )}
           </div>
           <div className="grid gap-7">
             {memberLinksBySection.map((group) => (
@@ -4220,11 +4630,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         <div className="pt-2">
           <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
             {renderEditablePrivatePageHeader("clubResourcesHero")}
-            {canEditMemberLinks && (
-              <div className="mt-4">
+              <div className={`overflow-hidden transition-all ${canEditMemberLinks ? "mt-3 max-h-16 opacity-100" : "mt-0 max-h-0 pointer-events-none opacity-0"}`}>
                 <SaveNotice notice={editorNotice} />
               </div>
-            )}
           </div>
 
           {nonCompetitiveFormLinks.length > 0 && (
@@ -4962,7 +5370,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           >
           <div className="grid gap-5">
           <div className="grid">
-            <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <Card ref={notesEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
               <button
                 type="button"
                 onClick={() => setNotesEditorOpen((current) => !current)}
@@ -4994,6 +5402,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     className="overflow-hidden"
                   >
                     <div className="mt-5">
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add Meeting Note</p>
                   <form onSubmit={handleNoteSubmit} className="grid gap-4">
                     <fieldset disabled={!canWriteNotes} className="grid gap-4 disabled:opacity-55">
                       <HelperText>Meeting notes publish to the public Meetings page. Use the formatting toolbar for links, lists, and emphasis.</HelperText>
@@ -5036,6 +5445,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   </form>
 
                   <div className="mt-4 min-h-0 flex-1 border-t border-[#ded8d2] pt-4">
+                    <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Past Meeting Notes</p>
                     <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                       Past E-Board Notes
                       <select
@@ -5071,7 +5481,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </Card>
           </div>
 
-          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+          <Card ref={announcementEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
             <button
               type="button"
               onClick={() => setAnnouncementEditorOpen((current) => !current)}
@@ -5103,6 +5513,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   className="overflow-hidden"
                 >
                   <form onSubmit={handleAnnouncementSubmit} className="mt-5 grid gap-3">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Edit Announcement</p>
                     <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                       <HelperText>This appears beside the meeting summary. Leave the body blank to show the default announcement message.</HelperText>
                       <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -5133,6 +5544,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
+
           </div>
           </SmoothDetails>
 
@@ -5142,8 +5554,174 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           >
           <div className="grid gap-5">
 
+          <Card ref={noviceGlossaryEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setNoviceGlossaryEditorOpen((current) => !current)}
+              className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+              aria-expanded={noviceGlossaryEditorOpen}
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <FileText className="text-[#CC0000]" />
+                  <Eyebrow>Budsite Editor</Eyebrow>
+                </div>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">APDA Glossary Manager</h2>
+                <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                  Add, edit, and delete terms in the public Novice Hub APDA Glossary.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                {noviceGlossaryEditorOpen ? "Close Glossary" : "Open Glossary"} <ChevronDown size={16} className={`transition ${noviceGlossaryEditorOpen ? "rotate-180" : ""}`} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {noviceGlossaryEditorOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-5 grid gap-4">
+                    <div className="grid gap-4 border border-[#2D2926] bg-white p-3">
+                      <div className="flex flex-col gap-2 border-b-2 border-[#CC0000] pb-3 md:flex-row md:items-end md:justify-between">
+                        <div>
+                          <Eyebrow>APDA Glossary</Eyebrow>
+                          <h3 className="mt-1 text-xl font-black text-[#2D2926]">Manage Terms</h3>
+                          <p className="mt-1 text-sm font-semibold leading-5 text-[#5b5450]">
+                            Select a term to edit it. Deleting removes it from the public glossary after publishing.
+                          </p>
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{noviceGlossaryTerms.length} terms</span>
+                      </div>
+
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Glossary Term</p>
+                      <form onSubmit={addGlossaryTerm} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                        <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
+                          <div className="grid gap-3 md:grid-cols-[0.7fr_0.55fr_1fr]">
+                            <input
+                              value={newGlossaryTerm.term}
+                              onChange={(event) => setNewGlossaryTerm((current) => ({ ...current, term: event.target.value }))}
+                              placeholder="Term"
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold outline-none focus:border-[#CC0000]"
+                            />
+                            <input
+                              value={newGlossaryTerm.category}
+                              onChange={(event) => setNewGlossaryTerm((current) => ({ ...current, category: event.target.value }))}
+                              placeholder="Category"
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold outline-none focus:border-[#CC0000]"
+                            />
+                            <input
+                              value={newGlossaryTerm.resourcesText}
+                              onChange={(event) => setNewGlossaryTerm((current) => ({ ...current, resourcesText: event.target.value }))}
+                              placeholder="Optional resource: Label | URL"
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
+                            />
+                          </div>
+                          <textarea
+                            value={newGlossaryTerm.definition}
+                            onChange={(event) => setNewGlossaryTerm((current) => ({ ...current, definition: event.target.value }))}
+                            placeholder="Definition"
+                            rows={2}
+                            className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
+                          />
+                          <button type="submit" className="w-fit bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">
+                            Add Term
+                          </button>
+                        </fieldset>
+                      </form>
+
+                      <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Glossary Terms</p>
+                      <div className="grid gap-3 lg:grid-cols-[16rem_1fr]">
+                        <div className="grid min-h-0 grid-rows-[auto_1fr] border border-[#ded8d2] bg-white">
+                          <label className="border-b border-[#ded8d2] px-3 py-2 text-[0.62rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">
+                            Search terms
+                            <input
+                              type="search"
+                              value={noviceGlossaryManagerSearch}
+                              onChange={(event) => setNoviceGlossaryManagerSearch(event.target.value)}
+                              placeholder="Search glossary"
+                              className="mt-1 w-full border border-[#ded8d2] bg-white px-2 py-1.5 text-sm font-semibold normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                          <div className="max-h-72 overflow-y-auto">
+                            {visibleNoviceGlossaryTerms.length > 0 ? visibleNoviceGlossaryTerms.map((term) => (
+                              <button
+                                key={term.id}
+                                type="button"
+                                onClick={() => setSelectedEditorGlossaryTermId(term.id)}
+                                className={`grid w-full grid-cols-[0.35rem_1fr_auto] items-center gap-2 border-b border-[#ece7e2] px-3 py-1.5 text-left text-sm transition last:border-b-0 ${selectedEditorGlossaryTerm?.id === term.id ? "text-[#2D2926]" : "text-[#5b5450] hover:text-[#2D2926]"}`}
+                              >
+                                <span className={`h-1.5 w-1.5 rounded-full ${selectedEditorGlossaryTerm?.id === term.id ? "bg-[#CC0000]" : "bg-transparent"}`} />
+                                <span className="truncate font-medium">{term.term}</span>
+                                <span className="shrink-0 text-[0.56rem] font-black uppercase tracking-[0.1em] text-[#8f8781]">{term.category}</span>
+                              </button>
+                            )) : (
+                              <div className="px-3 py-4 text-sm font-bold text-[#6d6560]">
+                                No terms match your search.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {selectedEditorGlossaryTerm ? (
+                          <fieldset disabled={!canWriteNotes} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 disabled:opacity-55">
+                            <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Selected Term Editor</p>
+                            <div className="grid gap-3 md:grid-cols-[0.75fr_0.5fr_auto]">
+                              <input
+                                value={selectedEditorGlossaryTerm.term}
+                                onChange={(event) => updateGlossaryTerm(selectedEditorGlossaryTerm.id, "term", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-black outline-none focus:border-[#CC0000]"
+                              />
+                              <input
+                                value={selectedEditorGlossaryTerm.category}
+                                onChange={(event) => updateGlossaryTerm(selectedEditorGlossaryTerm.id, "category", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold outline-none focus:border-[#CC0000]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => deleteGlossaryTerm(selectedEditorGlossaryTerm)}
+                                className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]"
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </div>
+                            <textarea
+                              value={selectedEditorGlossaryTerm.definition}
+                              onChange={(event) => updateGlossaryTerm(selectedEditorGlossaryTerm.id, "definition", event.target.value)}
+                              rows={4}
+                              className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium outline-none focus:border-[#CC0000]"
+                            />
+                            <label className="grid gap-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">
+                              Helpful resources, one per line: Label | URL
+                              <textarea
+                                value={formatGlossaryResources(selectedEditorGlossaryTerm.resources)}
+                                onChange={(event) => updateGlossaryTerm(selectedEditorGlossaryTerm.id, "resources", event.target.value)}
+                                rows={2}
+                                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                          </fieldset>
+                        ) : (
+                          <div className="grid content-start gap-2 border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-4 text-sm text-[#6d6560]">
+                            <h4 className="text-base font-black text-[#2D2926]">No term selected</h4>
+                            <p className="font-semibold leading-6">
+                              Choose a term from the list to load its editor. Nothing can be changed or deleted from this panel until a term is selected.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+
           {isAdmin && (
-            <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+            <Card ref={noviceInfographicEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
               <button
                 type="button"
                 onClick={() => setNoviceInfographicEditorOpen((current) => !current)}
@@ -5175,6 +5753,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     className="overflow-hidden"
                   >
                     <div className="mt-5 grid gap-3">
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Speech Steps</p>
                       <HelperText>Order controls update the speech number automatically. Keep descriptions short enough to fit the public infographic.</HelperText>
                       {noviceSpeechSteps.map((step, index) => (
                         <div key={step.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
@@ -5261,7 +5840,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </Card>
           )}
 
-          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+          <Card ref={noviceFaqEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
             <button
               type="button"
               onClick={() => setNoviceFaqEditorOpen((current) => !current)}
@@ -5293,6 +5872,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   className="overflow-hidden"
                 >
                   <div className="mt-5 grid gap-4">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New FAQ</p>
                     <form onSubmit={handleNoviceFaqSubmit} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                         <HelperText>Write basic, beginner-facing questions. Avoid duplicating a question that is already listed below.</HelperText>
@@ -5324,6 +5904,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </fieldset>
                     </form>
 
+                    <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing FAQs</p>
                     <div className="grid gap-3">
                       {noviceFaqs.map((faq, index) => (
                         <div
@@ -5345,16 +5926,18 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
                               />
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => removeNoviceFaq(faq)}
-                              className="grid h-10 w-10 place-items-center self-end border border-[#ded8d2] bg-white text-[#CC0000]"
-                              aria-label={`Remove ${faq.question}`}
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <div className="flex items-end gap-2">
+                              <ReorderButtons onMoveUp={() => moveNoviceFaq(index, -1)} onMoveDown={() => moveNoviceFaq(index, 1)} disabledUp={index === 0} disabledDown={index === noviceFaqs.length - 1} />
+                              <button
+                                type="button"
+                                onClick={() => removeNoviceFaq(faq)}
+                                className="grid h-10 w-10 place-items-center border border-[#ded8d2] bg-white text-[#CC0000]"
+                                aria-label={`Remove ${faq.question}`}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
-                          <ReorderButtons onMoveUp={() => moveNoviceFaq(index, -1)} onMoveDown={() => moveNoviceFaq(index, 1)} disabledUp={index === 0} disabledDown={index === noviceFaqs.length - 1} />
                           <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Answer
                             <textarea
@@ -5367,6 +5950,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         </div>
                       ))}
                     </div>
+
                   </div>
                 </motion.div>
               )}
@@ -5381,7 +5965,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           >
           <div className="grid gap-5">
 
-          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+          <Card ref={eboardEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
             <button
               type="button"
               onClick={() => setEboardEditorOpen((current) => !current)}
@@ -5413,6 +5997,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   className="overflow-hidden"
                 >
                   <div className="mt-5 grid gap-4">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Officer</p>
                     <form onSubmit={addEboardMember} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                         <HelperText>Recommended photos are square or portrait images under 2 MB. Name and role are required.</HelperText>
@@ -5482,6 +6067,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </fieldset>
                     </form>
 
+                    <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Officers</p>
                     <div className="grid gap-4">
                       {eboardMembers.map((member, index) => (
                         <div
@@ -5583,7 +6169,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           >
           <div className="grid gap-5">
 
-          <Card className="p-4 sm:p-5">
+          <Card ref={trophyEditorCardRef} className="budsite-editor-card budsite-trophy-editor-card p-4 sm:p-5">
             <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
               <button
                 type="button"
@@ -5769,9 +6355,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       )}
                     </div>
                     )}
-            <div className="columns-1 gap-5 xl:columns-2">
+            <div className="grid justify-items-center gap-5">
               {trophyEditorSection === "stats" && (
-              <SmoothDetails title={renderEditableDropdownTitle("trophyTopStats")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
+                {renderEditableDropdownTitle("trophyTopStats")}
+                <div className="mt-3 grid gap-3">
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Top Stat</p>
                 <form onSubmit={addTrophyStat} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <HelperText>Use short public stats. Labels that come from APDA may be overwritten by the APDA updater.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
@@ -5782,6 +6371,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   </div>
                   <FieldWarning>{newTrophyStatDuplicate ? "A top stat with this label already exists." : ""}</FieldWarning>
                 </form>
+                <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Top Stats</p>
                 <div className="grid gap-2">
                   {draftTrophiesContent.stats.map((stat, index) => (
                     <div
@@ -5803,11 +6393,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     </div>
                   ))}
                 </div>
-              </SmoothDetails>
+                </div>
+              </div>
               )}
 
               {trophyEditorSection === "accomplishments" && (
-              <SmoothDetails title={renderEditableDropdownTitle("trophyAccomplishments")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
+                {renderEditableDropdownTitle("trophyAccomplishments")}
+                <div className="mt-3 grid gap-3">
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Accomplishment</p>
                 <form onSubmit={addTrophyAccomplishment} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3 2xl:grid-cols-[1fr_auto]">
                   <input value={newTrophyAccomplishment} onChange={(event) => setNewTrophyAccomplishment(event.target.value)} placeholder="Add accomplishment line" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
@@ -5816,6 +6410,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     <FieldWarning>{newTrophyAccomplishmentDuplicate ? "This accomplishment already exists." : ""}</FieldWarning>
                   </div>
                 </form>
+                <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Accomplishments</p>
                 <div className="grid gap-2">
                   {draftTrophiesContent.accomplishments.map((item, index) => (
                     <div
@@ -5835,11 +6430,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     </div>
                   ))}
                 </div>
-              </SmoothDetails>
+                </div>
+              </div>
               )}
 
               {trophyEditorSection === "milestones" && (
-              <SmoothDetails title={renderEditableDropdownTitle("trophyMilestones")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
+                {renderEditableDropdownTitle("trophyMilestones")}
+                <div className="mt-3 grid gap-3">
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Milestone</p>
                 <form onSubmit={addTrophyMilestone} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
@@ -5850,6 +6449,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                   <FieldWarning>{newTrophyMilestoneDuplicate ? "A milestone with this title already exists." : ""}</FieldWarning>
                 </form>
+                <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Milestones</p>
                 <div className="grid gap-2">
                   {draftTrophiesContent.milestones.map((item, index) => (
                     <div
@@ -5873,11 +6473,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     </div>
                   ))}
                 </div>
-              </SmoothDetails>
+                </div>
+              </div>
               )}
 
               {trophyEditorSection === "members" && (
-              <SmoothDetails title={renderEditableDropdownTitle("trophyMembers")} className="mb-5 break-inside-avoid border border-[#ded8d2] bg-white p-3">
+              <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
+                {renderEditableDropdownTitle("trophyMembers")}
+                <div className="mt-3 grid gap-3">
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add Member Achievement</p>
                 <form onSubmit={addTrophyMemberAchievement} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                   <HelperText>Add one achievement at a time. Only administrators can create or rename member cards; e-board can add achievements to existing people.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
@@ -5896,8 +6500,19 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   </div>
                   <textarea value={newTrophyMember.achievement} onChange={(event) => setNewTrophyMember((current) => ({ ...current, achievement: event.target.value }))} placeholder="Achievement to add to this member" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                 </form>
+                <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Member Achievements</p>
+                <label className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                  Find Current Member
+                  <input
+                    type="search"
+                    value={trophyMemberSearch}
+                    onChange={(event) => setTrophyMemberSearch(event.target.value)}
+                    placeholder="Search by name, meta, or achievement"
+                    className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                  />
+                </label>
                 <div className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1">
-                  {draftTrophiesContent.members.map((member, memberIndex) => (
+                  {visibleTrophyMembers.length > 0 ? visibleTrophyMembers.map(({ member, index: memberIndex }) => (
                     <div
                       key={member.id}
                       draggable
@@ -5925,14 +6540,22 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         </div>
                       ))}
                     </div>
-                  ))}
+                  )) : (
+                    <div className="border border-dashed border-[#ded8d2] bg-white p-4 text-sm font-bold text-[#6d6560]">
+                      No members match your search.
+                    </div>
+                  )}
                 </div>
-              </SmoothDetails>
+                </div>
+              </div>
               )}
             </div>
 
             {trophyEditorSection === "results" && (
-            <SmoothDetails title={renderEditableDropdownTitle("trophyResults")} className="mt-5 border border-[#ded8d2] bg-white p-3">
+            <div className="mx-auto mt-5 w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
+              {renderEditableDropdownTitle("trophyResults")}
+              <div className="mt-3 grid gap-3">
+              <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Season</p>
               <form onSubmit={addTrophyResultSeason} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
                 <input
                   value={newTrophySeason}
@@ -5947,6 +6570,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <HelperText>Use seasons like 2026-2027. The most recent season should stay selected before using APDA update.</HelperText>
                 </div>
               </form>
+              <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Selected Season</p>
               <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                 <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                   Season
@@ -5969,6 +6593,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Delete Season
                 </button>
               </div>
+              <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add Tournament Result</p>
               <form onSubmit={addTrophyResult} className="grid gap-2 border border-[#CC0000]/45 bg-white p-3">
                 <HelperText>Use one highlight per line. Keep wording consistent with the public Trophies page.</HelperText>
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
@@ -5979,6 +6604,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <textarea value={newTrophyResult.highlights} onChange={(event) => setNewTrophyResult((current) => ({ ...current, highlights: event.target.value }))} placeholder="One highlight per line" rows={4} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                 <FieldWarning>{newTrophyResultDuplicate ? "This tournament already exists in the selected season." : ""}</FieldWarning>
               </form>
+              <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Tournament Results</p>
               <div className="grid gap-2">
                 {(selectedTrophySeason?.results || []).length === 0 && (
                   <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
@@ -6018,7 +6644,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   );
                 })}
               </div>
-            </SmoothDetails>
+              </div>
+            </div>
             )}
                   </div>
                 </motion.div>
@@ -6032,7 +6659,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             title={renderBudsiteEditorSectionTitle("home")}
           >
           <div className="grid gap-5">
-          <Card className="flex min-h-0 flex-col p-4 sm:p-5">
+          <Card ref={carouselEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
             <button
               type="button"
               onClick={() => setCarouselEditorOpen((current) => !current)}
@@ -6064,6 +6691,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   className="overflow-hidden"
                 >
                   <div className="mt-5 grid gap-4">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add Carousel Photo</p>
                     <form onSubmit={addCarouselSlide} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                         <HelperText>Upload a photo or paste an image URL. Captions are optional, but alt text keeps the carousel accessible.</HelperText>
@@ -6130,6 +6758,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </fieldset>
                     </form>
 
+                    <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Carousel Photos</p>
                     <div className="grid gap-4">
                       {draftHomeContent.carouselSlides.map((slide, index) => (
                         <div

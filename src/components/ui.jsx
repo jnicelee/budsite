@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { navigateTo } from "../lib/navigation";
 
 export function SiteLink({ href, children, className = "", onClick }) {
@@ -49,13 +50,13 @@ export function PageHeader({ eyebrow, title, children }) {
   );
 }
 
-export function Card({ children, className = "" }) {
+export const Card = forwardRef(function Card({ children, className = "" }, ref) {
   return (
-    <div className={`min-w-0 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-6 ${className}`}>
+    <div ref={ref} className={`min-w-0 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] sm:p-6 ${className}`}>
       {children}
     </div>
   );
-}
+});
 
 export function PrimaryButton({ href, children, className = "" }) {
   return (

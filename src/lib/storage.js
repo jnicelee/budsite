@@ -271,6 +271,18 @@ export function normalizeNoviceContent(content = defaultNoviceContent) {
       question: item.question || "",
       answer: item.answer || "",
     })),
+    glossaryTerms: normalizeTrophyItems(source.glossaryTerms || [], (item, index) => ({
+      id: item.id || `glossary-${index}-${slugify(item.term || "term")}`,
+      term: item.term || "",
+      category: item.category || "",
+      definition: item.definition || "",
+      resources: Array.isArray(item.resources)
+        ? item.resources.map((resource) => ({
+          label: resource.label || "",
+          url: resource.url || "",
+        })).filter((resource) => resource.label || resource.url)
+        : [],
+    })),
   };
 }
 
