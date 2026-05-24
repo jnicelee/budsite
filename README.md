@@ -1,212 +1,441 @@
-# BUDS Website
+# BUDS Website Instruction Manual
 
-Website for the Boston University Debate Society. The site is built with React and Vite, styled with Tailwind utility classes, and connected to Supabase for shared team data.
+This website is the public site and private operating hub for the Boston University Debate Society. It is meant to be simple enough for new members to use on day one, while still giving e-board and admins the tools they need to keep the club organized.
 
-## Main Website Functions
+## Project Goals
 
-The public website is organized into separate pages instead of one long scrolling page.
+- **Present BUDS clearly to the public**
+  - Show prospective members what the team does.
+  - Make joining the team easy and visible.
+  - Keep public pages like the e-board page, trophies page, novice hub, and meeting information current.
 
-- **Home**: introduces BUDS, highlights the team ranking, explains that debate is open to beginners, and includes a photo carousel with captions.
-- **About**: explains what BUDS does, who the team is best for, why students should join, and links into the team history section.
-- **Novice Hub**: gives new debaters quick access to APDA resources, guides, and learning links.
-- **Calendar**: embeds the team calendar for practices, tournaments, and events.
-- **Meetings**: displays secretary meeting notes as public blog-style posts, newest first.
-- **History**: provides a growing timeline of BUDS history, accomplishments, and alumni information.
-- **E-Board**: lists current e-board members and role descriptions.
-- **Contact**: shows practice information, email, Instagram, LinkedIn, and a request-to-join link.
-- **Join**: lets prospective members submit a membership request with name, email, password, and an optional note.
-- **Hub/Login**: provides private access for accepted members and e-board members.
+- **Make novice onboarding easier**
+  - Collect beginner education materials in one place.
+  - Explain APDA basics, speech order, common terms, FAQs, and useful resources.
+  - Give new debaters a smoother path from their first meeting to their first round.
 
-## Member Side
+- **Centralize member resources**
+  - Keep team links, forms, casebook materials, prep-outs, recordings, and club resources in one private hub.
+  - Make resources searchable, compact, and easy to scan.
+  - Let authorized users add and maintain useful debate resources without needing to edit code.
 
-Accepted members can log in through the **Hub/Login** page. The member side is meant to collect private team resources in one place.
+- **Support e-board operations**
+  - Provide tools for agenda planning, meeting notes, budget tracking, trophies updates, and member management.
+  - Reduce scattered documents and make club administration easier to hand off.
 
-Member resources include cards for links such as:
+- **Protect important editing powers**
+  - Let regular members view what they need.
+  - Let e-board members edit practical resource collections.
+  - Reserve larger page title and hub structure editing for admins.
 
-- Master document
-- Tournament sign-up sheet
-- Practice sign-up sheet
-- Matter file
-- APDA resources
-- Other team documents and forms
+- **Keep data shared across devices**
+  - Save club content and private hub data through Supabase when connected.
+  - Fall back to local browser storage when the database is unavailable.
 
-Administrators can edit the titles, descriptions, and URLs for these resource cards directly from the private hub.
+## Quick Role Guide
 
-## Join Requests
+### Public Visitors
 
-Prospective members use the **Join** page to submit a membership request.
+- Can view public pages without logging in.
+- Can learn about BUDS, novice debate, achievements, and current e-board members.
+- Can submit a join request if they want member access.
 
-The request form collects:
+### Members
 
-- Name
-- BU email
-- Chosen password
-- Optional reason for joining
+- Can log into the private hub after their account is approved.
+- Can view member resources, club resources, novice resources, and private links.
+- Do not see the database connection block in the private hub header.
+- Do not see edit URL controls or resource editing tools unless they have edit permissions.
 
-Administrators can review requests, accept or deny them, leave a reason, and delete old requests. Accepted users become member accounts that can log into the private hub with the password they chose.
+### E-Board Members
 
-## E-Board Side
+- Can access e-board workspace tools.
+- Can use **Edit Mode** to manage selected member resource content.
+- Can edit resource entries, descriptions, and ordering where permitted.
+- Cannot edit higher-level site titles and hub section titles unless they are also admins.
 
-E-board users log in through the **E-Board Login** option. E-board accounts open the private hub with the e-board workspace available.
+### Admins
 
-The e-board workspace includes these modules:
+- Can use all member and e-board tools.
+- Can edit section titles, dropdown titles, hub titles, page content, and higher-level site structure.
+- Can manage members and join requests.
+- Can publish Budsite Editor drafts to the public site.
 
-### Agenda + Accountability
+## Public Website
 
-Use this section to track meeting agenda items and accountability tasks.
+### Home Page
 
-- Add a task with a title, owner, and due date.
-- New tasks appear at the top.
-- Checking off a task greys it out instead of deleting it immediately.
-- Completed tasks can be unchecked for up to two weeks.
-- Completed tasks older than two weeks are automatically removed.
-- A trash icon appears on hover for manual deletion.
-- The undo button restores the last manually deleted agenda item.
+- Use this as the main public landing page for BUDS.
+- It introduces the organization and points visitors toward the rest of the site.
+- Admins can update editable home page content through the Budsite Editor.
+
+### Join and Prospective Member Flow
+
+- Prospective members should use the site join form to request access.
+- Submitted requests appear for admins or member managers to review.
+- Once approved, the person can log into the private hub with the approved account.
+
+### Novice Hub
+
+- The Novice Hub is designed for beginners and should be the first stop for new debaters.
+- It includes:
+  - Beginner education content.
+  - Frequently asked questions.
+  - APDA basics.
+  - APDA speech order.
+  - Common APDA terms glossary.
+  - Helpful documents and links.
+- The FAQ appears above the APDA basics infographic so new members see common beginner questions earlier.
+
+### Trophies Page
+
+- The trophies page shows public achievements and team accomplishments.
+- It can be updated manually through the Trophies Page Editor.
+- It also includes an APDA updater workflow for importing or refreshing standings-related data.
+
+### E-Board Page
+
+- The public e-board page lists current e-board members.
+- Each tile can include:
+  - Name.
+  - Role.
+  - Short role description.
+  - Email address.
+  - Photo or visual profile content, if configured.
+- The page description currently tells visitors to contact an e-board member by email or Messenger.
+
+## Logging In and Using the Private Hub
+
+### Logging In
+
+- Use the login screen with your approved account email.
+- After logging in, you will land in the private hub.
+- The private hub header shows your name and email.
+- The **Log Out** button is in the upper right and uses a more button-like style with depth.
+
+### Private Hub Header
+
+- Members see a clean header without the database connection block.
+- E-board and admin users may see status and editing controls depending on their permissions.
+- The red bottom border visually separates the account area from the hub navigation.
+
+### Hub Navigation
+
+- The main hub buttons are spaced away from surrounding content so they read clearly as navigation buttons.
+- Use these buttons to move between private sections such as:
+  - Member Resources.
+  - Club Resources.
+  - E-Board Workspace.
+  - Budsite Editor.
+  - Members.
+
+## Member Resources
+
+The Member Resources area is the main private resource hub for the team.
+
+### BUDS Team Specific Links
+
+- This section contains important team links such as:
+  - BUDS Drive.
+  - Tournament Sign-Ups.
+  - Events Google Calendar.
+  - Matter File.
+- The Matter File tile links to the shared Google Doc for examples, mechanisms, research, and recurring case areas.
+- Link tiles are compact and designed to show the full short description without awkward scrollbars.
+
+### Club Resources
+
+- Club Resources holds non-competitive or administrative resources.
+- Current examples include:
+  - Reimbursement guide.
+  - Forms.
+  - Paradigms.
+- Forms that used to live under Member Resources were moved here so the resource structure is cleaner.
+- The reimbursement guide includes the updated sixth step contact email: `njsaxena@bu.edu`.
+
+### BUDS Casebook
+
+- The BUDS Casebook section contains compact grid-style case tiles.
+- Each case tile should include:
+  - Case title.
+  - Case statement as the description.
+  - Up to two topic tags, such as economics, sports, feminism, law, education, or technology.
+  - Link to the case document.
+- Cases are organized alphabetically by default.
+- Use the search bar to find cases quickly.
+- The open button is intentionally small so the grid stays easy to scan.
+
+### BUDS Prep-Outs
+
+- The Prep-Outs section collects pre-prepared LOCs for cases that come up often in the league.
+- It includes a note explaining that prep-outs should use standardized headings with the case name and the team that wrote or runs the case.
+- Members can use **REQUEST A PREP-OUT** to access the request form.
+- Authorized editors can use **ADD A PREP-OUT** to open a popup and add a new prep-out.
+
+### Recorded APDA Rounds
+
+- This section collects useful recorded APDA rounds.
+- Each entry should include:
+  - Round name.
+  - Whether the round is a case or motion.
+  - Link to the video.
+  - Description, preferably the case statement if it appears in the video description.
+- Authorized editors can add and delete recorded rounds.
+
+## Editing Member Resource Content
+
+### Edit Mode
+
+- E-board members and admins have an **Edit Mode** switch.
+- When Edit Mode is off:
+  - Resource pages appear closer to the normal member view.
+  - Edit URL fields are hidden.
+  - The Casebook appears in member-facing mode instead of editor mode.
+- When Edit Mode is on:
+  - Authorized users can edit resource content.
+  - Admins can edit broader titles and section/dropdown names.
+  - E-board users can edit approved resource areas but cannot edit admin-only titles.
+
+### What E-Board Edit Mode Allows
+
+- Edit member resource links:
+  - BUDS Team Specific Links.
+  - Club Resources Forms.
+  - Casebook entries.
+  - Prep-Out entries.
+  - Recorded APDA Round entries.
+- Drag and reorder member resource tiles.
+- Edit descriptions for:
+  - BUDS Casebook.
+  - BUDS Prep-Outs.
+  - Recorded APDA Rounds.
+- Delete casebook, prep-out, and recorded round entries using the small trash icon on each tile.
+- Confirm deletions through an "are you sure" popup.
+
+### What Admin Edit Mode Adds
+
+- Edit major section titles such as:
+  - Club Resources.
+  - Private BUDS Links.
+  - Debate Resources.
+  - Budsite Editor dropdown titles.
+- Edit all section and dropdown titles in the hub.
+- Manage higher-level public page and hub structure.
+
+### Adding Resource Entries
+
+- Use the add buttons inside each resource section.
+- Fill out the popup fields carefully.
+- For casebook entries:
+  - Use the real case title.
+  - Use the case statement as the description.
+  - Choose up to two accurate topic tags.
+  - Add the document link.
+- For prep-outs:
+  - Add the case or prep-out title.
+  - Include the relevant link.
+  - Use clear descriptions so members know what they are opening.
+- For recorded rounds:
+  - Enter the round name.
+  - Choose **Case** or **Motion** from the dropdown.
+  - Add the video link.
+  - Add the case statement or motion description where available.
+
+### Deleting Resource Entries
+
+- Only e-board members and admins should see the small trash can icon.
+- The icon appears in the bottom right of casebook, prep-out, and recorded round tiles.
+- Selecting it opens a confirmation popup before deletion.
+- Confirmation messages fade out and use the same rounded style as other messages.
+
+## Budsite Editor
+
+The Budsite Editor is where admins and authorized editors update site content without editing code.
+
+### Editor Layout
+
+- Major editor areas are organized as dropdowns to reduce scrolling and visual clutter.
+- Opening a dropdown should smoothly scroll to a useful position.
+- Editors are slightly narrower than their containing dropdowns to make the page easier to read.
+- Editing modules inside editors are narrower than their module titles where appropriate.
+
+### Drafts and Publishing
+
+- Some Budsite Editor content uses drafts.
+- Draft changes are not always public immediately.
+- To make draft content visible on the public site, use the publish workflow.
+- Revision history allows admins to restore previous versions if needed.
+
+### Confirmation Messages
+
+- Save and delete confirmations fade out instead of disappearing instantly.
+- Confirmation messages use rounded boxes for consistency with the rest of the interface.
+
+### Beginner Education and FAQ Content
+
+- This area controls novice-facing educational content.
+- It includes:
+  - FAQ content.
+  - APDA basics resources.
+  - Common APDA Terms Glossary manager.
+- In the Novice FAQ editor:
+  - Reorder arrows sit next to the trash can instead of taking up a full line.
+  - The dropdown scroll behavior should take the user to the section title, such as **Common First-Round Questions**.
+
+### APDA Glossary Manager
+
+- The APDA Glossary Manager is its own dropdown under Beginner Education and FAQ Content.
+- It includes:
+  - A search bar.
+  - A plain list of terms without tile styling.
+  - A selected-term editor.
+  - A default message when no term is selected so no one accidentally edits or deletes a term.
+- The public glossary shows:
+  - A narrower search-and-list module.
+  - A selected definition box.
+  - Helpful resource links formatted like smaller bullet points.
+- Some terms link to relevant resources, such as:
+  - APDA Speaker Scale.
+  - APDA standings for COTY, SOTY, TOTY, and related standings terms.
+
+### APDA Speech Order Infographic
+
+- The speech order block preserves a timeline-style left/right visual motif.
+- Government and opposition colors are kept visually consistent.
+- The module is sized to sit beside the APDA Glossary in the Novice Hub.
+
+### E-Board Page Editor
+
+- Use this editor to update current e-board tiles.
+- Each member tile can include:
+  - Name.
+  - Role.
+  - Role description.
+  - Email.
+- The email should appear below the role description, red, and slightly larger than before while still being less prominent than the name and role.
+
+### Trophies Page Editor
+
+- The main achievements editor is controlled by buttons instead of a dropdown.
+- Available editor areas include:
+  - Top Stats.
+  - Accomplishments.
+  - Milestones.
+  - Individual Achievements.
+  - Seasons / Results.
+  - APDA Update.
+- The editor module is centered and sized so fields do not get cut off.
+- Individual Achievements includes a search bar to find a current member.
+- Each editor includes small, clear titles separating add sections from existing achievements.
+
+## E-Board Workspace
+
+### Agenda
+
+- The agenda section is used for planning e-board work.
+- The title should simply say **Agenda**.
+- The agenda module is intentionally narrower than the Budget Tracker so the page feels balanced.
 
 ### Budget Tracker
 
-Use this section to track club spending and revenue.
-
-- The base budget appears at the top.
-- Budget rows include category, allocated amount, spent amount, and status.
-- Status options are **On Hold**, **Approved**, and **Denied**.
-- Rows marked **On Hold** do not affect budget totals.
-- Rows marked **Approved** affect allocated/spent totals.
-- Rows marked **Denied** are removed.
-- Revenue additions can be logged separately for money earned from events such as hosting tournaments.
-- Revenue increases the effective total budget.
+- The Budget Tracker tracks club budget information.
+- Base budget uses dollar-sign formatting.
+- Large numbers automatically show commas while typing.
+- If the base budget field is empty, it should default to `$0.00`.
+- Revenue additions can be negative to indicate debt.
+- Negative values are color coded so debt is visually distinct from positive revenue.
 
 ### Secretary Meeting Notes
 
-Use this section to publish meeting notes to the public **Meetings** page.
+- Use this area to draft and manage internal meeting notes.
+- Meeting notes can be restored or reviewed through the editor workflow when revision support is available.
 
-Required fields:
-
-- Meeting date
-- Brief title
-- Notes body
-
-When notes are saved, they become meeting posts in the Meetings tab. Posts are ordered by date, newest first. E-board members can delete meeting posts.
-
-### Budsite Editor Drafts and Restoring Revisions
-
-The **Budsite Editor** uses a safe draft workflow for public page edits.
-
-- Edit public content in the Budsite Editor.
-- Use **Preview Draft** to review the draft version.
-- Use **Publish** only when the draft should replace the live public page.
-- Publishing saves the previous live version into **Revision History**.
-
-To restore an older version:
-
-- Go to **Hub** > **Budsite Editor**.
-- In the **Editing Guide** dashboard, find the page to restore.
-- Under **Revision History**, click the restore option for the date you want.
-- The old version is restored into the draft, not the live website.
-- Click **Preview Draft** to check it.
-- Click **Publish** if the restored draft should become the live page.
-
-Safe restore flow: **Restore revision** > **Preview Draft** > **Publish**.
-
-### Trophies Page APDA Updater
-
-The **Update from APDA** button in the Trophies Page Editor has two stages: **preview** and **apply**. It does not change the website when first clicked.
-
-When clicked, the updater looks for:
-
-- The currently selected Trophies editor season. For example, `2025-2026` becomes APDA season `2025`.
-- Boston University's APDA school page, school ID `6`.
-- Current roster members from `season_summary.members`, including each debater's name, APDA status, and years on team.
-- Each current member's APDA detail page, used to collect tournament-level awards for that season.
-- BU's COTY history and current season COTY breakdown.
-- Tournament team awards where at least one debater is from Boston University.
-- Speaker awards where the speaker is from Boston University.
-
-The updater ignores:
-
-- Non-placed placeholder rows.
-- Awards with no real APDA placement.
-- Non-BU speaker awards.
-- Non-BU team results unless the team includes a BU debater.
-
-After the preview is reviewed and **Apply Reviewed Changes** is clicked, the updater changes:
-
-- **Top Stats**: replaces APDA-managed stats such as current COTY rank, current members, COTY contributors, and previous COTY rank.
-- **Accomplishments**: replaces APDA-managed lines involving Terrier Central members, COTY rank/points, and COTY contributors.
-- **Selected Season Results Timeline**: replaces that APDA season's timeline with the newly pulled tournament results.
-- **Current Member Achievement Cards**: replaces the member achievement list with the current APDA roster and each member's APDA-listed awards.
-
-The updater does not change:
-
-- Milestone cards.
-- Manually added non-APDA stats.
-- Manually added non-APDA accomplishments.
-- Other seasons besides the APDA season being applied.
-- Secretary notes, budget tracker, member accounts, or any other module.
-
-Generated tournament wording uses the public Trophies page style:
-
-- `are Varsity Champions`
-- `are Novice Champions`
-- `places 2nd in Varsity/Novice Team`
-- `reaches Varsity/Novice Semi-Finals`
-- `earns 1st/2nd/etc. Varsity/Novice Speaker`
-
-Within each tournament, generated highlights are ordered by prestige: team awards first, then speaker awards; Varsity before Novice; higher placements before lower placements.
+## Members and Join Requests
 
 ### Members List
 
-Administrators and approved member managers can view member accounts.
+- Admins and member managers can view and manage approved members.
+- Members can be assigned roles and permissions depending on club needs.
 
-Depending on permission level, this area can be used to:
+### Join Requests
 
-- View accepted members.
-- Change a member role between member and e-board.
-- Revoke or unrevoke access.
-- Delete a member account after confirmation.
+- Submitted join requests appear for review.
+- Admins or member managers can approve or reject requests.
+- Approved members gain access to the private hub.
 
-## Admin Notes
+## Permissions Summary
 
-The administrator account has extra editing permissions. Editable fields, request review tools, member management, budget edits, and private link edits are intended to be controlled from the administrator/e-board side of the private hub.
+### Regular Members
 
-Important security note: this project currently uses a prototype-style login flow. Password handling should be migrated to Supabase Auth before storing sensitive documents, real budgets, or private team records.
+- Can view public pages.
+- Can log into the private hub after approval.
+- Can view member resources and club resources.
+- Cannot edit resource links, titles, or site content.
+
+### E-Board Members
+
+- Can access e-board tools.
+- Can use Edit Mode for practical resource management.
+- Can add, edit, reorder, and delete approved resource entries.
+- Can edit descriptions for Casebook, Prep-Outs, and Recorded APDA Rounds.
+- Cannot edit admin-only page titles, hub titles, or dropdown titles.
+
+### Admins
+
+- Can do everything e-board members can do.
+- Can edit titles and dropdown names.
+- Can edit broader public page content.
+- Can publish Budsite Editor drafts.
+- Can manage member access.
+
+### Member Managers
+
+- Can help manage membership workflows.
+- May be allowed to approve or manage join requests depending on the configured permissions.
+- Do not automatically receive every admin-only site editing power.
 
 ## Data Storage
 
-The app can use Supabase for shared data and falls back to browser local storage when Supabase is not configured.
+### Supabase
 
-Supabase-backed areas include:
+- Supabase is the shared database used by the live website.
+- When Supabase is connected, updates should appear across devices.
+- This is important for:
+  - Budsite Editor content.
+  - Member resources.
+  - Casebook entries.
+  - Prep-outs.
+  - Recorded rounds.
+  - Budget and agenda data.
+  - Member records.
 
-- E-board agenda
-- Budget rows and revenue additions
-- Secretary notes
-- Private member links
-- Membership requests
-- Member accounts
+### Local Fallback
 
-Local storage is used as a backup for development and for cases where the Supabase environment variables are missing.
+- If Supabase is unavailable, the site may fall back to local browser storage.
+- Local fallback is useful for preventing data loss while editing.
+- Local fallback data may not appear on other devices.
 
 ## Local Development
 
-Install dependencies:
+### Install Dependencies
 
 ```bash
 npm install
 ```
 
-Run the development server:
+### Start the Development Server
 
 ```bash
 npm run dev
 ```
 
-Build for production:
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-Run lint checks:
+### Run Linting
 
 ```bash
 npm run lint
@@ -214,11 +443,47 @@ npm run lint
 
 ## Environment Variables
 
-Supabase configuration is read from Vite environment variables:
+Create a local environment file when working with Supabase:
 
 ```bash
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-Use `.env.local` for local development and configure the same variables in Vercel for deployment.
+- Keep real credentials out of public commits.
+- Use `.env.local` for local development secrets.
+- Use the production deployment provider's environment variable settings for the live site.
+
+## Updating the Live Website
+
+### Before Editing
+
+- Pull the latest changes from the repository.
+- Check that the working tree is clean or understand what files are already modified.
+- Confirm whether the change belongs in code, Supabase data, or the Budsite Editor.
+
+### After Editing Code
+
+- Run linting or a production build when relevant.
+- Review the changed files.
+- Commit the changes with a clear message.
+- Push to the live branch when the user wants the website updated.
+
+### After Editing Website Content
+
+- If editing through the Budsite Editor, make sure draft content is published when it should appear publicly.
+- If editing private hub resources, confirm that the data saves through Supabase so it appears on other devices.
+- Use another device or browser session to verify shared updates when changing permissions, titles, or resource collections.
+
+## Maintenance Checklist
+
+- Keep public page text current.
+- Keep novice resources beginner-friendly and easy to scan.
+- Remove duplicate links when a resource already appears elsewhere.
+- Keep casebook descriptions limited to case statements.
+- Use accurate topic tags for casebook entries.
+- Keep prep-out entries labeled by case and team when possible.
+- Keep recorded round descriptions useful for members deciding what to watch.
+- Check that Edit Mode hides editing controls when turned off.
+- Confirm that e-board users have the editing powers they need without receiving admin-only title controls.
+- Push code changes after meaningful updates so the live website reflects the current version.
