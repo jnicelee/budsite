@@ -178,7 +178,7 @@ function HomePage({ homeContent }) {
           <div className="grid h-full gap-0 sm:grid-cols-[0.82fr_1.18fr]">
             <div className="flex min-h-48 flex-col justify-between bg-[#CC0000] p-6 text-white sm:min-h-[31rem] lg:min-h-[33rem] md:p-8">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-white/78">2026 national rank</p>
-              <p className="text-[5rem] font-black leading-none tracking-tight sm:text-[6.5rem]">#4</p>
+              <p className="text-[7rem] font-black leading-none tracking-tight sm:text-[9rem] lg:text-[10rem]">#4</p>
             </div>
             <div className="grid content-center gap-7 p-6 md:p-8 lg:p-10">
               <div>
@@ -221,7 +221,7 @@ function HomePage({ homeContent }) {
             </div>
             <div className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] sm:grid-cols-4">
               {["Read Novice Hub", "Come to Practice", "Find a Partner", "Try a Tournament"].map((step, index) => (
-                <div key={step} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+                <div key={step} className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">
                   <span className="mr-2 text-[#CC0000]">{index + 1}</span>{step}
                 </div>
               ))}
@@ -259,7 +259,7 @@ function ConfirmationModal({ confirmation, onCancel, onConfirm }) {
               <button
                 type="button"
                 onClick={onCancel}
-                className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] transition duration-200 hover:border-[#2D2926] hover:bg-white"
+                className="border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] transition duration-200 hover:border-[#2D2926] hover:bg-white"
               >
                 Cancel
               </button>
@@ -495,7 +495,7 @@ function ResourceEntryModal({ open, resource, onChange, onCancel, onSubmit, eyeb
               <button
                 type="button"
                 onClick={onCancel}
-                className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] transition duration-200 hover:border-[#2D2926] hover:bg-white"
+                className="border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] transition duration-200 hover:border-[#2D2926] hover:bg-white"
               >
                 Cancel
               </button>
@@ -830,7 +830,7 @@ function RichTextEditor({ value, onChange, disabled = false, placeholder = "" })
 
   return (
     <div className={`border border-[#ded8d2] bg-white ${disabled ? "opacity-55" : ""}`}>
-      <div className="border-b border-[#ded8d2] bg-[#f6f4f2] p-2">
+      <div className="border-b border-[#ded8d2] bg-[#f3f4f4] p-2">
         <div className="flex flex-wrap items-center gap-1">
           {richTextToolbarTools.map(({ label, icon: Icon, command }) => (
             <button
@@ -974,16 +974,29 @@ function isApdaManagedAccomplishment(item) {
 
 function mergeApdaTrophiesProposal(content, proposal) {
   const nextStats = [
-    ...proposal.stats,
-    ...(content.stats || []).filter((stat) => !isApdaManagedStat(stat)),
+    ...(proposal.stats || []),
+    ...(content.stats || []).filter((stat) => !proposal.stats?.some((proposalStat) => proposalStat.id === stat.id)),
   ];
+
   const nextAccomplishments = [
-    ...proposal.accomplishments,
-    ...(content.accomplishments || []).filter((item) => !isApdaManagedAccomplishment(item)),
+    ...(proposal.accomplishments || []),
+    ...(content.accomplishments || []).filter((item) => !proposal.accomplishments?.some((proposalItem) => proposalItem.id === item.id)),
   ];
+  const mergeResultSeason = (season) => {
+    if (season.id !== proposal.resultSeason.id) return season;
+    const resultsById = new Map((season.results || []).map((result) => [result.id, result]));
+    (proposal.resultSeason.results || []).forEach((result) => resultsById.set(result.id, result));
+    return {
+      ...season,
+      label: proposal.resultSeason.label || season.label,
+      results: [...resultsById.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    };
+  };
   const nextResultSeasons = (content.resultSeasons || []).some((season) => season.id === proposal.resultSeason.id)
-    ? content.resultSeasons.map((season) => (season.id === proposal.resultSeason.id ? proposal.resultSeason : season))
+    ? content.resultSeasons.map(mergeResultSeason)
     : [...(content.resultSeasons || []), proposal.resultSeason];
+  const membersByName = new Map((content.members || []).map((member) => [member.name.trim().toLowerCase(), member]));
+  (proposal.members || []).forEach((member) => membersByName.set(member.name.trim().toLowerCase(), member));
 
   return {
     ...content,
@@ -991,7 +1004,81 @@ function mergeApdaTrophiesProposal(content, proposal) {
     stats: nextStats,
     accomplishments: nextAccomplishments,
     resultSeasons: sortResultSeasons(nextResultSeasons),
-    members: proposal.members || content.members,
+    members: [...membersByName.values()].sort((a, b) => a.name.localeCompare(b.name)),
+  };
+}
+
+function apdaValueKey(value) {
+  return JSON.stringify(value ?? "");
+}
+
+function formatApdaStatChange(stat) {
+  return `${stat.value} ${stat.label} (${stat.detail})`;
+}
+
+function formatApdaResultChange(result) {
+  return `${result.date} - ${result.tournament}: ${(result.highlights || []).join("; ") || "No listed highlights"}`;
+}
+
+function formatApdaMemberChange(member) {
+  return `${member.meta}: ${(member.achievements || []).join("; ") || "No listed achievements"}`;
+}
+
+function buildApdaPreviewChangeSummary(currentContent, proposal) {
+  const changes = [];
+  const currentStats = new Map((currentContent.stats || []).filter(isApdaManagedStat).map((stat) => [stat.id, stat]));
+  (proposal.stats || []).forEach((stat) => {
+    const current = currentStats.get(stat.id);
+    if (!current) {
+      changes.push({ type: "added", area: "Top Stats", title: stat.label, after: formatApdaStatChange(stat) });
+      return;
+    }
+    if (apdaValueKey(current) !== apdaValueKey(stat)) {
+      changes.push({ type: "changed", area: "Top Stats", title: stat.label, before: formatApdaStatChange(current), after: formatApdaStatChange(stat) });
+    }
+  });
+
+  const currentAccomplishments = new Map((currentContent.accomplishments || []).filter(isApdaManagedAccomplishment).map((item) => [item.id, item]));
+  (proposal.accomplishments || []).forEach((item) => {
+    const current = currentAccomplishments.get(item.id);
+    if (!current) {
+      changes.push({ type: "added", area: "Accomplishments", title: item.text, after: item.text });
+      return;
+    }
+    if ((current.text || "") !== (item.text || "")) {
+      changes.push({ type: "changed", area: "Accomplishments", title: item.id, before: current.text, after: item.text });
+    }
+  });
+
+  const currentSeason = (currentContent.resultSeasons || []).find((season) => season.id === proposal.resultSeason?.id);
+  const currentResults = new Map((currentSeason?.results || []).map((result) => [result.id, result]));
+  (proposal.resultSeason?.results || []).forEach((result) => {
+    const current = currentResults.get(result.id);
+    if (!current) {
+      changes.push({ type: "added", area: "Results Timeline", title: result.tournament, after: formatApdaResultChange(result) });
+      return;
+    }
+    if (apdaValueKey(current) !== apdaValueKey(result)) {
+      changes.push({ type: "changed", area: "Results Timeline", title: result.tournament, before: formatApdaResultChange(current), after: formatApdaResultChange(result) });
+    }
+  });
+
+  const currentMembers = new Map((currentContent.members || []).map((member) => [member.name.trim().toLowerCase(), member]));
+  (proposal.members || []).forEach((member) => {
+    const current = currentMembers.get(member.name.trim().toLowerCase());
+    if (!current) {
+      changes.push({ type: "added", area: "Member Achievement Cards", title: member.name, after: formatApdaMemberChange(member) });
+      return;
+    }
+    if (apdaValueKey({ meta: current.meta, achievements: current.achievements }) !== apdaValueKey({ meta: member.meta, achievements: member.achievements })) {
+      changes.push({ type: "changed", area: "Member Achievement Cards", title: member.name, before: formatApdaMemberChange(current), after: formatApdaMemberChange(member) });
+    }
+  });
+
+  return {
+    added: changes.filter((change) => change.type === "added"),
+    changed: changes.filter((change) => change.type === "changed"),
+    all: changes,
   };
 }
 
@@ -1394,14 +1481,30 @@ function NoviceHubPage({ noviceContent }) {
   const noviceFaqSectionRef = useRef(null);
   const apdaSpeechSteps = noviceContent.speechSteps || [];
   const apdaGlossaryTerms = getInitialNoviceGlossaryTerms(noviceContent);
-  const filteredGlossaryTerms = apdaGlossaryTerms.filter((item) => {
-    const query = glossarySearch.trim().toLowerCase();
-    if (!query) return true;
-    return `${item.term} ${item.category} ${item.definition}`.toLowerCase().includes(query);
-  });
+  const glossaryQuery = glossarySearch.trim().toLowerCase();
+  const getGlossarySearchRank = (item) => {
+    if (!glossaryQuery) return 0;
+    const term = item.term.toLowerCase();
+    const category = item.category.toLowerCase();
+    const definition = item.definition.toLowerCase();
+    if (term === glossaryQuery) return 0;
+    if (term.startsWith(glossaryQuery)) return 1;
+    if (term.includes(glossaryQuery)) return 2 + (term.indexOf(glossaryQuery) / 100);
+    if (category.includes(glossaryQuery)) return 3 + (category.indexOf(glossaryQuery) / 100);
+    if (definition.includes(glossaryQuery)) return 4 + (definition.indexOf(glossaryQuery) / 1000);
+    return Number.POSITIVE_INFINITY;
+  };
+  const filteredGlossaryTerms = [...apdaGlossaryTerms]
+    .map((item) => ({ item, rank: getGlossarySearchRank(item) }))
+    .filter(({ rank }) => {
+      if (!glossaryQuery) return true;
+      return Number.isFinite(rank);
+    })
+    .sort((a, b) => a.rank - b.rank || a.item.term.localeCompare(b.item.term))
+    .map(({ item }) => item);
   const displayedGlossaryTerm = filteredGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
-    || apdaGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
     || filteredGlossaryTerms[0]
+    || apdaGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
     || apdaGlossaryTerms[0];
   const noviceFaqSection = (
     <section ref={noviceFaqSectionRef} className="mt-6">
@@ -1437,7 +1540,7 @@ function NoviceHubPage({ noviceContent }) {
           </p>
         </div>
       </div>
-      <div className="mt-4 h-[38rem] min-h-0 overflow-hidden border border-[#ded8d2] bg-[#f6f4f2] lg:grid lg:grid-cols-[17rem_1fr]">
+      <div className="mt-4 h-[38rem] min-h-0 overflow-hidden border border-[#ded8d2] bg-[#f3f4f4] lg:grid lg:grid-cols-[17rem_1fr]">
         <div className="flex h-full min-h-0 flex-col border-b border-[#ded8d2] bg-white p-3 lg:border-b-0 lg:border-r">
           <label className="grid gap-1">
             <span className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">Search terms</span>
@@ -1446,7 +1549,7 @@ function NoviceHubPage({ noviceContent }) {
               value={glossarySearch}
               onChange={(event) => setGlossarySearch(event.target.value)}
               placeholder="Try POC, speaks, break..."
-              className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-semibold text-[#2D2926] outline-none transition focus:border-[#CC0000] focus:bg-white"
+              className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-sm font-semibold text-[#2D2926] outline-none transition focus:border-[#CC0000] focus:bg-white"
             />
           </label>
           <div className="mt-3 h-0 min-h-0 flex-1 overflow-y-auto border-t border-[#ded8d2] pt-1">
@@ -1476,7 +1579,7 @@ function NoviceHubPage({ noviceContent }) {
               )}
           </div>
         </div>
-        <div className="h-full overflow-y-auto bg-[#f6f4f2] p-4 lg:p-5">
+        <div className="h-full overflow-y-auto bg-[#f3f4f4] p-4 lg:p-5">
           {displayedGlossaryTerm ? (
             <>
               <span className="inline-flex bg-[#CC0000] px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.12em] text-white">
@@ -1586,11 +1689,22 @@ function NoviceHubPage({ noviceContent }) {
       </div>
     </section>
   );
+  const memberPracticeSection = (
+    <section className="grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
+      <div>
+        <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
+        <p className="max-w-4xl text-lg font-semibold leading-8 text-white md:text-xl">
+          The best way to learn APDA is to stay for a practice round, or "pround," after practice. Demonstration rounds, walkthroughs, and examples are also shown regularly during meetings so new debaters can see how cases, rebuttals, and weighing work in real time.
+        </p>
+      </div>
+      <div className="border border-white/30 px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white md:justify-self-end">Members Only</div>
+    </section>
+  );
 
   return (
     <Page>
       <PageHeader eyebrow="Novice Hub" title="A Cleaner Path from First Practice to First Tournament.">
-        Give new debaters the essentials without burying them in a long scroll.
+        Give new debaters the essentials in a clear, approachable starting point.
       </PageHeader>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {noviceResources.map((resource) => (
@@ -1611,18 +1725,12 @@ function NoviceHubPage({ noviceContent }) {
       </div>
       {noviceFaqSection}
       <div className="mt-6 grid gap-5 xl:grid-cols-[1.12fr_0.88fr] xl:items-start">
-        {apdaGlossarySection}
+        <div className="grid gap-5">
+          {apdaGlossarySection}
+          {memberPracticeSection}
+        </div>
         {apdaBasicsSection}
       </div>
-      <section className="mt-6 grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
-        <div>
-          <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
-          <p className="max-w-4xl text-xl font-black leading-tight text-white md:text-2xl">
-            The best way to learn APDA is to stay for a practice round, or "pround," after practice. Demonstration rounds, walkthroughs, and examples are also shown regularly during meetings so new debaters can see how cases, rebuttals, and weighing work in real time.
-          </p>
-        </div>
-        <div className="border border-white/30 px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white md:justify-self-end">Members Only</div>
-      </section>
     </Page>
   );
 }
@@ -1761,7 +1869,7 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
                       body: "This meeting post will be removed from the public meeting archive.",
                       onConfirm: () => removeMeetingPost(post.id),
                     })}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f6f4f2] text-[#6d6560] opacity-100 transition hover:border-[#CC0000] hover:text-[#CC0000] md:opacity-0 md:group-hover:opacity-100"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f3f4f4] text-[#6d6560] opacity-100 transition hover:border-[#CC0000] hover:text-[#CC0000] md:opacity-0 md:group-hover:opacity-100"
                     aria-label={`Delete ${post.title || "meeting post"}`}
                   >
                     <Trash2 size={17} />
@@ -1824,7 +1932,7 @@ function HistoryPage({ trophiesContent }) {
           </div>
           <div className="grid gap-3">
             {historyAccomplishments.map((item) => (
-              <div key={item} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+              <div key={item} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-4">
                 <span className="mt-2 h-2 w-2 shrink-0 bg-[#CC0000]" aria-hidden="true" />
                 <span className="font-bold text-[#2D2926]">{item}</span>
               </div>
@@ -1877,7 +1985,7 @@ function TrophiesPage({ trophiesContent }) {
           </div>
           <div className="grid gap-3">
             {trophiesContent.accomplishments.map((item) => (
-              <div key={item.id || item.text} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-4">
+              <div key={item.id || item.text} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-4">
                 <span className="mt-2 h-2 w-2 shrink-0 bg-[#CC0000]" aria-hidden="true" />
                 <span className="font-bold text-[#2D2926]">{item.text}</span>
               </div>
@@ -1902,13 +2010,13 @@ function TrophiesPage({ trophiesContent }) {
             {resultSeasons.map((season, index) => (
               <SmoothDetails key={season.id} title={season.label} defaultOpen={index === 0} className="border border-[#ded8d2] bg-white p-3">
                 {season.results.length === 0 ? (
-                  <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-4 text-sm font-bold text-[#5b5450]">
+                  <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-4 text-sm font-bold text-[#5b5450]">
                     No results logged yet.
                   </div>
                 ) : (
                   <div className="grid gap-4">
                     {[...season.results].reverse().map((result) => (
-                      <div key={result.id || `${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] p-4">
+                      <div key={result.id || `${result.date}-${result.tournament}`} className="border-l-4 border-[#CC0000] bg-[#f3f4f4] p-4">
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                           <h3 className="text-xl font-black text-[#2D2926]">{result.tournament}</h3>
                           <p className="text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">{result.date}</p>
@@ -1952,7 +2060,7 @@ function TrophiesPage({ trophiesContent }) {
               >
                 <ul className="grid gap-2">
                   {member.achievements.map((achievement) => (
-                    <li key={achievement} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2 text-sm font-semibold leading-6 text-[#5b5450]">
+                    <li key={achievement} className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2 text-sm font-semibold leading-6 text-[#5b5450]">
                       {achievement}
                     </li>
                   ))}
@@ -2068,7 +2176,7 @@ function ContactPage() {
         </div>
 
         <div className="border border-[#ded8d2] bg-white p-5 shadow-[0_20px_55px_rgba(45,41,38,0.08)] sm:p-8 md:p-10">
-          <div className="border-t-8 border-t-[#CC0000] bg-[#f6f4f2] p-7">
+          <div className="border-t-8 border-t-[#CC0000] bg-[#f3f4f4] p-7">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#CC0000] text-white">
                 <MapPin />
@@ -2294,9 +2402,9 @@ function JoinPage({ auth, onRequestConfirmation }) {
           </div>
           <div className="mt-10 grid gap-4 border border-white/40 bg-white p-4 text-[#2D2926] sm:p-6">
             <div className="grid gap-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] sm:grid-cols-3">
-              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">1. Request</div>
-              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">2. Wait for approval</div>
-              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">3. Log in</div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">1. Request</div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">2. Wait for approval</div>
+              <div className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">3. Log in</div>
             </div>
             <div className="flex items-start gap-3">
               <MapPin className="mt-1 shrink-0 text-[#CC0000]" />
@@ -2385,7 +2493,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
           </div>
           <div className="mt-5 grid gap-4">
             {requests.length === 0 && (
-              <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-5 text-sm font-bold text-[#5b5450]">
+              <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-5 text-sm font-bold text-[#5b5450]">
                 No membership requests yet.
               </div>
             )}
@@ -2408,13 +2516,13 @@ function JoinPage({ auth, onRequestConfirmation }) {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-xl font-black text-[#2D2926]">{request.name}</h3>
-                      <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f6f4f2] text-[#6d6560]"}`}>
+                      <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f3f4f4] text-[#6d6560]"}`}>
                         {MEMBERSHIP_REQUEST_STATUSES.includes(request.status) ? request.status : "Pending"}
                       </span>
                     </div>
                     <p className="mt-1 text-sm font-semibold text-[#6d6560]">{request.email}</p>
                     <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message || "No optional note added."}</p>
-                    {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
+                    {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f3f4f4] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
                   </div>
                   <div className="grid gap-3">
                     <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -2424,7 +2532,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
                         onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
                         rows={4}
                         placeholder="Defaults to Welcome to BUDS! when accepting"
-                        className="resize-none border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                        className="resize-none border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                       />
                     </label>
                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -2625,7 +2733,7 @@ function LoginPage({ onLogin, onRequestConfirmation }) {
           <div className="mt-8 grid gap-3 border border-white/20 bg-white/5 p-5 text-sm font-bold text-white/80">
             <p>New? Request an account before trying to log in.</p>
             <p>Waiting? You can log in only after an admin accepts your request.</p>
-            <a href="/join" onClick={(event) => { event.preventDefault(); navigateTo("/join"); }} className="mt-2 inline-flex w-fit items-center justify-center gap-2 rounded-sm bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:bg-[#f6f4f2] hover:text-[#CC0000]">
+            <a href="/join" onClick={(event) => { event.preventDefault(); navigateTo("/join"); }} className="mt-2 inline-flex w-fit items-center justify-center gap-2 rounded-sm bg-white px-5 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:bg-[#f3f4f4] hover:text-[#CC0000]">
               Request Account <ArrowRight size={16} />
             </a>
           </div>
@@ -2691,7 +2799,7 @@ function LoginPage({ onLogin, onRequestConfirmation }) {
 }
 
 function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, homeContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onHomeContentChange, onRequestConfirmation, onLogout }) {
-  const [activeTab, setActiveTab] = useState(() => (auth?.role === "eboard" || auth?.role === ADMIN_ROLE ? "eboard" : "member"));
+  const [activeTab, setActiveTab] = useState("member");
   const [draftTrophiesContent, setDraftTrophiesContent] = useState(() => getStoredDraftContent("trophies", trophiesContent, normalizeTrophiesContent));
   const [draftMeetingsContent, setDraftMeetingsContent] = useState(() => getStoredDraftContent("meetings", meetingsContent, normalizeMeetingsContent));
   const [draftNoviceContent, setDraftNoviceContent] = useState(() => getStoredDraftContent("novice", noviceContent, normalizeNoviceContent));
@@ -4210,7 +4318,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const pullApdaTrophiesPreview = async () => {
     if (!canEditTrophies) return;
-    setApdaUpdateStatus({ state: "loading", message: "Pulling the latest APDA standings. Existing Trophies content is untouched." });
+    setApdaUpdateStatus({ state: "loading", message: "Pulling new APDA changes. Existing Trophies content is untouched." });
     setApdaUpdatePreview(null);
     try {
       const currentSeason = selectedTrophySeasonIdValue ? selectedTrophySeasonIdValue.slice(0, 4) : "";
@@ -4223,10 +4331,17 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           : "The APDA updater returned an unexpected response. Please try again after refreshing.");
       }
       const data = await response.json();
-      setApdaUpdatePreview(data);
+      const changes = buildApdaPreviewChangeSummary(draftTrophiesContent, data);
+      const preview = { ...data, changes };
+      setApdaUpdatePreview(preview);
+      const addedCount = changes.added.length;
+      const changedCount = changes.changed.length;
+      const changeMessage = changes.all.length > 0
+        ? `Review APDA changes before applying: ${addedCount} being added, ${changedCount} before and after change${changedCount === 1 ? "" : "s"}.`
+        : "Nothing new is there. APDA matches the current Trophies draft, so there is nothing to apply.";
       setApdaUpdateStatus({
-        state: "ready",
-        message: `Review ${data.summary.tournamentCount} tournaments, ${data.summary.highlightCount} highlights, and ${data.summary.memberCount} member cards before applying.`,
+        state: changes.all.length > 0 ? "ready" : "idle",
+        message: changeMessage,
       });
     } catch (error) {
       setApdaUpdateStatus({
@@ -4238,9 +4353,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const applyApdaTrophiesPreview = () => {
     if (!apdaUpdatePreview) return;
+    if (!apdaUpdatePreview.changes?.all?.length) {
+      setApdaUpdateStatus({ state: "idle", message: "Nothing new is there. APDA matches the current Trophies draft, so there is nothing to apply." });
+      return;
+    }
     requestDeleteConfirmation({
       title: `Apply APDA update for ${apdaUpdatePreview.seasonDisplay}?`,
-      body: `This will update APDA-managed stats, accomplishments, the ${apdaUpdatePreview.seasonDisplay} results timeline, and current member achievement cards. You already reviewed the preview; this is the final save step.`,
+      body: `This will apply only the reviewed APDA changes: ${apdaUpdatePreview.changes.added.length} being added and ${apdaUpdatePreview.changes.changed.length} before and after change${apdaUpdatePreview.changes.changed.length === 1 ? "" : "s"}. You already reviewed the preview; this is the final save step.`,
       actionLabel: "Apply Update",
       onConfirm: () => {
         persistTrophiesContent((content) => mergeApdaTrophiesProposal(content, apdaUpdatePreview));
@@ -4494,7 +4613,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </h1>
             <p className="mt-1.5 break-all text-sm font-semibold text-[#6d6560]">{auth.email}</p>
           </div>
-          <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 self-start border border-[#d6d0ca] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-[0_4px_0_#d6d0ca,0_12px_24px_rgba(45,41,38,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000] hover:bg-white hover:text-[#CC0000] hover:shadow-[0_5px_0_#CC0000,0_16px_30px_rgba(45,41,38,0.12)] active:translate-y-0.5 active:shadow-[0_2px_0_#CC0000,0_8px_18px_rgba(45,41,38,0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CC0000] focus-visible:ring-offset-2 md:self-center">
+          <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 self-start border border-[#d6d0ca] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-[0_4px_0_#d6d0ca,0_12px_24px_rgba(45,41,38,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000] hover:bg-white hover:text-[#CC0000] hover:shadow-[0_5px_0_#CC0000,0_16px_30px_rgba(45,41,38,0.12)] active:translate-y-0.5 active:shadow-[0_2px_0_#CC0000,0_8px_18px_rgba(45,41,38,0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CC0000] focus-visible:ring-offset-2 md:self-center">
             Log out <LogOut size={15} />
           </button>
         </div>
@@ -4532,7 +4651,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 className={`h-3 w-6 rounded-full border transition ${
                   resourceEditModeEnabled
                     ? "border-[#79c792] bg-[#a8e6ba]"
-                    : "border-[#ded8d2] bg-[#f6f4f2]"
+                    : "border-[#ded8d2] bg-[#f3f4f4]"
                 }`}
               >
                 <span
@@ -4556,7 +4675,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 className={`h-3 w-6 rounded-full border transition ${
                   adminControlSettings.titleEditingEnabledForYeon
                     ? "border-[#79c792] bg-[#a8e6ba]"
-                    : "border-[#ded8d2] bg-[#f6f4f2]"
+                    : "border-[#ded8d2] bg-[#f3f4f4]"
                 }`}
               >
                 <span
@@ -4572,13 +4691,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         )}
       </div>
 
-      <div className="mx-3 my-5 flex flex-wrap gap-2 border-y border-[#ded8d2] bg-[#f6f4f2]/70 px-3 py-3 sm:mx-5 sm:px-4">
+      <div className="mx-3 my-5 flex flex-wrap gap-2 border-y border-[#ded8d2] bg-[#f3f4f4]/70 px-3 py-3 sm:mx-5 sm:px-4">
         <button
           type="button"
           onClick={() => setActiveTab("member")}
           className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "member" ? "bg-[#2D2926] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
         >
-          Member Resources
+          Debate Resources
         </button>
         <button
           type="button"
@@ -4650,7 +4769,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       return (
                         <>
                     {group.section === "BUDS Prep Outs" && (
-                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
                         {renderEditableResourceNote("memberPrepOuts")}
                         <div className="flex flex-wrap gap-3">
                           <a href={prepOutRequestLink?.url || "#"} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
@@ -4665,7 +4784,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </div>
                     )}
                     {group.section === "Recorded APDA Rounds" && (
-                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
                         {renderEditableResourceNote("memberRecordings")}
                         {canEditMemberLinks && (
                           <button type="button" onClick={() => setRecordingModalOpen(true)} className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
@@ -4675,7 +4794,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </div>
                     )}
                     {group.section === "BUDS Casebook" && (
-                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
                         {renderEditableResourceNote("memberCasebook")}
                         {canEditMemberLinks && (
                           <button type="button" onClick={() => setCasebookModalOpen(true)} className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
@@ -4710,7 +4829,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                   value={(link.topicTags || []).slice(0, 2).join(", ")}
                                   onChange={(event) => updateMemberLink(link.id, "topicTags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2))}
                                   placeholder="Tags, max 2"
-                                  className="w-full border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1 text-[0.68rem] font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
+                                  className="w-full border border-[#ded8d2] bg-[#f3f4f4] px-2 py-1 text-[0.68rem] font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
                                 />
                               ) : (
                                 (link.topicTags || ["Case"]).slice(0, 2).map((tag) => (
@@ -4754,7 +4873,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 value={link.url}
                                 onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
                                 placeholder="https://..."
-                                className="min-w-0 flex-1 border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                                className="min-w-0 flex-1 border border-[#ded8d2] bg-[#f3f4f4] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
                               />
                             )}
                           </div>
@@ -4773,7 +4892,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       ))}
                     </div>
                     {filteredLinks.length === 0 && (
-                      <p className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-4 text-sm font-bold text-[#6d6560]">
+                      <p className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-4 text-sm font-bold text-[#6d6560]">
                         No matching resources.
                       </p>
                     )}
@@ -4841,7 +4960,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 value={link.url}
                                 onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
                                 placeholder="https://..."
-                                className="border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-[0.7rem] font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                                className="border border-[#ded8d2] bg-[#f3f4f4] px-2 py-1.5 text-[0.7rem] font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                               />
                             </label>
                           </>
@@ -4930,7 +5049,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               value={link.url}
                               onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
                               placeholder="https://..."
-                              className="border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-[0.7rem] font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                              className="border border-[#ded8d2] bg-[#f3f4f4] px-2 py-1.5 text-[0.7rem] font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                             />
                           </label>
                         </>
@@ -4999,7 +5118,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <p className="mt-2 text-sm font-semibold leading-5 text-[#5b5450]">
                     Make a public-view Google Doc explaining how you judge, then submit the link here.
                   </p>
-                  <a href="https://docs.google.com/forms/d/e/1FAIpQLSdS8k_CAvhQ1Z-y64SDc1JxjRSsPLCzAtAQpLLtr-ucNpT7YA/viewform" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2.5 text-xs font-black uppercase tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                  <a href="https://docs.google.com/forms/d/e/1FAIpQLSdS8k_CAvhQ1Z-y64SDc1JxjRSsPLCzAtAQpLLtr-ucNpT7YA/viewform" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2.5 text-xs font-black uppercase tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
                     Submit Paradigm <ExternalLink size={15} />
                   </a>
                 </Card>
@@ -5081,7 +5200,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     "Expect approval, denial, or a revision request in 3-5 business days.",
                     "If approved, checks are usually ready in about 2 weeks at the GSU 2nd floor.",
                   ].map((item) => (
-                    <p key={item} className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2 text-sm font-semibold leading-5 text-[#2D2926]">
+                    <p key={item} className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2 text-sm font-semibold leading-5 text-[#2D2926]">
                       {item}
                     </p>
                   ))}
@@ -5114,13 +5233,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{memberAccounts.length} accounts</p>
-              <button type="button" onClick={hydrateMemberAccounts} className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+              <button type="button" onClick={hydrateMemberAccounts} className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
                 Refresh
               </button>
             </div>
           </div>
           {memberAccountsStatus === "loading" && (
-            <p className="mt-5 border-l-4 border-[#2D2926] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Loading approved member accounts...</p>
+            <p className="mt-5 border-l-4 border-[#2D2926] bg-[#f3f4f4] px-4 py-3 text-sm font-bold text-[#2D2926]">Loading approved member accounts...</p>
           )}
           {memberAccountsStatus === "error" && (
             <p className="mt-5 border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">Could not load approved member accounts from Supabase. Try Refresh or check the database connection.</p>
@@ -5139,7 +5258,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <tbody>
                 {memberAccounts.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] px-4 py-6 text-center font-bold text-[#5b5450]">
+                    <td colSpan="5" className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] px-4 py-6 text-center font-bold text-[#5b5450]">
                       No Accepted Member Accounts Yet.
                     </td>
                   </tr>
@@ -5169,7 +5288,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         value={MEMBER_ACCOUNT_ROLES.includes(account.role) ? account.role : "member"}
                         onChange={(event) => updateMemberStatus(account.id, event.target.value)}
                         disabled={account.status === "revoked"}
-                        className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 font-bold uppercase tracking-[0.08em] text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-50"
+                        className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 font-bold uppercase tracking-[0.08em] text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-50"
                       >
                         <option value="member">Member</option>
                         <option value="eboard">E-Board</option>
@@ -5229,7 +5348,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   type="button"
                   onClick={undoAgendaDelete}
                   disabled={!canEditWorkspace || !lastDeletedAgendaItem}
-                  className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Undo
                 </button>
@@ -5268,14 +5387,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <div className="grid gap-2">
                   {agenda.length === 0 && (
-                    <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-4 text-sm font-bold text-[#5b5450]">
+                    <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-4 text-sm font-bold text-[#5b5450]">
                       No Agenda Items Right Now. Add One Above.
                     </div>
                   )}
                   {agenda.map((item) => {
                     const isComplete = Boolean(item.completed_at);
                     return (
-                      <div key={item.id} className={`group flex items-start gap-3 border p-3 transition ${isComplete ? "border-[#c9c2bc] bg-[#d4d0cc] opacity-80" : "border-[#ded8d2] bg-[#f6f4f2]"}`}>
+                      <div key={item.id} className={`group flex items-start gap-3 border p-3 transition ${isComplete ? "border-[#c9c2bc] bg-[#d4d0cc] opacity-80" : "border-[#ded8d2] bg-[#f3f4f4]"}`}>
                         <label className="flex min-w-0 flex-1 gap-3">
                           <input
                             type="checkbox"
@@ -5333,13 +5452,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     />
                   </span>
                 </label>
-                <div className="bg-[#f6f4f2] p-3">
+                <div className="bg-[#f3f4f4] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Revenue</p>
                   <p className={`mt-1 text-2xl font-black ${totalRevenue < 0 ? "text-[#CC0000]" : "text-[#0b6b35]"}`}>
                     {formatSignedCurrency(totalRevenue)}
                   </p>
                 </div>
-                <div className="bg-[#f6f4f2] p-3">
+                <div className="bg-[#f3f4f4] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Remaining Total</p>
                   <p className="mt-1 text-2xl font-black text-[#2D2926]">{formatCurrency(remainingBudget)}</p>
                 </div>
@@ -5364,7 +5483,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             value={row.category}
                             onChange={(event) => updateBudgetRow(row.id, "category", event.target.value)}
                             disabled={!canEditWorkspace}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold text-[#2D2926] outline-none focus:border-[#CC0000] disabled:opacity-70"
+                            className="w-full border border-transparent bg-[#f3f4f4] px-2 py-2 font-bold text-[#2D2926] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -5375,7 +5494,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             value={row.allocated}
                             onChange={(event) => updateBudgetRow(row.id, "allocated", event.target.value)}
                             disabled={!canEditWorkspace}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
+                            className="w-full border border-transparent bg-[#f3f4f4] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -5386,7 +5505,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             value={row.spent}
                             onChange={(event) => updateBudgetRow(row.id, "spent", event.target.value)}
                             disabled={!canEditWorkspace}
-                            className="w-full border border-transparent bg-[#f6f4f2] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
+                            className="w-full border border-transparent bg-[#f3f4f4] px-2 py-2 text-[#5b5450] outline-none focus:border-[#CC0000] disabled:opacity-70"
                           />
                         </td>
                         <td className="px-2 py-2">
@@ -5398,7 +5517,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 value={currentStatus}
                                 onChange={(event) => updateBudgetRow(row.id, "status", event.target.value)}
                                 disabled={!canEditWorkspace}
-                                className={`w-full border border-transparent bg-[#f6f4f2] px-2 py-2 font-bold outline-none focus:border-[#CC0000] disabled:opacity-70 ${getBudgetStatusClassName(currentStatus)}`}
+                                className={`w-full border border-transparent bg-[#f3f4f4] px-2 py-2 font-bold outline-none focus:border-[#CC0000] disabled:opacity-70 ${getBudgetStatusClassName(currentStatus)}`}
                               >
                                 {BUDGET_STATUSES.map((status) => (
                                   <option key={status} value={status} className={getBudgetStatusClassName(status)}>{status}</option>
@@ -5459,7 +5578,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 </form>
                 <div className="mt-3 grid max-h-52 gap-2 overflow-y-auto pr-1">
                   {(budget.revenueRows || []).length === 0 && (
-                    <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
+                    <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-bold text-[#5b5450]">
                       No Revenue Logged Yet.
                     </div>
                   )}
@@ -5534,15 +5653,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </div>
             </div>
             <div className="mt-4 grid gap-3 border-y border-[#ded8d2] py-3 lg:grid-cols-3">
-              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+              <div className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">
                 <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">1. Draft</p>
                 <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Edit modules below. Changes stay private until published.</p>
               </div>
-              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+              <div className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">
                 <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">2. Preview</p>
                 <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Use Preview Draft to check what the public page will look like.</p>
               </div>
-              <div className="border-l-4 border-[#CC0000] bg-[#f6f4f2] px-3 py-2">
+              <div className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">
                 <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">3. Publish</p>
                 <p className="mt-1 text-xs font-bold leading-5 text-[#5b5450]">Review the change summary, confirm, then the live page updates.</p>
               </div>
@@ -5557,7 +5676,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 const publishKey = item.publishId || item.id;
                 const revisionKey = item.revisionId || item.id;
                 return (
-                  <div key={item.id} className="grid w-[16rem] shrink-0 gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                  <div key={item.id} className="grid w-[16rem] shrink-0 gap-2 border border-[#ded8d2] bg-[#f3f4f4] p-3">
                     <div>
                       <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">{isDirty ? "Draft changes" : "Published"}</p>
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
@@ -5633,7 +5752,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     Save public meeting notes and choose a past note to preview.
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                   {notesEditorOpen ? "Close Notes" : "Open Notes"} <ChevronDown size={16} className={`transition ${notesEditorOpen ? "rotate-180" : ""}`} />
                 </span>
               </button>
@@ -5706,7 +5825,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </select>
                     </label>
                     {selectedNote && (
-                      <div className="mt-3 max-h-[11rem] overflow-y-auto border border-[#ded8d2] bg-[#f6f4f2] p-4">
+                      <div className="mt-3 max-h-[11rem] overflow-y-auto border border-[#ded8d2] bg-[#f3f4f4] p-4">
                         <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{selectedNote.date}</p>
                         <h3 className="mt-2 text-xl font-black text-[#2D2926]">{selectedNote.title}</h3>
                         {selectedNote.body ? (
@@ -5744,7 +5863,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Edit the small public announcement block on the Meetings page.
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                 {announcementEditorOpen ? "Close Announcement" : "Open Announcement"} <ChevronDown size={16} className={`transition ${announcementEditorOpen ? "rotate-180" : ""}`} />
               </span>
             </button>
@@ -5769,7 +5888,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           value={meetingAnnouncement.announcementTitle}
                           onChange={(event) => setMeetingAnnouncement((current) => ({ ...current, announcementTitle: event.target.value }))}
                           disabled={!canEditBudsiteTitles}
-                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                          className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                         />
                       </label>
                       <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -5817,7 +5936,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Add, edit, and delete terms in the public Novice Hub APDA Glossary.
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                 {noviceGlossaryEditorOpen ? "Close Glossary" : "Open Glossary"} <ChevronDown size={16} className={`transition ${noviceGlossaryEditorOpen ? "rotate-180" : ""}`} />
               </span>
             </button>
@@ -5845,7 +5964,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </div>
 
                       <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Glossary Term</p>
-                      <form onSubmit={addGlossaryTerm} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                      <form onSubmit={addGlossaryTerm} className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3">
                         <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                           <div className="grid gap-3 md:grid-cols-[0.7fr_0.55fr_1fr]">
                             <input
@@ -5913,7 +6032,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           </div>
                         </div>
                         {selectedEditorGlossaryTerm ? (
-                          <fieldset disabled={!canWriteNotes} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 disabled:opacity-55">
+                          <fieldset disabled={!canWriteNotes} className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3 disabled:opacity-55">
                             <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Selected Term Editor</p>
                             <div className="grid gap-3 md:grid-cols-[0.75fr_0.5fr_auto]">
                               <input
@@ -5951,7 +6070,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             </label>
                           </fieldset>
                         ) : (
-                          <div className="grid content-start gap-2 border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-4 text-sm text-[#6d6560]">
+                          <div className="grid content-start gap-2 border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-4 text-sm text-[#6d6560]">
                             <h4 className="text-base font-black text-[#2D2926]">No term selected</h4>
                             <p className="font-semibold leading-6">
                               Choose a term from the list to load its editor. Nothing can be changed or deleted from this panel until a term is selected.
@@ -5984,7 +6103,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                     Edit the speech names, timing, sides, and descriptions in the public APDA Speech Order infographic.
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                   {noviceInfographicEditorOpen ? "Close Infographic" : "Open Infographic"} <ChevronDown size={16} className={`transition ${noviceInfographicEditorOpen ? "rotate-180" : ""}`} />
                 </span>
               </button>
@@ -6002,7 +6121,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Speech Steps</p>
                       <HelperText>Order controls update the speech number automatically. Keep descriptions short enough to fit the public infographic.</HelperText>
                       {noviceSpeechSteps.map((step, index) => (
-                        <div key={step.id} className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3">
+                        <div key={step.id} className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3">
                           <div className="flex justify-end">
                             <ReorderButtons onMoveUp={() => moveNoviceSpeechStep(index, -1)} onMoveDown={() => moveNoviceSpeechStep(index, 1)} disabledUp={index === 0} disabledDown={index === noviceSpeechSteps.length - 1} />
                           </div>
@@ -6056,7 +6175,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               value={step.title}
                               onChange={(event) => updateNoviceSpeechStep(step.id, "title", event.target.value)}
                               disabled={!canEditBudsiteTitles}
-                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                              className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                             />
                           </label>
                           <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6103,7 +6222,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Add and edit basic debate questions shown publicly on the Novice Hub.
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                 {noviceFaqEditorOpen ? "Close FAQ" : "Open FAQ"} <ChevronDown size={16} className={`transition ${noviceFaqEditorOpen ? "rotate-180" : ""}`} />
               </span>
             </button>
@@ -6130,7 +6249,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             onChange={(event) => setNewNoviceFaq((current) => ({ ...current, question: event.target.value }))}
                             placeholder="What is a tight call?"
                             disabled={!canEditBudsiteTitles}
-                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                            className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                           />
                         </label>
                         <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6160,7 +6279,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           onDragOver={allowEditorDrop}
                           onDrop={() => dropNoviceFaq(faq.id)}
                           onDragEnd={finishEditorDrag}
-                          className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3"
+                          className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3"
                         >
                           <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                             <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6169,7 +6288,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 value={faq.question}
                                 onChange={(event) => updateNoviceFaq(faq.id, "question", event.target.value)}
                                 disabled={!canEditBudsiteTitles}
-                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                               />
                             </label>
                             <div className="flex items-end gap-2">
@@ -6228,7 +6347,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Edit the public officer cards and upload photos for each person.
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                 {eboardEditorOpen ? "Close E-Board" : "Open E-Board"} <ChevronDown size={16} className={`transition ${eboardEditorOpen ? "rotate-180" : ""}`} />
               </span>
             </button>
@@ -6256,7 +6375,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               onChange={(event) => setNewEboardMember((current) => ({ ...current, name: event.target.value }))}
                               placeholder="New officer name"
                               disabled={!canEditBudsiteTitles}
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6267,7 +6386,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               onChange={(event) => setNewEboardMember((current) => ({ ...current, role: event.target.value }))}
                               placeholder="President"
                               disabled={!canEditBudsiteTitles}
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6282,7 +6401,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Photo
-                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
                               <Upload size={16} /> Upload Photo
                               <input type="file" accept="image/*" onChange={(event) => handleNewEboardPhotoUpload(event.target.files?.[0])} className="sr-only" />
                             </span>
@@ -6299,7 +6418,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           />
                         </label>
                         {newEboardMember.photo && (
-                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[8rem_1fr] sm:items-center">
+                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3 sm:grid-cols-[8rem_1fr] sm:items-center">
                             <img src={newEboardMember.photo} alt="New e-board member preview" className="aspect-[4/3] w-full object-cover" />
                             <button type="button" onClick={() => setNewEboardMember((current) => ({ ...current, photo: "" }))} className="w-fit border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]">
                               Remove Photo
@@ -6323,7 +6442,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           onDragOver={allowEditorDrop}
                           onDrop={() => dropEboardMember(member.id)}
                           onDragEnd={finishEditorDrag}
-                          className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[12rem_1fr_auto]"
+                          className="grid gap-4 border border-[#ded8d2] bg-[#f3f4f4] p-3 lg:grid-cols-[12rem_1fr_auto]"
                         >
                           <div className="grid gap-2">
                             <div className="aspect-[4/3] overflow-hidden bg-[#2D2926]">
@@ -6353,7 +6472,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                   value={member.name}
                                   onChange={(event) => updateEboardMember(member.id, "name", event.target.value)}
                                   disabled={!canEditBudsiteTitles}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                                 />
                               </label>
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6362,7 +6481,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                   value={member.role}
                                   onChange={(event) => updateEboardMember(member.id, "role", event.target.value)}
                                   disabled={!canEditBudsiteTitles}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                                 />
                               </label>
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -6441,7 +6560,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <button
                   type="button"
                   onClick={() => setHistoryEditorOpen((current) => !current)}
-                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
                   aria-expanded={historyEditorOpen}
                 >
                   {historyEditorOpen ? "Close Editor" : "Open Editor"} <ChevronDown size={16} className={`transition ${historyEditorOpen ? "rotate-180" : ""}`} />
@@ -6467,7 +6586,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <HelperText>Use milestones for longer historical cards that should not be overwritten by APDA updates.</HelperText>
                         <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                           <input value={newTrophyMilestone.year} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, year: event.target.value }))} placeholder="Year" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                          <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                          <input value={newTrophyMilestone.title} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, title: event.target.value }))} placeholder="Title" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                           <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                         </div>
                         <textarea value={newTrophyMilestone.copy} onChange={(event) => setNewTrophyMilestone((current) => ({ ...current, copy: event.target.value }))} placeholder="Short description" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -6487,7 +6606,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           >
                             <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                               <input value={item.year} onChange={(event) => updateTrophyItem("milestones", item.id, "year", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                              <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                              <input value={item.title} onChange={(event) => updateTrophyItem("milestones", item.id, "title", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                               <div className="flex items-center gap-2">
                                 <ReorderButtons onMoveUp={() => moveTrophyItem("milestones", index, -1)} onMoveDown={() => moveTrophyItem("milestones", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.milestones.length - 1} />
                                 <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${item.title}?`, body: "This milestone card will be removed from the public History page.", onConfirm: () => removeTrophyItem("milestones", item.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${item.title}`}><Trash2 size={16} /></button>
@@ -6540,7 +6659,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <button
                   type="button"
                   onClick={() => setTrophyEditorOpen((current) => !current)}
-                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                  className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
                   aria-expanded={trophyEditorOpen}
                 >
                   {trophyEditorOpen ? "Close Editor" : "Open Editor"} <ChevronDown size={16} className={`transition ${trophyEditorOpen ? "rotate-180" : ""}`} />
@@ -6577,7 +6696,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       ))}
                     </div>
                     {trophyEditorSection === "apda" && (
-                    <div className="mb-5 border border-[#ded8d2] bg-[#f6f4f2] p-4">
+                    <div className="mb-5 border border-[#ded8d2] bg-[#f3f4f4] p-4">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="max-w-3xl">
                           <div className="flex items-center gap-2">
@@ -6586,7 +6705,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           </div>
                           <h3 className="mt-2 text-xl font-black text-[#2D2926]">Pull standings, review, then apply.</h3>
                           <p className="mt-2 text-sm leading-6 text-[#5b5450]">
-                            This creates a preview from APDA before saving anything. Applying the preview updates APDA-managed stats, accomplishments, the selected season timeline, and member achievement cards.
+                            This pulls new APDA changes only and creates a preview before saving anything. The preview says what is being added, what has a before and after change, or when nothing new is there.
                           </p>
                         </div>
                         <button
@@ -6596,7 +6715,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           className="inline-flex items-center justify-center gap-2 bg-[#2D2926] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#CC0000] disabled:cursor-wait disabled:opacity-55"
                         >
                           <RefreshCw size={15} className={apdaUpdateStatus.state === "loading" ? "animate-spin" : ""} />
-                          {apdaUpdateStatus.state === "loading" ? "Pulling APDA" : "Update from APDA"}
+                          {apdaUpdateStatus.state === "loading" ? "Pulling APDA" : "Pull New APDA Changes"}
                         </button>
                       </div>
                       {apdaUpdateStatus.message && (
@@ -6642,38 +6761,54 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               {warning}
                             </p>
                           ))}
-                          <div className="grid gap-3 xl:grid-cols-2">
-                            <div className="border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Stats and accomplishments to update</p>
-                              <div className="mt-3 grid gap-2">
-                                {apdaUpdatePreview.stats.map((stat) => (
-                                  <div key={stat.id} className="border border-[#ded8d2] bg-white p-2 text-sm">
-                                    <span className="font-black">{stat.value}</span> {stat.label} <span className="text-[#6d6560]">({stat.detail})</span>
+                          <div className="grid gap-3">
+                            {apdaUpdatePreview.changes?.all?.length > 0 ? (
+                              <>
+                                <div className="border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                                  <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Being Added</p>
+                                  <div className="mt-3 grid gap-2">
+                                    {apdaUpdatePreview.changes.added.length > 0 ? apdaUpdatePreview.changes.added.map((change) => (
+                                      <div key={`${change.area}-${change.title}`} className="border border-[#ded8d2] bg-white p-2 text-sm">
+                                        <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">{change.area}</p>
+                                        <p className="mt-1 font-black text-[#2D2926]">{change.title}</p>
+                                        <p className="mt-1 leading-6 text-[#5b5450]">{change.after}</p>
+                                      </div>
+                                    )) : (
+                                      <p className="border border-dashed border-[#ded8d2] bg-white p-2 text-sm font-bold text-[#6d6560]">Nothing is being added.</p>
+                                    )}
                                   </div>
-                                ))}
-                                {apdaUpdatePreview.accomplishments.map((item) => (
-                                  <div key={item.id} className="border border-[#ded8d2] bg-white p-2 text-sm font-bold">
-                                    {item.text}
+                                </div>
+                                <div className="border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                                  <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Before And After Change</p>
+                                  <div className="mt-3 grid gap-2">
+                                    {apdaUpdatePreview.changes.changed.length > 0 ? apdaUpdatePreview.changes.changed.map((change) => (
+                                      <div key={`${change.area}-${change.title}`} className="grid gap-2 border border-[#ded8d2] bg-white p-2 text-sm">
+                                        <div>
+                                          <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">{change.area}</p>
+                                          <p className="mt-1 font-black text-[#2D2926]">{change.title}</p>
+                                        </div>
+                                        <div className="grid gap-2 md:grid-cols-2">
+                                          <div className="border border-[#ded8d2] bg-[#f3f4f4] p-2">
+                                            <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Before</p>
+                                            <p className="mt-1 leading-6 text-[#5b5450]">{change.before}</p>
+                                          </div>
+                                          <div className="border border-[#ded8d2] bg-[#fff1f1] p-2">
+                                            <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">After</p>
+                                            <p className="mt-1 leading-6 text-[#2D2926]">{change.after}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )) : (
+                                      <p className="border border-dashed border-[#ded8d2] bg-white p-2 text-sm font-bold text-[#6d6560]">There are no before and after changes.</p>
+                                    )}
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="border border-[#ded8d2] bg-[#f6f4f2] p-3">
-                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Timeline preview</p>
-                              <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto pr-1">
-                                {apdaUpdatePreview.resultSeason.results.slice(0, 8).map((result) => (
-                                  <div key={result.id} className="border border-[#ded8d2] bg-white p-2">
-                                    <p className="text-xs font-black text-[#CC0000]">{result.date}</p>
-                                    <p className="text-sm font-black text-[#2D2926]">{result.tournament}</p>
-                                    <ul className="mt-1 list-disc pl-5 text-xs leading-5 text-[#5b5450]">
-                                      {result.highlights.slice(0, 4).map((highlight) => (
-                                        <li key={highlight}>{highlight}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-bold text-[#5b5450]">
+                                Nothing new is there. APDA matches the current Trophies draft, so there is nothing to apply.
+                              </p>
+                            )}
                           </div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                             <button
@@ -6682,14 +6817,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 setApdaUpdatePreview(null);
                                 setApdaUpdateStatus({ state: "idle", message: "APDA preview dismissed. No changes were saved." });
                               }}
-                              className="border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]"
+                              className="border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]"
                             >
                               Dismiss Preview
                             </button>
                             <button
                               type="button"
                               onClick={applyApdaTrophiesPreview}
-                              className="bg-[#CC0000] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]"
+                              disabled={!apdaUpdatePreview.changes?.all?.length}
+                              className="bg-[#CC0000] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:bg-[#bdb6b0]"
                             >
                               Apply Reviewed Changes
                             </button>
@@ -6708,7 +6844,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <HelperText>Use short public stats. Labels that come from APDA may be overwritten by the APDA updater.</HelperText>
                   <div className="grid gap-2 2xl:grid-cols-[0.45fr_0.8fr_1fr_auto]">
                     <input value={newTrophyStat.value} onChange={(event) => setNewTrophyStat((current) => ({ ...current, value: event.target.value }))} placeholder="#4" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                    <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                    <input value={newTrophyStat.label} onChange={(event) => setNewTrophyStat((current) => ({ ...current, label: event.target.value }))} placeholder="Label" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                     <input value={newTrophyStat.detail} onChange={(event) => setNewTrophyStat((current) => ({ ...current, detail: event.target.value }))} placeholder="Detail" className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                     <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                   </div>
@@ -6727,7 +6863,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       className="grid gap-2 border border-[#ded8d2] bg-white p-3 2xl:grid-cols-[0.35fr_0.75fr_1fr_auto]"
                     >
                       <input value={stat.value} onChange={(event) => updateTrophyItem("stats", stat.id, "value", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000]" />
-                      <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                      <input value={stat.label} onChange={(event) => updateTrophyItem("stats", stat.id, "label", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-bold outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                       <input value={stat.detail} onChange={(event) => updateTrophyItem("stats", stat.id, "detail", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                       <div className="flex items-center gap-2">
                         <ReorderButtons onMoveUp={() => moveTrophyItem("stats", index, -1)} onMoveDown={() => moveTrophyItem("stats", index, 1)} disabledUp={index === 0} disabledDown={index === draftTrophiesContent.stats.length - 1} />
@@ -6801,7 +6937,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <textarea value={newTrophyMember.achievement} onChange={(event) => setNewTrophyMember((current) => ({ ...current, achievement: event.target.value }))} placeholder="Achievement to add to this member" rows={2} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
                 </form>
                 <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Member Achievements</p>
-                <label className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                <label className="grid gap-2 border border-[#ded8d2] bg-[#f3f4f4] p-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
                   Find Current Member
                   <input
                     type="search"
@@ -6823,7 +6959,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       className="grid gap-2 border border-[#ded8d2] bg-white p-3"
                     >
                       <div className="grid gap-2 2xl:grid-cols-[1fr_0.75fr_auto]">
-                        <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} disabled={!isAdmin} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                        <input value={member.name} onChange={(event) => updateTrophyItem("members", member.id, "name", event.target.value)} disabled={!isAdmin} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                         <input value={member.meta} onChange={(event) => updateTrophyItem("members", member.id, "meta", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
                         <div className="flex items-center gap-2">
                           <ReorderButtons onMoveUp={() => moveTrophyItem("members", memberIndex, -1)} onMoveDown={() => moveTrophyItem("members", memberIndex, 1)} disabledUp={memberIndex === 0} disabledDown={memberIndex === draftTrophiesContent.members.length - 1} />
@@ -6856,7 +6992,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               {renderEditableDropdownTitle("trophyResults")}
               <div className="mt-3 grid gap-3">
               <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add New Season</p>
-              <form onSubmit={addTrophyResultSeason} className="grid gap-2 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[1fr_auto]">
+              <form onSubmit={addTrophyResultSeason} className="grid gap-2 border border-[#ded8d2] bg-[#f3f4f4] p-3 sm:grid-cols-[1fr_auto]">
                 <input
                   value={newTrophySeason}
                   onChange={(event) => setNewTrophySeason(event.target.value)}
@@ -6877,7 +7013,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <select
                     value={selectedTrophySeasonIdValue}
                     onChange={(event) => setSelectedTrophySeasonId(event.target.value)}
-                    className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-sm font-bold normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                    className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-sm font-bold normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
                   >
                     {trophyResultSeasons.map((season) => (
                       <option key={season.id} value={season.id}>{season.label}</option>
@@ -6898,7 +7034,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 <HelperText>Use one highlight per line. Keep wording consistent with the public Trophies page.</HelperText>
                 <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                   <input type="date" value={newTrophyResult.date} onChange={(event) => setNewTrophyResult((current) => ({ ...current, date: event.target.value }))} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                  <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                  <input value={newTrophyResult.tournament} onChange={(event) => setNewTrophyResult((current) => ({ ...current, tournament: event.target.value }))} placeholder="Tournament name" disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                   <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white">Add</button>
                 </div>
                 <textarea value={newTrophyResult.highlights} onChange={(event) => setNewTrophyResult((current) => ({ ...current, highlights: event.target.value }))} placeholder="One highlight per line" rows={4} className="resize-none border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000]" />
@@ -6907,7 +7043,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Tournament Results</p>
               <div className="grid gap-2">
                 {(selectedTrophySeason?.results || []).length === 0 && (
-                  <div className="border border-dashed border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-bold text-[#5b5450]">
+                  <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-bold text-[#5b5450]">
                     No results logged for this season yet.
                   </div>
                 )}
@@ -6925,7 +7061,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   >
                     <div className="grid gap-2 2xl:grid-cols-[0.45fr_1fr_auto]">
                       <input type="date" value={result.date} onChange={(event) => updateTrophyResult(result.id, "date", event.target.value)} className="border border-[#ded8d2] px-2 py-2 text-sm outline-none focus:border-[#CC0000]" />
-                      <input value={result.tournament} onChange={(event) => updateTrophyResult(result.id, "tournament", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]" />
+                      <input value={result.tournament} onChange={(event) => updateTrophyResult(result.id, "tournament", event.target.value)} disabled={!canEditBudsiteTitles} className="border border-[#ded8d2] px-2 py-2 text-sm font-black outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]" />
                       <div className="flex items-center gap-2">
                         <ReorderButtons onMoveUp={() => moveTrophyResult(result.id, 1)} onMoveDown={() => moveTrophyResult(result.id, -1)} disabledUp={originalIndex === (selectedTrophySeason?.results || []).length - 1} disabledDown={originalIndex === 0} />
                         <button type="button" onClick={() => requestDeleteConfirmation({ title: `Delete ${result.tournament}?`, body: "This tournament entry and its highlights will be removed from the public Trophies page.", onConfirm: () => removeTrophyResult(result.id) })} className="grid h-10 w-10 place-items-center border border-[#ded8d2] text-[#CC0000]" aria-label={`Remove ${result.tournament}`}><Trash2 size={16} /></button>
@@ -6976,7 +7112,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   Upload photos, edit captions, and reorder the homepage carousel.
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+              <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
                 {carouselEditorOpen ? "Close Carousel" : "Open Carousel"} <ChevronDown size={16} className={`transition ${carouselEditorOpen ? "rotate-180" : ""}`} />
               </span>
             </button>
@@ -6998,7 +7134,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <div className="grid gap-3 lg:grid-cols-[0.75fr_1fr_1fr]">
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Photo
-                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                            <span className="inline-flex items-center justify-center gap-2 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
                               <Upload size={16} /> Upload Photo
                               <input type="file" accept="image/*" onChange={(event) => handleNewCarouselPhotoUpload(event.target.files?.[0])} className="sr-only" />
                             </span>
@@ -7020,7 +7156,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
                               placeholder="Tournament"
                               disabled={!canEditBudsiteTitles}
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                             />
                           </label>
                         </div>
@@ -7045,7 +7181,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           </label>
                         </div>
                         {newCarouselSlide.src && (
-                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 sm:grid-cols-[10rem_1fr] sm:items-center">
+                          <div className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3 sm:grid-cols-[10rem_1fr] sm:items-center">
                             <img src={newCarouselSlide.src} alt="New carousel preview" className="aspect-[16/9] w-full object-cover" />
                             <button type="button" onClick={() => setNewCarouselSlide((current) => ({ ...current, src: "" }))} className="w-fit border border-[#ded8d2] bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]">
                               Remove Photo
@@ -7068,7 +7204,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           onDragOver={allowEditorDrop}
                           onDrop={() => dropCarouselSlide(slide.id)}
                           onDragEnd={finishEditorDrag}
-                          className="grid gap-4 border border-[#ded8d2] bg-[#f6f4f2] p-3 lg:grid-cols-[13rem_1fr_auto]"
+                          className="grid gap-4 border border-[#ded8d2] bg-[#f3f4f4] p-3 lg:grid-cols-[13rem_1fr_auto]"
                         >
                           <div className="grid gap-2">
                             <div className="aspect-[16/9] overflow-hidden bg-[#2D2926]">
@@ -7094,7 +7230,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                   value={slide.kicker}
                                   onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
                                   disabled={!canEditBudsiteTitles}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f6f4f2] disabled:text-[#8f8781]"
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                                 />
                               </label>
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -7422,7 +7558,7 @@ export default function App() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
-                    className={`px-4 py-3 font-black ${active ? "bg-[#2D2926] text-white" : "bg-[#f6f4f2] text-[#2D2926]"}`}
+                    className={`px-4 py-3 font-black ${active ? "bg-[#2D2926] text-white" : "bg-[#f3f4f4] text-[#2D2926]"}`}
                   >
                     {item.label}
                   </SiteLink>
@@ -7438,7 +7574,7 @@ export default function App() {
               <SiteLink
                 href={auth ? "/hub" : "/login"}
                 onClick={() => setMenuOpen(false)}
-                className={`px-4 py-3 font-black ${path === "/login" || path === "/hub" ? "bg-[#2D2926] text-white" : "bg-[#f6f4f2] text-[#2D2926]"}`}
+                className={`px-4 py-3 font-black ${path === "/login" || path === "/hub" ? "bg-[#2D2926] text-white" : "bg-[#f3f4f4] text-[#2D2926]"}`}
               >
                 {auth ? "Private Hub" : "Login"}
               </SiteLink>
