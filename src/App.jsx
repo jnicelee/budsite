@@ -2473,7 +2473,36 @@ function JoinPage({ auth, onRequestConfirmation }) {
 function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => (
+    isSupabaseConfigured && new URLSearchParams(window.location.search).get("reset") === "password"
+  ));
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return undefined;
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get("code");
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchangeError }) => {
+        if (exchangeError) {
+          setError("That password reset link could not be verified. Please request a new reset email.");
+          return;
+        }
+        setIsPasswordRecovery(true);
+        window.history.replaceState({}, "", "/login?reset=password");
+      });
+    }
+
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setIsPasswordRecovery(true);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -2518,6 +2547,65 @@ function LoginPage({ onLogin }) {
     navigateTo("/hub");
   };
 
+  const handleForgotPassword = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
+
+    setError("");
+    setResetMessage("");
+
+    if (!isSupabaseConfigured) {
+      setError("Password reset is available when Supabase is connected.");
+      return;
+    }
+
+    if (!isBuEmail) {
+      setError("Enter your BU email first, then request a password reset.");
+      return;
+    }
+
+    const existingAccount = await findMemberAccountByEmail(normalizedEmail);
+    if (!existingAccount || existingAccount.status !== "active") {
+      setResetMessage("If this is an active approved BUDS account, a reset email will be sent.");
+      return;
+    }
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/login?reset=password`,
+    });
+
+    if (resetError) {
+      setError(resetError.message || "Could not send the password reset email. Please try again.");
+      return;
+    }
+
+    setResetMessage("Password reset email sent. Open the link in your email to choose a new password.");
+  };
+
+  const handlePasswordUpdate = async (event) => {
+    event.preventDefault();
+    setError("");
+    setResetMessage("");
+
+    if (newPassword.trim().length < 6) {
+      setError("Please choose a password with at least 6 characters.");
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) {
+      setError(updateError.message || "Could not update your password. Please request a new reset email.");
+      return;
+    }
+
+    await supabase.auth.signOut();
+    setNewPassword("");
+    setPassword("");
+    setIsPasswordRecovery(false);
+    setResetMessage("Password updated. You can log in with your new password.");
+    window.history.replaceState({}, "", "/login");
+  };
+
   return (
     <Page>
       <PageHeader eyebrow="Private Login" title="Choose Your BUDS Access Level.">
@@ -2542,6 +2630,26 @@ function LoginPage({ onLogin }) {
         </Card>
 
         <Card className="p-5 sm:p-8">
+          {isPasswordRecovery ? (
+          <form onSubmit={handlePasswordUpdate} className="grid gap-5">
+            <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
+              New Password
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                minLength={6}
+                required
+                className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+              />
+            </label>
+            {error && <p className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">{error}</p>}
+            {resetMessage && <p className="border-l-4 border-[#0b6b35] bg-[#e5f7ec] px-4 py-3 text-sm font-bold text-[#0b6b35]">{resetMessage}</p>}
+            <button type="submit" className="inline-flex items-center justify-center gap-2 bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
+              Update Password <Lock size={16} />
+            </button>
+          </form>
+          ) : (
           <form onSubmit={handleSubmit} className="grid gap-5">
             <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
               BU Email
@@ -2564,11 +2672,16 @@ function LoginPage({ onLogin }) {
                 className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
               />
             </label>
+            <button type="button" onClick={handleForgotPassword} className="w-fit text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] underline decoration-[#CC0000]/40 underline-offset-4 transition hover:text-[#8a0000]">
+              Forgot password?
+            </button>
             {error && <p className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">{error}</p>}
+            {resetMessage && <p className="border-l-4 border-[#0b6b35] bg-[#e5f7ec] px-4 py-3 text-sm font-bold text-[#0b6b35]">{resetMessage}</p>}
             <button type="submit" className="inline-flex items-center justify-center gap-2 bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
               Log in <Lock size={16} />
             </button>
           </form>
+          )}
         </Card>
       </div>
     </Page>
