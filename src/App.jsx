@@ -536,6 +536,20 @@ const contentRevisionNormalizers = {
   home: normalizeHomeContent,
 };
 const contentRevisionIds = ["trophies", "meetings", "novice", "eboard", "home"];
+const resourceDescriptionEditIds = ["memberCasebook", "memberPrepOuts", "memberRecordings"];
+
+function getResourceEditModeStorageKey(email = "") {
+  return `buds-resource-edit-mode:${email.toLowerCase()}`;
+}
+
+function getStoredResourceEditMode(email = "") {
+  if (typeof window === "undefined" || !email) return false;
+  try {
+    return window.localStorage.getItem(getResourceEditModeStorageKey(email)) === "true";
+  } catch {
+    return false;
+  }
+}
 
 function getStoredDraftContent(id, fallback, normalizer) {
   try {
@@ -856,6 +870,28 @@ function budgetNumberValue(value) {
 
 function isBudgetInputValue(value) {
   return /^\d*(?:\.\d{0,2})?$/.test(value);
+}
+
+function isSignedBudgetInputValue(value) {
+  return /^-?\d*(?:\.\d{0,2})?$/.test(value);
+}
+
+function cleanCurrencyInputValue(value) {
+  return String(value).replace(/[$,\s]/g, "");
+}
+
+function formatBudgetInputValue(value) {
+  if (value === "") return "0.00";
+  const [wholePart, decimalPart] = String(value).split(".");
+  const formattedWhole = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(Number(wholePart.replace(/,/g, "")) || 0);
+  return decimalPart === undefined ? formattedWhole : `${formattedWhole}.${decimalPart}`;
+}
+
+function formatSignedCurrency(value) {
+  const amount = Number(value) || 0;
+  return amount > 0 ? `+${formatCurrency(amount)}` : formatCurrency(amount);
 }
 
 function isApdaManagedStat(stat) {
@@ -2237,6 +2273,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [dragItem, setDragItem] = useState(null);
   const [previewDraftId, setPreviewDraftId] = useState("");
   const [adminControlSettings, setAdminControlSettings] = useState(() => normalizeAdminControlSettings());
+  const [resourceEditModeEnabled, setResourceEditModeEnabled] = useState(() => {
+    if (auth?.role !== "eboard" || !auth?.email) return false;
+    return getStoredResourceEditMode(auth.email);
+  });
   const initialBudsiteEditorSectionTitlesRef = useRef(budsiteEditorSectionTitles);
 
   const isAdmin = auth?.role === ADMIN_ROLE;
@@ -2244,13 +2284,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEditWorkspace = isEboard;
-  const canEditMemberLinks = isAdmin;
+  const canEditMemberLinks = isAdmin || (auth?.role === "eboard" && resourceEditModeEnabled);
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
   const canEditBudsiteTitles = isAdmin && (!isTitleEditingToggleAccount || adminControlSettings.titleEditingEnabledForYeon);
-  const canEditCasebookLinks = canEditMemberLinks && canEditBudsiteTitles;
-  const canEditMemberLinkTileContent = canEditMemberLinks && canEditBudsiteTitles;
-  const canDeleteCasebookLinks = isEboard;
+  const canEditCasebookLinks = canEditMemberLinks;
+  const canEditMemberLinkTileContent = canEditMemberLinks;
+  const canDeleteCasebookLinks = canEditMemberLinks;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -2313,6 +2353,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     setEditorNotice({ type, message });
   };
 
+  const toggleResourceEditMode = () => {
+    if (auth?.role !== "eboard" || !auth?.email) return;
+    setResourceEditModeEnabled((current) => {
+      const next = !current;
+      window.localStorage.setItem(getResourceEditModeStorageKey(auth.email), String(next));
+      return next;
+    });
+  };
+
   const toggleTitleEditingForYeon = () => {
     if (!isAdmin) return;
     const nextSettings = normalizeAdminControlSettings({
@@ -2324,7 +2373,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
 
   const updateBudsiteEditorSectionTitle = (id, field, value) => {
-    if (!canEditBudsiteTitles) return;
+    const canEditResourceDescription = field === "description" && resourceDescriptionEditIds.includes(id) && canEditMemberLinks;
+    if (!canEditBudsiteTitles && !canEditResourceDescription) return;
     const nextTitles = normalizeBudsiteEditorSectionTitles({
       ...budsiteEditorSectionTitles,
       [id]: {
@@ -2397,7 +2447,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const renderEditableResourceNote = (id) => {
     const sectionTitle = budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id] || {};
-    if (canEditBudsiteTitles) {
+    const canEditResourceDescription = resourceDescriptionEditIds.includes(id) && canEditMemberLinks;
+    if (canEditBudsiteTitles || canEditResourceDescription) {
       return (
         <textarea
           value={sectionTitle.description || ""}
@@ -2900,10 +2951,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const updateBudgetTotal = (total) => {
     if (!canEditWorkspace) return;
-    if (!isBudgetInputValue(total)) return;
-    const nextBudget = { ...budget, total };
+    const cleanedTotal = cleanCurrencyInputValue(total);
+    const normalizedTotal = cleanedTotal === "" ? "0.00" : cleanedTotal;
+    if (!isBudgetInputValue(normalizedTotal)) return;
+    const nextBudget = { ...budget, total: normalizedTotal };
     updateBudget(nextBudget);
-    upsertBudgetSettings(budgetNumberValue(total));
+    upsertBudgetSettings(budgetNumberValue(normalizedTotal));
   };
 
   const updateBudgetRow = (id, field, value) => {
@@ -2968,7 +3021,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     if (!canEditWorkspace) return;
     const category = newRevenueCategory.trim();
     const amount = Number(newRevenueAmount);
-    if (!category || amount <= 0) return;
+    if (!category || !Number.isFinite(amount) || amount === 0) return;
 
     const nextRow = { id: `revenue-${Date.now()}`, category, amount };
     const nextBudget = {
@@ -2985,7 +3038,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
 
   const updateNewRevenueAmount = (value) => {
-    if (!isBudgetInputValue(value)) return;
+    if (!isSignedBudgetInputValue(value)) return;
     setNewRevenueAmount(value);
   };
 
@@ -3811,6 +3864,30 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           <span className={`inline-flex h-8 items-center px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] ${isSupabaseConfigured ? "bg-[#e5f7ec] text-[#0b6b35]" : "bg-[#fff1f1] text-[#8a0000]"}`}>
             {isSupabaseConfigured ? "Database connected" : "Local storage mode"}
           </span>
+          {!isAdmin && auth?.role === "eboard" && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={resourceEditModeEnabled}
+              onClick={toggleResourceEditMode}
+              className="inline-flex h-8 items-center gap-2 border border-[#ded8d2] bg-white px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] md:ml-auto"
+            >
+              <span
+                className={`h-3 w-6 rounded-full border transition ${
+                  resourceEditModeEnabled
+                    ? "border-[#79c792] bg-[#a8e6ba]"
+                    : "border-[#ded8d2] bg-[#f6f4f2]"
+                }`}
+              >
+                <span
+                  className={`block h-full w-1/2 rounded-full bg-white transition ${
+                    resourceEditModeEnabled ? "translate-x-full" : "translate-x-0"
+                  }`}
+                />
+              </span>
+              Edit Mode
+            </button>
+          )}
           {isAdmin && (
             <button
               type="button"
@@ -4474,7 +4551,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
       {visibleTab === "eboard" && isEboard && (
         <div className="grid gap-5">
-          <div className="grid gap-5 xl:grid-cols-2">
+          <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
             <Card className="relative flex min-h-[28rem] flex-col p-4 sm:min-h-[34rem] sm:p-5">
               <div className={`pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 bg-[#0b6b35] px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-700 ${agendaCompleteFlash ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
                 Checked off
@@ -4482,7 +4559,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <ClipboardList className="text-[#CC0000]" />
-                  <h2 className="text-xl font-black text-[#2D2926]">Agenda + Accountability</h2>
+                  <h2 className="text-xl font-black text-[#2D2926]">Agenda</h2>
                 </div>
                 <button
                   type="button"
@@ -4579,19 +4656,24 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <div className="mb-4 grid gap-3 sm:grid-cols-3">
                 <label className="grid gap-1 bg-[#2D2926] p-3 text-white">
                   <span className="text-xs font-black uppercase tracking-[0.08em] text-white/70">Base Budget</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={budget.total}
-                    onChange={(event) => updateBudgetTotal(event.target.value)}
-                    disabled={!canEditWorkspace}
-                    className="w-full bg-transparent text-2xl font-black outline-none disabled:opacity-70"
-                  />
+                  <span className="flex items-center gap-1 text-2xl font-black">
+                    <span aria-hidden="true">$</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={formatBudgetInputValue(budget.total)}
+                      onChange={(event) => updateBudgetTotal(event.target.value)}
+                      disabled={!canEditWorkspace}
+                      aria-label="Base budget"
+                      className="min-w-0 flex-1 bg-transparent outline-none disabled:opacity-70"
+                    />
+                  </span>
                 </label>
                 <div className="bg-[#f6f4f2] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Revenue</p>
-                  <p className="mt-1 text-2xl font-black text-[#0b6b35]">+{formatCurrency(totalRevenue)}</p>
+                  <p className={`mt-1 text-2xl font-black ${totalRevenue < 0 ? "text-[#CC0000]" : "text-[#0b6b35]"}`}>
+                    {formatSignedCurrency(totalRevenue)}
+                  </p>
                 </div>
                 <div className="bg-[#f6f4f2] p-3">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">Remaining Total</p>
@@ -4685,7 +4767,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <div className="mt-4 border-t border-[#ded8d2] pt-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">Revenue Additions</h3>
-                  <span className="text-sm font-black text-[#0b6b35]">+{formatCurrency(totalRevenue)}</span>
+                  <span className={`text-sm font-black ${totalRevenue < 0 ? "text-[#CC0000]" : "text-[#0b6b35]"}`}>
+                    {formatSignedCurrency(totalRevenue)}
+                  </span>
                 </div>
                 <form onSubmit={addBudgetRevenueRow} className="grid gap-2 sm:grid-cols-[1fr_8rem_auto]">
                   <input
@@ -4698,11 +4782,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   />
                   <input
                     type="number"
-                    min="0"
                     step="0.01"
                     value={newRevenueAmount}
                     onChange={(event) => updateNewRevenueAmount(event.target.value)}
-                    placeholder="Amount"
+                    placeholder="Amount, use - for debt"
                     disabled={!canEditWorkspace}
                     className="border border-[#ded8d2] px-3 py-2 text-sm outline-none focus:border-[#CC0000] disabled:opacity-55"
                   />
@@ -4716,23 +4799,28 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       No Revenue Logged Yet.
                     </div>
                   )}
-                  {(budget.revenueRows || []).map((row) => (
-                    <div key={row.id} className="flex items-center justify-between gap-3 border border-[#ded8d2] bg-[#e5f7ec] px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="font-black text-[#2D2926]">{row.category}</p>
-                        <p className="text-sm font-bold text-[#0b6b35]">+{formatCurrency(row.amount)}</p>
+                  {(budget.revenueRows || []).map((row) => {
+                    const isDebt = Number(row.amount) < 0;
+                    return (
+                      <div key={row.id} className={`flex items-center justify-between gap-3 border px-3 py-2 ${isDebt ? "border-[#f0c2c2] bg-[#fff1f1]" : "border-[#ded8d2] bg-[#e5f7ec]"}`}>
+                        <div className="min-w-0">
+                          <p className="font-black text-[#2D2926]">{row.category}</p>
+                          <p className={`text-sm font-bold ${isDebt ? "text-[#CC0000]" : "text-[#0b6b35]"}`}>
+                            {formatSignedCurrency(row.amount)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeBudgetRevenueRow(row.id)}
+                          disabled={!canEditWorkspace}
+                          aria-label={`Remove ${row.category} revenue`}
+                          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center border bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40 ${isDebt ? "border-[#f0c2c2]" : "border-[#b7d9c4]"}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeBudgetRevenueRow(row.id)}
-                        disabled={!canEditWorkspace}
-                        aria-label={`Remove ${row.category} revenue`}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-[#b7d9c4] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </Card>
