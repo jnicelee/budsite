@@ -2745,6 +2745,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [recordingModalOpen, setRecordingModalOpen] = useState(false);
   const [resourceSearches, setResourceSearches] = useState({});
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
+  const [memberAccountsStatus, setMemberAccountsStatus] = useState("idle");
   const [newTrophyStat, setNewTrophyStat] = useState({ value: "", label: "", detail: "" });
   const [newTrophyAccomplishment, setNewTrophyAccomplishment] = useState("");
   const [newTrophyMilestone, setNewTrophyMilestone] = useState({ year: "", title: "", copy: "" });
@@ -2785,7 +2786,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   const isAdmin = auth?.role === ADMIN_ROLE;
   const isTitleEditingToggleAccount = auth?.email?.toLowerCase() === TITLE_EDITING_TOGGLE_EMAIL;
-  const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(auth?.email);
+  const authEmail = auth?.email?.toLowerCase();
+  const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(authEmail);
   const isEboard = auth?.role === "eboard" || isAdmin;
   const canEditWorkspace = isEboard;
   const canEditTrophies = isEboard;
@@ -3245,22 +3247,62 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     };
   }, [isAdmin, onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
 
+  const hydrateMemberAccounts = useCallback(async () => {
+    if (!canManageMembers) return;
+    setMemberAccountsStatus("loading");
+    const databaseAccounts = await loadMemberAccounts();
+    if (!databaseAccounts) {
+      setMemberAccountsStatus("error");
+      return;
+    }
+    setMemberAccounts(databaseAccounts);
+    saveStoredMemberAccounts(databaseAccounts);
+    setMemberAccountsStatus("loaded");
+  }, [canManageMembers]);
+
   useEffect(() => {
     let ignore = false;
 
-    async function hydrateMemberAccounts() {
+    async function hydrateOnMount() {
+      if (!canManageMembers) return;
       const databaseAccounts = await loadMemberAccounts();
-      if (!databaseAccounts || ignore) return;
+      if (!databaseAccounts || ignore) {
+        if (!ignore) setMemberAccountsStatus("error");
+        return;
+      }
       setMemberAccounts(databaseAccounts);
       saveStoredMemberAccounts(databaseAccounts);
+      setMemberAccountsStatus("loaded");
     }
 
-    if (canManageMembers) hydrateMemberAccounts();
+    hydrateOnMount();
 
     return () => {
       ignore = true;
     };
   }, [canManageMembers]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateOnMembersTab() {
+      if (!canManageMembers || visibleTab !== "members") return;
+      const databaseAccounts = await loadMemberAccounts();
+      if (!databaseAccounts || ignore) {
+        if (!ignore) setMemberAccountsStatus("error");
+        return;
+      }
+      setMemberAccounts(databaseAccounts);
+      saveStoredMemberAccounts(databaseAccounts);
+      setMemberAccountsStatus("loaded");
+    }
+
+    hydrateOnMembersTab();
+
+    return () => {
+      ignore = true;
+    };
+  }, [canManageMembers, visibleTab]);
 
   useEffect(() => {
     if (!editorNotice.message) return undefined;
@@ -5053,8 +5095,19 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Member Accounts</h2>
               <p className="mt-2 text-sm leading-6 text-[#5b5450]">Change account status between member and e-board, or revoke membership access.</p>
             </div>
-            <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{memberAccounts.length} accounts</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{memberAccounts.length} accounts</p>
+              <button type="button" onClick={hydrateMemberAccounts} className="border border-[#ded8d2] bg-[#f6f4f2] px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                Refresh
+              </button>
+            </div>
           </div>
+          {memberAccountsStatus === "loading" && (
+            <p className="mt-5 border-l-4 border-[#2D2926] bg-[#f6f4f2] px-4 py-3 text-sm font-bold text-[#2D2926]">Loading approved member accounts...</p>
+          )}
+          {memberAccountsStatus === "error" && (
+            <p className="mt-5 border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">Could not load approved member accounts from Supabase. Try Refresh or check the database connection.</p>
+          )}
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
               <thead className="bg-[#2D2926] text-white">
