@@ -2470,7 +2470,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
   );
 }
 
-function LoginPage({ onLogin }) {
+function LoginPage({ onLogin, onRequestConfirmation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -2547,6 +2547,19 @@ function LoginPage({ onLogin }) {
     navigateTo("/hub");
   };
 
+  const sendPasswordReset = async (normalizedEmail) => {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/login?reset=password`,
+    });
+
+    if (resetError) {
+      setError(resetError.message || "Could not send the password reset email. Please try again.");
+      return;
+    }
+
+    setResetMessage("Password reset email sent. Open the link in your email to choose a new password.");
+  };
+
   const handleForgotPassword = async () => {
     const normalizedEmail = email.trim().toLowerCase();
     const isBuEmail = /@([a-z0-9-]+\.)?bu\.edu$/.test(normalizedEmail);
@@ -2570,16 +2583,12 @@ function LoginPage({ onLogin }) {
       return;
     }
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${window.location.origin}/login?reset=password`,
+    onRequestConfirmation({
+      title: "Send password reset email?",
+      body: `Supabase will email a password reset link to ${normalizedEmail}. Only use this if you want to reset this account password now.`,
+      actionLabel: "Send Reset",
+      onConfirm: () => sendPasswordReset(normalizedEmail),
     });
-
-    if (resetError) {
-      setError(resetError.message || "Could not send the password reset email. Please try again.");
-      return;
-    }
-
-    setResetMessage("Password reset email sent. Open the link in your email to choose a new password.");
   };
 
   const handlePasswordUpdate = async (event) => {
@@ -2672,7 +2681,7 @@ function LoginPage({ onLogin }) {
                 className="border border-[#ded8d2] bg-white px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
               />
             </label>
-            <button type="button" onClick={handleForgotPassword} className="w-fit text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] underline decoration-[#CC0000]/40 underline-offset-4 transition hover:text-[#8a0000]">
+            <button type="button" onClick={handleForgotPassword} className="w-fit text-[0.58rem] font-black uppercase tracking-[0.08em] text-[#8a817b] underline decoration-[#8a817b]/30 underline-offset-4 transition hover:text-[#CC0000]">
               Forgot password?
             </button>
             {error && <p className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-4 py-3 text-sm font-bold text-[#8a0000]">{error}</p>}
@@ -7199,7 +7208,7 @@ export default function App() {
       case "/join":
         return <JoinPage auth={auth} onRequestConfirmation={requestConfirmation} />;
       case "/login":
-        return <LoginPage onLogin={setAuth} />;
+        return <LoginPage onLogin={setAuth} onRequestConfirmation={requestConfirmation} />;
       case "/hub":
         return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} homeContent={homeContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onHomeContentChange={updateHomeContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           if (isSupabaseConfigured) supabase.auth.signOut();
