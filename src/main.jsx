@@ -11,6 +11,6 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
     <Analytics />
-    <SpeedInsights />
+    <SpeedInsights scriptSrc={import.meta.env.PROD ? 'https://va.vercel-scripts.com/v1/speed-insights/script.js' : undefined} />
   </StrictMode>,
 )
