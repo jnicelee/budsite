@@ -4284,6 +4284,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             Log out <LogOut size={15} />
           </button>
         </div>
+        {(isEboard || canManageMembers) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ded8d2] pt-2.5">
           {isAdmin && (
             <span className="inline-flex h-8 items-center bg-[#2D2926] px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-white">
@@ -4354,9 +4355,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </button>
           )}
         </div>
+        )}
       </div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="mx-3 my-5 flex flex-wrap gap-2 border-y border-[#ded8d2] bg-[#f6f4f2]/70 px-3 py-3 sm:mx-5 sm:px-4">
         <button
           type="button"
           onClick={() => setActiveTab("member")}
