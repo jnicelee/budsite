@@ -341,7 +341,7 @@ export async function loadMembershipRequests() {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from("membership_requests")
-    .select("id,name,email,password,message,status,reason,created_at,reviewed_at")
+    .select("id,name,email,message,status,reason,created_at,reviewed_at")
     .order("created_at", { ascending: false });
   if (error) {
     console.error("Supabase membership requests load failed", error);
@@ -391,26 +391,10 @@ export async function loadMemberAccounts() {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from("member_accounts")
-    .select("id,name,email,password,role,status,created_at,updated_at")
+    .select("id,name,email,role,status,created_at,updated_at")
     .order("created_at", { ascending: false });
   if (error) {
     console.error("Supabase member accounts load failed", error);
-    return null;
-  }
-  return data;
-}
-
-export async function findMemberAccount(email, password) {
-  if (!isSupabaseConfigured) return null;
-  const { data, error } = await supabase
-    .from("member_accounts")
-    .select("id,name,email,role,status")
-    .eq("email", email)
-    .eq("password", password)
-    .eq("status", "active")
-    .maybeSingle();
-  if (error) {
-    console.error("Supabase member login failed", error);
     return null;
   }
   return data;
@@ -420,7 +404,7 @@ export async function findMemberAccountByEmail(email) {
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from("member_accounts")
-    .select("id,name,email,password,role,status")
+    .select("id,name,email,role,status")
     .eq("email", email)
     .maybeSingle();
   if (error) {

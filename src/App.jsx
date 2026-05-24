@@ -73,7 +73,6 @@ import {
   deleteMemberAccount,
   deleteMembershipRequest,
   deleteNote,
-  findMemberAccount,
   findMemberAccountByEmail,
   findMembershipRequestByEmail,
   insertMembershipRequest,
@@ -2209,13 +2208,33 @@ function JoinPage({ auth, onRequestConfirmation }) {
       id: `member-${Date.now()}`,
       name: name.trim(),
       email: normalizedEmail,
-      password: requestPassword,
+      ...(!isSupabaseConfigured ? { password: requestPassword } : {}),
       message: message.trim(),
       status: "Pending",
       reason: "",
       created_at: new Date().toISOString(),
       reviewed_at: null,
     };
+
+    if (isSupabaseConfigured) {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: requestPassword,
+        options: {
+          data: { name: name.trim(), membership_status: "pending" },
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+
+      await supabase.auth.signOut();
+
+      if (signUpError) {
+        setSubmitMessageType("error");
+        setSubmitMessage(signUpError.message || "Supabase could not create this login. Please try again.");
+        return;
+      }
+    }
+
     const nextRequests = [nextRequest, ...requests];
     setRequests(nextRequests);
     saveStoredMembershipRequests(nextRequests);
@@ -2228,7 +2247,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
     setSubmitMessage("Request sent. An administrator can review it from this page.");
   };
 
-  const reviewMembershipRequest = (id, status) => {
+  const reviewMembershipRequest = async (id, status) => {
     const reviewedRequest = requests.find((request) => request.id === id);
     if (status === "Accepted" && reviewedRequest && RESERVED_ACCOUNT_EMAILS.includes(reviewedRequest.email.toLowerCase())) {
       setReviewReasons((current) => ({ ...current, [id]: "This email is reserved and cannot be accepted through requests." }));
@@ -2250,11 +2269,23 @@ function JoinPage({ auth, onRequestConfirmation }) {
     saveStoredMembershipRequests(nextRequests);
     updateMembershipRequestStatus(id, status, reason);
     if (status === "Accepted" && reviewedRequest) {
+      if (isSupabaseConfigured && reviewedRequest.password) {
+        await supabase.auth.signUp({
+          email: reviewedRequest.email,
+          password: reviewedRequest.password,
+          options: {
+            data: { name: reviewedRequest.name, membership_status: "accepted" },
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
+        });
+        await supabase.auth.signOut();
+      }
+
       upsertMemberAccount({
         id: reviewedRequest.email,
         name: reviewedRequest.name,
         email: reviewedRequest.email,
-        password: reviewedRequest.password,
+        ...(!isSupabaseConfigured ? { password: reviewedRequest.password } : {}),
         role: "member",
         status: "active",
         updated_at: new Date().toISOString(),
@@ -2455,34 +2486,36 @@ function LoginPage({ onLogin }) {
     }
 
     const existingAccount = await findMemberAccountByEmail(normalizedEmail);
-    if (existingAccount) {
-      if (existingAccount.status === "revoked") {
-        setError("This membership has been revoked. Contact BUDS if this is a mistake.");
-        return;
-      }
 
-      if (existingAccount.password !== password) {
+    if (!existingAccount) {
+      setError("No accepted BUDS account was found for that email and password.");
+      return;
+    }
+
+    if (existingAccount.status === "revoked") {
+      setError("This membership has been revoked. Contact BUDS if this is a mistake.");
+      return;
+    }
+
+    if (isSupabaseConfigured) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+
+      if (signInError) {
         setError("Incorrect account password.");
         return;
       }
-
-      const auth = { role: existingAccount.role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
-      saveStoredAuth(auth);
-      onLogin(auth);
-      navigateTo("/hub");
+    } else if (existingAccount.password !== password) {
+      setError("Incorrect account password.");
       return;
     }
 
-    const account = await findMemberAccount(normalizedEmail, password);
-    if (account) {
-      const auth = { role: account.role, email: account.email, name: account.name, accountId: account.id };
-      saveStoredAuth(auth);
-      onLogin(auth);
-      navigateTo("/hub");
-      return;
-    }
-
-    setError("No accepted BUDS account was found for that email and password.");
+    const auth = { role: existingAccount.role, email: existingAccount.email, name: existingAccount.name, accountId: existingAccount.id };
+    saveStoredAuth(auth);
+    onLogin(auth);
+    navigateTo("/hub");
   };
 
   return (
@@ -7056,6 +7089,7 @@ export default function App() {
         return <LoginPage onLogin={setAuth} />;
       case "/hub":
         return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} homeContent={homeContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onHomeContentChange={updateHomeContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
+          if (isSupabaseConfigured) supabase.auth.signOut();
           clearStoredAuth();
           setAuth(null);
           navigateTo("/login");

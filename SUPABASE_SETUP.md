@@ -22,7 +22,17 @@ npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase db push
 ```
 
-## 3. Add environment variables
+## 3. Migrate existing passwords
+
+Before applying `20260524143000_move_passwords_to_supabase_auth.sql` to an existing database, migrate the current plaintext member passwords into Supabase Auth:
+
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co SUPABASE_SERVICE_ROLE_KEY=your-service-role-key npm run migrate:auth-passwords
+```
+
+After the script reports completion, apply the SQL migration. New membership requests store passwords directly in Supabase Auth and keep only profile, approval, role, and status data in app tables.
+
+## 4. Add environment variables
 
 Copy `.env.example` to `.env.local` for local development:
 
@@ -35,4 +45,4 @@ Add the same two variables in Vercel project settings before deploying.
 
 ## Current security note
 
-The current BUDS login is a frontend prototype. The Supabase schema allows anonymous reads/writes so the current app can save agenda, budget, notes, and links. Before using real sensitive data, switch the login to Supabase Auth and tighten row-level security policies to authenticated users only.
+Member passwords are handled by Supabase Auth. The Supabase schema still allows broad anonymous reads/writes so the current app can save agenda, budget, notes, and links. Before using more sensitive private data, tighten row-level security policies to authenticated users only.
