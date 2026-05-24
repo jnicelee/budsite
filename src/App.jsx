@@ -4908,7 +4908,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <th className="px-4 py-3 font-black">Email</th>
                   <th className="px-4 py-3 font-black">Status</th>
                   <th className="px-4 py-3 font-black">Role</th>
-                  <th className="px-4 py-3 font-black">Action</th>
+                  <th className="w-64 px-4 py-3 font-black">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -4950,8 +4950,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <option value="eboard">E-Board</option>
                       </select>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    <td className="w-64 px-4 py-3">
+                      <div className="flex w-full items-center justify-between gap-4">
                         {account.status === "revoked" ? (
                           <button
                             type="button"
