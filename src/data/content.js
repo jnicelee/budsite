@@ -16,11 +16,13 @@ export const defaultBudsiteEditorSectionTitles = {
   trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
   home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
   memberTeamLinks: { title: "BUDS Team Specific Links" },
-  memberCasebook: { title: "BUDS Casebook" },
-  memberPrepOuts: { title: "BUDS Prep Outs" },
+  memberCasebook: { title: "BUDS Casebook", description: "The BUDS Casebook collects shared cases, practice shells, and examples members can study, adapt, or run in practice. Add cases with a clear case name, concise statement, useful topic tags, and a link to the full document." },
+  memberPrepOuts: { title: "BUDS Prep Outs", description: "The purpose of this section is to make and collect pre-prepared LOCs for cases that come up frequently in the league. Some of the cases also have copies of the PMC or MG spikes and overview (if we have access to them) or potential ideas for MO ballots. Each of the prep outs should have a relatively standardized heading with the case name and which team wrote/runs the case. Everyone is welcome to add or request prep outs but we ask that you do your best to adhere to the headings so we have sources and clear labels for everything." },
+  memberRecordings: { title: "Recorded APDA Rounds", description: "These videos are APDA outrounds from cases and motions tournaments. Case or motion statements are usually linked in comments or video descriptions; some recordings include prep time before speeches start." },
   memberResourcesHero: { eyebrow: "Members Only", title: "Private BUDS links and debate resources.", description: "Team documents, calendars, and APDA guides for the season." },
   clubResourcesHero: { eyebrow: "Members Only", title: "Club resources.", description: "Forms, reimbursements, and day-to-day BUDS logistics for members." },
   clubForms: { title: "Forms" },
+  clubParadigms: { title: "Paradigms" },
   clubReimbursements: { title: "Reimbursements" },
   trophyTopStats: { title: "Top Stats" },
   trophyAccomplishments: { title: "Accomplishments List" },
@@ -140,16 +142,33 @@ export const privateLinks = [
   { id: "prepout-qualia", section: "BUDS Prep Outs", order: 46, label: "Qualia", topicTags: ["George Washington"], description: "THB qualia, per the definition above, does not exist.", url: "https://docs.google.com/document/d/15Fl3tZzA5lMGgb36FPv5IvXYimjQosnge0yUyofL2LM/edit?usp=drive_link" },
   { id: "prepout-trade-unions", section: "BUDS Prep Outs", order: 47, label: "Trade Unions", topicTags: ["Northeastern"], description: "In the United States, THBT we should defer to trade unions over direct government intervention in labor practices.", url: "https://docs.google.com/document/d/1JIIKK52XaMtIgzuzcu5ogNGa0on5b78D6Xp9rDWoMY0/edit?usp=drive_link" },
   { id: "prepout-van-gogh", section: "BUDS Prep Outs", order: 48, label: "Van Gogh", topicTags: ["Institution TBD"], description: "We say, don't bring Van Gogh to the present.", url: "https://docs.google.com/document/d/1UPnlgyNgmeWe4Ody9f7iphhE0ZsagBZLfYyY-31vEuQ/edit?usp=drive_link" },
+  { id: "recording-2024-au-semis", section: "Recorded APDA Rounds", order: 49, label: "2024 AU Semis", topicTags: ["Cases"], description: "It would be preferable to the status quo to restrict RBI in Anguilla to a $150k gift to the CDF.", url: "https://www.youtube.com/watch?v=yMrB88_WLQE" },
+  { id: "recording-tufts-quarters-2024", section: "Recorded APDA Rounds", order: 50, label: "Tufts Quarters 2024", topicTags: ["Cases"], description: "Outround recording from a cases tournament.", url: "https://www.youtube.com/watch?v=EwrFHEEAS4c" },
+  { id: "recording-williams-finals-2023", section: "Recorded APDA Rounds", order: 51, label: "Williams Finals 2023", topicTags: ["Cases"], description: "THP a satisfied life over a striving life.", url: "https://www.youtube.com/watch?v=9m_24Zo-O_k" },
+  { id: "recording-williams-2024-semis", section: "Recorded APDA Rounds", order: 52, label: "Williams 2024 Semis", topicTags: ["Cases"], description: "Preferable to the status quo, THBT the ECB should remove zero-risk weighting status for bonds.", url: "https://www.youtube.com/watch?v=WzsSQQjzozQ4" },
+  { id: "recording-williams-24-varsity-semifinals", section: "Recorded APDA Rounds", order: 53, label: "Williams 24 Varsity Semifinals", topicTags: ["Cases"], description: "THB it is in Jonas Savimbi's best interests to accept the 1992 election results and demobilize UNITA.", url: "https://www.youtube.com/watch?v=1YMccv-5zAs" },
+  { id: "recording-2025-amherst-finals", section: "Recorded APDA Rounds", order: 54, label: "2025 Amherst Finals", topicTags: ["Cases"], description: "This house regrets The Prime Directive.", url: "https://www.youtube.com/watch?v=zAEm_cJ8xYo" },
+  { id: "recording-brown-wesleyan-semis-2023", section: "Recorded APDA Rounds", order: 55, label: "Brown/Wesleyan Semis 2023", topicTags: ["Cases"], description: "Caveating success, TH, as Radical Republicans post-Civil War, would repeal the 10th Amendment.", url: "https://www.youtube.com/watch?v=SBqGcaITDqI" },
+  { id: "recording-nats-2024-quarters", section: "Recorded APDA Rounds", order: 56, label: "Nats 2024 Quarters", topicTags: ["Cases"], description: "THBT it is in the best interests of Hiroshi Yomiuri to stay at Maas and not take the offer.", url: "https://www.youtube.com/watch?v=VYI3GnWKRaM" },
+  { id: "recording-2025-nats-semis", section: "Recorded APDA Rounds", order: 57, label: "2025 Nats Semis", topicTags: ["Cases"], description: "Time-spaced to August 1990, THBT it is not in Saddam Hussein's regime's interests for Iraq to invade Kuwait.", url: "https://www.youtube.com/watch?v=F4QZTK0mUPs" },
+  { id: "recording-2025-rutgers-finals", section: "Recorded APDA Rounds", order: 58, label: "2025 Rutgers Finals", topicTags: ["Motions"], description: "Assuming equal religious merit, THBT a devout Hindu community should follow Advaita Vedanta rather than Dvaita Vedanta.", url: "https://www.youtube.com/watch?v=8D4IA3rqOXc" },
+  { id: "recording-2025-drexel-finals", section: "Recorded APDA Rounds", order: 59, label: "2025 Drexel Finals", topicTags: ["Motions"], description: "THS a presidential coup by the military in Venezuela.", url: "https://www.youtube.com/watch?v=WqHEw5ZvNGc" },
+  { id: "recording-2025-chicago-finals", section: "Recorded APDA Rounds", order: 60, label: "2025 Chicago Finals", topicTags: ["Motions"], description: "THW adopt feline philosophy.", url: "https://www.youtube.com/watch?v=FyLsJwZPtYU" },
+  { id: "recording-princeton-finals-2025", section: "Recorded APDA Rounds", order: 61, label: "Princeton Finals 2025", topicTags: ["Motions"], description: "THBT the existence of billionaires is immoral.", url: "https://youtu.be/n1Lw0WPGyr4" },
+  { id: "recording-princeton-octofinals-2025", section: "Recorded APDA Rounds", order: 62, label: "Princeton Octofinals 2025", topicTags: ["Motions"], description: "THBT cities are on balance feminist spaces.", url: "https://www.youtube.com/watch?v=aWlGvtTApkg" },
+  { id: "recording-2025-rutgers-semis", section: "Recorded APDA Rounds", order: 63, label: "2025 Rutgers Semis", topicTags: ["Motions"], description: "THS the rise of Pink Feminism in China.", url: "https://www.youtube.com/watch?v=Kg3c1hS0fRY" },
+  { id: "recording-2025-apda-summer-open-quarters", section: "Recorded APDA Rounds", order: 64, label: "2025 APDA Summer Open Quarters", topicTags: ["Motions"], description: "TH, as prominent Black abolitionists in the antebellum North, would interpret the Constitution as anti-slavery rather than pro-slavery.", url: "https://www.youtube.com/watch?v=LvQxBExwMic" },
 ];
 
 export const privateLinkDefaultsById = Object.fromEntries(privateLinks.map((link) => [link.id, link]));
 export const privateFormLinkIds = ["link-equity-complaint", "link-big-little", "link-prep-out", "link-birthday", "link-feedback"];
-export const privateLinkSections = ["BUDS Team Specific Links", "Forms", "Debater Resources", "BUDS Casebook", "BUDS Prep Outs"];
+export const privateLinkSections = ["BUDS Team Specific Links", "Forms", "Debater Resources", "BUDS Casebook", "BUDS Prep Outs", "Recorded APDA Rounds"];
 
 export function getPrivateLinkSection(link) {
   if (privateFormLinkIds.includes(link.id)) return "Forms";
   if (link.id?.startsWith("casebook-")) return "BUDS Casebook";
   if (link.id?.startsWith("prepout-")) return "BUDS Prep Outs";
+  if (link.id?.startsWith("recording-")) return "Recorded APDA Rounds";
   return link.section;
 }
 

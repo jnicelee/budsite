@@ -53,6 +53,28 @@ a {
   border-radius: var(--soft-radius);
 }
 
+:where(button, a):where([class*="border"], [class*="bg-"]):not([class*="shadow-"]) {
+  box-shadow: 0 2px 0 rgba(45, 41, 38, 0.1), 0 7px 16px rgba(45, 41, 38, 0.05);
+  transition-property: transform, box-shadow, background-color, border-color, color, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+:where(button, a):where([class*="border"], [class*="bg-"]):not([class*="shadow-"]):where(:hover, :focus-visible) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 rgba(45, 41, 38, 0.12), 0 10px 20px rgba(45, 41, 38, 0.075);
+}
+
+:where(button, a):where([class*="border"], [class*="bg-"]):not([class*="shadow-"]):active {
+  transform: translateY(0);
+  box-shadow: 0 1px 0 rgba(45, 41, 38, 0.1), 0 5px 12px rgba(45, 41, 38, 0.06);
+}
+
+:where(button, a):where([class*="border"], [class*="bg-"]):focus-visible {
+  outline: 2px solid var(--bu-red);
+  outline-offset: 2px;
+}
+
 .rounded-none {
   border-radius: 0;
 }

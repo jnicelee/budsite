@@ -364,7 +364,7 @@ function SaveNotice({ notice }) {
   );
 }
 
-function PrepOutModal({ open, prepOut, onChange, onCancel, onSubmit }) {
+function ResourceEntryModal({ open, resource, onChange, onCancel, onSubmit, eyebrow, title, submitLabel, labelPlaceholder = "Case name", tagPlaceholder, tagOptions = null, descriptionPlaceholder, urlPlaceholder = "Google Doc URL" }) {
   return (
     <AnimatePresence>
       {open && (
@@ -383,33 +383,45 @@ function PrepOutModal({ open, prepOut, onChange, onCancel, onSubmit }) {
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Eyebrow>BUDS Prep Outs</Eyebrow>
-            <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">Add a Prep-Out</h2>
+            <Eyebrow>{eyebrow}</Eyebrow>
+            <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926]">{title}</h2>
             <div className="mt-5 grid gap-3">
               <input
-                value={prepOut.label}
+                value={resource.label}
                 onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))}
-                placeholder="Case name"
+                placeholder={labelPlaceholder}
                 className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
               />
-              <input
-                value={prepOut.topicTags}
-                onChange={(event) => onChange((current) => ({ ...current, topicTags: event.target.value }))}
-                placeholder="Team / institution tags, max 2"
-                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
-              />
+              {tagOptions ? (
+                <select
+                  value={resource.topicTags}
+                  onChange={(event) => onChange((current) => ({ ...current, topicTags: event.target.value }))}
+                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                >
+                  {tagOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  value={resource.topicTags}
+                  onChange={(event) => onChange((current) => ({ ...current, topicTags: event.target.value }))}
+                  placeholder={tagPlaceholder}
+                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                />
+              )}
               <textarea
-                value={prepOut.description}
+                value={resource.description}
                 onChange={(event) => onChange((current) => ({ ...current, description: event.target.value }))}
                 rows={4}
-                placeholder="Case statement / background"
+                placeholder={descriptionPlaceholder}
                 className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#2D2926] outline-none focus:border-[#CC0000]"
               />
               <input
                 type="url"
-                value={prepOut.url}
+                value={resource.url}
                 onChange={(event) => onChange((current) => ({ ...current, url: event.target.value }))}
-                placeholder="Google Doc URL"
+                placeholder={urlPlaceholder}
                 className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
               />
             </div>
@@ -425,7 +437,7 @@ function PrepOutModal({ open, prepOut, onChange, onCancel, onSubmit }) {
                 type="submit"
                 className="bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white transition duration-200 hover:bg-[#a90000]"
               >
-                Add Prep-Out
+                {submitLabel}
               </button>
             </div>
           </motion.form>
@@ -2197,8 +2209,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [newRevenueAmount, setNewRevenueAmount] = useState("");
   const [memberLinks, setMemberLinks] = useState(() => getStoredPrivateLinks());
   const [newCasebookCase, setNewCasebookCase] = useState({ label: "", description: "", url: "", topicTags: "" });
+  const [casebookModalOpen, setCasebookModalOpen] = useState(false);
   const [newPrepOut, setNewPrepOut] = useState({ label: "", description: "", url: "", topicTags: "" });
   const [prepOutModalOpen, setPrepOutModalOpen] = useState(false);
+  const [newRecording, setNewRecording] = useState({ label: "", description: "", url: "", topicTags: "Cases" });
+  const [recordingModalOpen, setRecordingModalOpen] = useState(false);
   const [resourceSearches, setResourceSearches] = useState({});
   const [memberAccounts, setMemberAccounts] = useState(() => getStoredMemberAccounts());
   const [newTrophyStat, setNewTrophyStat] = useState({ value: "", label: "", detail: "" });
@@ -2235,6 +2250,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const canEditBudsiteTitles = isAdmin && (!isTitleEditingToggleAccount || adminControlSettings.titleEditingEnabledForYeon);
   const canEditCasebookLinks = canEditMemberLinks && canEditBudsiteTitles;
   const canEditMemberLinkTileContent = canEditMemberLinks && canEditBudsiteTitles;
+  const canDeleteCasebookLinks = isEboard;
   const canUsePrivateTabs = isEboard || canManageMembers;
   const visibleTab = activeTab === "member" || activeTab === "operations" || canUsePrivateTabs ? activeTab : "member";
   const sortedNotes = [...notes].sort((a, b) => b.date.localeCompare(a.date));
@@ -2268,7 +2284,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     links: memberLinks
       .filter((link) => getPrivateLinkSection(link) === section)
       .sort((a, b) => (
-        ["BUDS Casebook", "BUDS Prep Outs"].includes(section)
+        ["BUDS Casebook", "BUDS Prep Outs", "Recorded APDA Rounds"].includes(section)
           ? getMemberLinkTitleValue(a).localeCompare(getMemberLinkTitleValue(b), undefined, { sensitivity: "base" })
           : 0
       )),
@@ -2377,6 +2393,22 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         )}
       </span>
     );
+  };
+
+  const renderEditableResourceNote = (id) => {
+    const sectionTitle = budsiteEditorSectionTitles[id] || defaultBudsiteEditorSectionTitles[id] || {};
+    if (canEditBudsiteTitles) {
+      return (
+        <textarea
+          value={sectionTitle.description || ""}
+          onChange={(event) => updateBudsiteEditorSectionTitle(id, "description", event.target.value)}
+          rows={1}
+          className="field-sizing-content min-h-0 w-full resize-none overflow-hidden border border-transparent bg-transparent p-0 text-sm font-semibold leading-6 text-[#5b5450] outline-none focus:border-[#ded8d2] focus:bg-white focus:px-2 focus:py-1"
+          aria-label="Section description"
+        />
+      );
+    }
+    return <p>{sectionTitle.description}</p>;
   };
 
   const renderEditablePrivatePageHeader = (id) => {
@@ -3017,6 +3049,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     saveStoredPrivateLinks(nextLinks);
     upsertPrivateLink(nextCase);
     setNewCasebookCase({ label: "", description: "", url: "", topicTags: "" });
+    setCasebookModalOpen(false);
     showEditorNotice("Casebook case added.");
   };
 
@@ -3055,9 +3088,45 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     showEditorNotice("Prep-out added.");
   };
 
-  const deleteCasebookCase = (caseLink) => {
+  const addRecording = (event) => {
+    event.preventDefault();
     if (!canEditMemberLinks) return;
-    const resourceLabel = getPrivateLinkSection(caseLink) === "BUDS Prep Outs" ? "prep out" : "case";
+    const label = newRecording.label.trim();
+    const description = newRecording.description.trim();
+    const url = newRecording.url.trim();
+    if (!label || !description || !url) {
+      showEditorNotice("Add a recording title, case or motion statement, and link before saving.", "error");
+      return;
+    }
+
+    const topicTags = newRecording.topicTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 2);
+    const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "recording";
+    const nextRecording = {
+      id: `recording-${slug}-${Date.now()}`,
+      section: "Recorded APDA Rounds",
+      order: memberLinks.length + 1,
+      label,
+      description,
+      url,
+      topicTags,
+    };
+    const nextLinks = [...memberLinks, nextRecording];
+    setMemberLinks(nextLinks);
+    saveStoredPrivateLinks(nextLinks);
+    upsertPrivateLink(nextRecording);
+    setNewRecording({ label: "", description: "", url: "", topicTags: "Cases" });
+    setRecordingModalOpen(false);
+    showEditorNotice("Recording added.");
+  };
+
+  const deleteCasebookCase = (caseLink) => {
+    if (!canDeleteCasebookLinks) return;
+    const section = getPrivateLinkSection(caseLink);
+    const resourceLabel = section === "BUDS Prep Outs" ? "prep out" : section === "Recorded APDA Rounds" ? "recording" : "case";
     requestDeleteConfirmation({
       title: `Delete ${caseLink.label || `this ${resourceLabel}`}?`,
       body: `This ${resourceLabel} will be removed from the ${getPrivateLinkSection(caseLink)} list.`,
@@ -3709,21 +3778,21 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   return (
     <>
-    <Page className={isEboard ? "max-w-[98rem] py-4 md:py-5" : ""}>
-      <div className="mb-3 border-b-4 border-[#CC0000] bg-white px-4 py-4 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:px-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <Page className={isEboard ? "max-w-[98rem] py-3 md:py-4" : ""}>
+      <div className="mb-3 border-b-4 border-[#CC0000] bg-white px-4 py-3 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:px-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
             <Eyebrow>Private Hub</Eyebrow>
-            <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-4xl">
+            <h1 className="mt-1.5 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-[2.2rem]">
               {hubTitle}
             </h1>
-            <p className="mt-2 break-all text-sm font-semibold text-[#6d6560]">{auth.email}</p>
+            <p className="mt-1.5 break-all text-sm font-semibold text-[#6d6560]">{auth.email}</p>
           </div>
-          <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 self-start border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000] md:self-center">
+          <button onClick={onLogout} className="inline-flex items-center justify-center gap-2 self-start border border-[#d6d0ca] bg-[#f6f4f2] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-[0_4px_0_#d6d0ca,0_12px_24px_rgba(45,41,38,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-[#CC0000] hover:bg-white hover:text-[#CC0000] hover:shadow-[0_5px_0_#CC0000,0_16px_30px_rgba(45,41,38,0.12)] active:translate-y-0.5 active:shadow-[0_2px_0_#CC0000,0_8px_18px_rgba(45,41,38,0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CC0000] focus-visible:ring-offset-2 md:self-center">
             Log out <LogOut size={15} />
           </button>
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#ded8d2] pt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ded8d2] pt-2.5">
           {isAdmin && (
             <span className="inline-flex h-8 items-center bg-[#2D2926] px-3 text-[0.68rem] font-black uppercase leading-none tracking-[0.1em] text-white">
               Administrator
@@ -3822,7 +3891,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         >
       {visibleTab === "member" && (
-        <div>
+        <div className="pt-2">
           <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
             {renderEditablePrivatePageHeader("memberResourcesHero")}
             {canEditMemberLinks && (
@@ -3838,11 +3907,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
                 defaultOpen={group.section === "BUDS Team Specific Links"}
                 title={renderEditableDropdownTitle(
-                  group.section === "BUDS Casebook" ? "memberCasebook" : group.section === "BUDS Prep Outs" ? "memberPrepOuts" : "memberTeamLinks",
+                  group.section === "BUDS Casebook" ? "memberCasebook" : group.section === "BUDS Prep Outs" ? "memberPrepOuts" : group.section === "Recorded APDA Rounds" ? "memberRecordings" : "memberTeamLinks",
                   `${group.links.length} links`
                 )}
               >
-                {["BUDS Casebook", "BUDS Prep Outs"].includes(group.section) ? (
+                {["BUDS Casebook", "BUDS Prep Outs", "Recorded APDA Rounds"].includes(group.section) ? (
                   <div className="grid gap-2">
                     {(() => {
                       const filteredLinks = getFilteredResourceLinks(group);
@@ -3850,12 +3919,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         <>
                     {group.section === "BUDS Prep Outs" && (
                       <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
-                        <p>
-                          The purpose of this section is to make and collect pre-prepared LOCs for cases that come up frequently in the league. Some of the cases also have copies of the PMC or MG spikes and overview (if we have access to them) or potential ideas for MO ballots. Each of the prep outs should have a relatively standardized heading with the case name and which team wrote/runs the case. Everyone is welcome to add or request prep outs but we ask that you do your best to adhere to the headings so we have sources and clear labels for everything.
-                        </p>
+                        {renderEditableResourceNote("memberPrepOuts")}
                         <div className="flex flex-wrap gap-3">
                           <a href={prepOutRequestLink?.url || "#"} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
-                            Prep-Out Request Form <ChevronRight size={14} />
+                            Request a Prep-Out <ChevronRight size={14} />
                           </a>
                           {canEditMemberLinks && (
                             <button type="button" onClick={() => setPrepOutModalOpen(true)} className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
@@ -3865,43 +3932,25 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         </div>
                       </div>
                     )}
-                    {group.section === "BUDS Casebook" && canEditCasebookLinks && (
-                      <form onSubmit={addCasebookCase} className="mb-3 grid gap-2 border-2 border-dashed border-[#CC0000] bg-[#fffdfd] p-3">
-                        <div className="grid gap-2 lg:grid-cols-[0.7fr_1.2fr_0.8fr_0.7fr_auto]">
-                          <input
-                            type="text"
-                            value={newCasebookCase.label}
-                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, label: event.target.value }))}
-                            placeholder="Case title"
-                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold text-[#2D2926] outline-none focus:border-[#CC0000]"
-                          />
-                          <input
-                            type="text"
-                            value={newCasebookCase.description}
-                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, description: event.target.value }))}
-                            placeholder="Case statement"
-                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
-                          />
-                          <input
-                            type="url"
-                            value={newCasebookCase.url}
-                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, url: event.target.value }))}
-                            placeholder="Google Doc URL"
-                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
-                          />
-                          <input
-                            type="text"
-                            value={newCasebookCase.topicTags}
-                            onChange={(event) => setNewCasebookCase((current) => ({ ...current, topicTags: event.target.value }))}
-                            placeholder="Tags, max 2"
-                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
-                          />
-                          <button type="submit" className="bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#a90000]">
-                            Add
+                    {group.section === "Recorded APDA Rounds" && (
+                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                        {renderEditableResourceNote("memberRecordings")}
+                        {canEditMemberLinks && (
+                          <button type="button" onClick={() => setRecordingModalOpen(true)} className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                            Add Recording <ChevronRight size={14} />
                           </button>
-                        </div>
-                        <HelperText>Separate topic tags with commas. Casebook rows sort alphabetically by title.</HelperText>
-                      </form>
+                        )}
+                      </div>
+                    )}
+                    {group.section === "BUDS Casebook" && (
+                      <div className="mb-3 grid gap-3 border border-[#ded8d2] bg-[#f6f4f2] p-3 text-sm font-semibold leading-6 text-[#5b5450]">
+                        {renderEditableResourceNote("memberCasebook")}
+                        {canEditMemberLinks && (
+                          <button type="button" onClick={() => setCasebookModalOpen(true)} className="inline-flex w-fit items-center gap-1.5 text-xs font-black uppercase tracking-[0.1em] text-[#CC0000]">
+                            Add to Casebook <ChevronRight size={14} />
+                          </button>
+                        )}
+                      </div>
                     )}
                     <div className="mb-2 grid gap-1">
                       <label className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]" htmlFor={`resource-search-${group.section.replace(/\s+/g, "-").toLowerCase()}`}>
@@ -3920,7 +3969,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       {filteredLinks.map((link) => (
                         <div
                           key={link.id}
-                          className="group flex min-h-[12rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.045)] transition hover:border-[#CC0000] hover:bg-[#fffafa] hover:shadow-[0_18px_40px_rgba(45,41,38,0.09)]"
+                          className="group relative flex min-h-[12rem] flex-col border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.045)] transition hover:border-[#CC0000] hover:bg-[#fffafa] hover:shadow-[0_18px_40px_rgba(45,41,38,0.09)]"
                         >
                           <div className="mb-3 flex flex-wrap gap-1.5">
                               {canEditCasebookLinks ? (
@@ -3968,26 +4017,26 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               Open <ChevronRight className="transition group-hover:translate-x-1" size={12} />
                             </a>
                             {canEditCasebookLinks && (
-                              <>
-                                <input
-                                  type="url"
-                                  value={link.url}
-                                  onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
-                                  placeholder="https://..."
-                                  className="min-w-0 flex-1 border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => deleteCasebookCase(link)}
-                                  className="grid h-8 w-8 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
-                                  aria-label={`Delete ${link.label || (group.section === "BUDS Prep Outs" ? "prep out" : "case")}`}
-                                  title={group.section === "BUDS Prep Outs" ? "Delete prep out" : "Delete case"}
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </>
+                              <input
+                                type="url"
+                                value={link.url}
+                                onChange={(event) => updateMemberLink(link.id, "url", event.target.value)}
+                                placeholder="https://..."
+                                className="min-w-0 flex-1 border border-[#ded8d2] bg-[#f6f4f2] px-2 py-1.5 text-xs font-medium text-[#2D2926] outline-none focus:border-[#CC0000]"
+                              />
                             )}
                           </div>
+                          {canDeleteCasebookLinks && (
+                            <button
+                              type="button"
+                              onClick={() => deleteCasebookCase(link)}
+                                  className="absolute bottom-3 right-3 grid h-6 w-6 place-items-center border border-[#ded8d2] bg-white text-[#8f8781] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
+                                  aria-label={`Delete ${link.label || (group.section === "BUDS Prep Outs" ? "prep out" : group.section === "Recorded APDA Rounds" ? "recording" : "case")}`}
+                                  title={group.section === "BUDS Prep Outs" ? "Delete prep out" : group.section === "Recorded APDA Rounds" ? "Delete recording" : "Delete case"}
+                                >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -4077,7 +4126,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       )}
 
       {visibleTab === "operations" && (
-        <div>
+        <div className="pt-2">
           <div className="mb-6 border-b-4 border-[#CC0000] pb-4">
             {renderEditablePrivatePageHeader("clubResourcesHero")}
             {canEditMemberLinks && (
@@ -4162,6 +4211,71 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               </div>
             </SmoothDetails>
           )}
+
+          <SmoothDetails
+            className="mb-5 border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderEditableDropdownTitle("clubParadigms", "Guide")}
+          >
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <Card className="p-4">
+                <div className="border-b-2 border-[#CC0000] pb-3">
+                  <Eyebrow>Judge Adaptation</Eyebrow>
+                  <h2 className="mt-1 text-2xl font-black leading-tight text-[#2D2926]">All About Paradigms</h2>
+                  <p className="mt-1 max-w-2xl text-sm font-semibold leading-5 text-[#5b5450]">
+                    A paradigm is the framework a judge uses to evaluate a round. Knowing it before the round helps you adapt your debating to what that judge values.
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-3">
+                  {[
+                    {
+                      title: "Why paradigms matter",
+                      body: "Some judges prefer real-world, robust arguments. Others may be willing to vote on fast blips read in the MG.",
+                    },
+                    {
+                      title: "How to use them",
+                      body: "Read your judge's preferences before round so you can adapt strategy, weighing, speed, and explanation.",
+                    },
+                    {
+                      title: "How to find one",
+                      body: "Open the paradigm spreadsheet and Command/Control-F your judge's name on the list.",
+                    },
+                    {
+                      title: "If you are judging",
+                      body: "Create a Google Doc, set viewing permissions to anyone with the link can view, then submit it through the form.",
+                    },
+                  ].map((item) => (
+                    <div key={item.title} className="border border-[#ded8d2] bg-white p-3">
+                      <h3 className="text-base font-black text-[#2D2926]">{item.title}</h3>
+                      <p className="mt-1 text-sm font-medium leading-5 text-[#5b5450]">{item.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <div className="grid gap-4">
+                <Card className="p-4">
+                  <Eyebrow>Before Round</Eyebrow>
+                  <h2 className="mt-1 text-xl font-black text-[#2D2926]">Check Your Judge</h2>
+                  <p className="mt-2 text-sm font-semibold leading-5 text-[#5b5450]">
+                    Use the shared list to find judge paradigms and prep your approach before the round starts.
+                  </p>
+                  <a href="https://docs.google.com/spreadsheets/d/1ZMRIHR00ZXKPluV4sFORzcH-ROER-QiGPtOOblpEgdI/edit?gid=0#gid=0" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2.5 text-xs font-black uppercase tracking-[0.1em] text-white transition hover:bg-[#a90000]">
+                    Open Paradigm List <ExternalLink size={15} />
+                  </a>
+                </Card>
+                <Card className="p-4">
+                  <Eyebrow>When Judging</Eyebrow>
+                  <h2 className="mt-1 text-xl font-black text-[#2D2926]">Submit a Paradigm</h2>
+                  <p className="mt-2 text-sm font-semibold leading-5 text-[#5b5450]">
+                    Make a public-view Google Doc explaining how you judge, then submit the link here.
+                  </p>
+                  <a href="https://docs.google.com/forms/d/e/1FAIpQLSdS8k_CAvhQ1Z-y64SDc1JxjRSsPLCzAtAQpLLtr-ucNpT7YA/viewform" target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 border border-[#ded8d2] bg-[#f6f4f2] px-4 py-2.5 text-xs font-black uppercase tracking-[0.1em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                    Submit Paradigm <ExternalLink size={15} />
+                  </a>
+                </Card>
+              </div>
+            </div>
+          </SmoothDetails>
 
           <SmoothDetails
             className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
@@ -5986,12 +6100,44 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         </motion.div>
       </AnimatePresence>
     </Page>
-    <PrepOutModal
+    <ResourceEntryModal
+      open={casebookModalOpen}
+      resource={newCasebookCase}
+      onChange={setNewCasebookCase}
+      onCancel={() => setCasebookModalOpen(false)}
+      onSubmit={addCasebookCase}
+      eyebrow="BUDS Casebook"
+      title="Add to Casebook"
+      submitLabel="Add Case"
+      tagPlaceholder="Topic tags, max 2"
+      descriptionPlaceholder="Case statement"
+    />
+    <ResourceEntryModal
       open={prepOutModalOpen}
-      prepOut={newPrepOut}
+      resource={newPrepOut}
       onChange={setNewPrepOut}
       onCancel={() => setPrepOutModalOpen(false)}
       onSubmit={addPrepOut}
+      eyebrow="BUDS Prep Outs"
+      title="Add a Prep-Out"
+      submitLabel="Add Prep-Out"
+      tagPlaceholder="Team / institution tags, max 2"
+      descriptionPlaceholder="Case statement / background"
+    />
+    <ResourceEntryModal
+      open={recordingModalOpen}
+      resource={newRecording}
+      onChange={setNewRecording}
+      onCancel={() => setRecordingModalOpen(false)}
+      onSubmit={addRecording}
+      eyebrow="Recorded APDA Rounds"
+      title="Add Recording"
+      submitLabel="Add Recording"
+      labelPlaceholder="Round Name"
+      tagOptions={["Cases", "Motions"]}
+      tagPlaceholder="Cases or Motions"
+      descriptionPlaceholder="Case or motion statement"
+      urlPlaceholder="Link to video"
     />
     </>
   );
