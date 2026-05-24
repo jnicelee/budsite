@@ -108,10 +108,14 @@ This website is the public site and private operating hub for the Boston Univers
 
 ### Logging In
 
-- Use the login screen with your approved account email.
+- Use the login screen with your approved account email and Supabase Auth password.
 - After logging in, you will land in the private hub.
 - The private hub header shows your name and email.
 - The **Log Out** button is in the upper right and uses a more button-like style with depth.
+- If a member forgets their password, they can enter their BU email and select **Forgot password?**.
+- Password reset emails require confirmation before they are sent.
+- Password reset links return to `/login?reset=password`, where the member can choose a new password.
+- Passwords are not stored in app tables.
 
 ### Private Hub Header
 
@@ -356,12 +360,15 @@ The Budsite Editor is where admins and authorized editors update site content wi
 
 - Admins and member managers can view and manage approved members.
 - Members can be assigned roles and permissions depending on club needs.
+- The Members tab reads approved account rows from `member_accounts`.
+- If the table looks stale, use the **Refresh** button in the Members tab.
 
 ### Join Requests
 
 - Submitted join requests appear for review.
 - Admins or member managers can approve or reject requests.
-- Approved members gain access to the private hub.
+- New member passwords are created in Supabase Auth during request submission.
+- Approved members gain access to the private hub after their `member_accounts` row is created.
 
 ## Permissions Summary
 
@@ -399,6 +406,7 @@ The Budsite Editor is where admins and authorized editors update site content wi
 ### Supabase
 
 - Supabase is the shared database used by the live website.
+- Supabase Auth handles member passwords, login sessions, and password reset emails.
 - When Supabase is connected, updates should appear across devices.
 - This is important for:
   - Budsite Editor content.
@@ -408,6 +416,8 @@ The Budsite Editor is where admins and authorized editors update site content wi
   - Recorded rounds.
   - Budget and agenda data.
   - Member records.
+- The app tables keep member profile, approval, role, and status data, but they do not store readable passwords.
+- Logged-in users use the Supabase `authenticated` role, so database policies must allow authenticated access to the app tables the hub needs.
 
 ### Local Fallback
 
@@ -440,6 +450,22 @@ npm run build
 ```bash
 npm run lint
 ```
+
+### Auth Maintenance Scripts
+
+Migrate legacy app-table passwords into Supabase Auth before dropping old password columns:
+
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co SUPABASE_SERVICE_ROLE_KEY=your-service-role-key npm run migrate:auth-passwords
+```
+
+Reset or create a Supabase Auth login for an already-approved active member:
+
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co SUPABASE_SERVICE_ROLE_KEY=your-service-role-key npm run reset:approved-login -- member@bu.edu
+```
+
+The reset command prints a temporary password. Share it securely and ask the member to change it with the password reset flow.
 
 ## Environment Variables
 

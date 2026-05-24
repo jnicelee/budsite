@@ -32,7 +32,11 @@ SUPABASE_URL=https://your-project-ref.supabase.co SUPABASE_SERVICE_ROLE_KEY=your
 
 After the script reports completion, apply the SQL migration. New membership requests store passwords directly in Supabase Auth and keep only profile, approval, role, and status data in app tables.
 
-## 4. Add environment variables
+## 4. Confirm authenticated policies
+
+After moving login to Supabase Auth, logged-in users use the `authenticated` database role. Apply `20260524153000_allow_authenticated_app_access.sql` so signed-in admins, e-board, member managers, and members can still read and write the app tables they need.
+
+## 5. Add environment variables
 
 Copy `.env.example` to `.env.local` for local development:
 
@@ -43,6 +47,22 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 Add the same two variables in Vercel project settings before deploying.
 
+## Password resets
+
+Members can request a password reset from the login screen after entering their BU email. The app shows a confirmation popup before sending a reset email. Reset links return to:
+
+```text
+https://your-site.example/login?reset=password
+```
+
+Make sure this URL pattern is allowed in Supabase Auth redirect settings for production and local development.
+
+Admins can reset an approved active account from the command line:
+
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co SUPABASE_SERVICE_ROLE_KEY=your-service-role-key npm run reset:approved-login -- member@bu.edu
+```
+
 ## Current security note
 
-Member passwords are handled by Supabase Auth. The Supabase schema still allows broad anonymous reads/writes so the current app can save agenda, budget, notes, and links. Before using more sensitive private data, tighten row-level security policies to authenticated users only.
+Member passwords are handled by Supabase Auth and are not stored in app tables. The current schema still allows broad app-table access for the roles the site uses so agenda, budget, notes, links, content, requests, and member-management workflows keep working. Before using more sensitive private data, tighten row-level security policies by role and table.
