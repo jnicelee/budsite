@@ -1892,21 +1892,103 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
   );
 }
 
+const alumniSpotlightDebaters = [
+  {
+    rank: 1,
+    name: "Alex Taubes",
+    era: "2007-12",
+    totalPoints: "486.75",
+    bestSeason: "2010-11: 186.75 COTY points",
+    accent: "bg-[#CC0000]",
+    sourceUrl: "https://results.apda.online/core/debaters/627",
+    accolades: [
+      "2011 APDA National Champion with Greg Meyer",
+      "2011 Team of the Year with Greg Meyer",
+      "2011 Speaker of the Year",
+      "2010-11 APDA President",
+      "2011 Jeff Williams Award and Chris Porcaro Award",
+    ],
+  },
+  {
+    rank: 2,
+    name: "Jasper Primack",
+    era: "2015-19",
+    totalPoints: "265.75",
+    bestSeason: "2018-19: 177.25 COTY points",
+    accent: "bg-[#a91313]",
+    sourceUrl: "https://results.apda.online/core/debaters/2906",
+    accolades: [
+      "2019 Team of the Year tie with Teddy Wyman",
+      "2019 Jeff Williams Award",
+      "Three APDA qualifying seasons listed in BU records",
+    ],
+  },
+  {
+    rank: 3,
+    name: "Teddy Wyman",
+    era: "2016-20",
+    totalPoints: "259.75",
+    bestSeason: "2018-19: 152.75 COTY points",
+    accent: "bg-[#822222]",
+    sourceUrl: "https://results.apda.online/core/debaters/3409",
+    accolades: [
+      "2019 Team of the Year tie with Jasper Primack",
+      "Three APDA qualifying seasons listed in BU records",
+      "Top-three cumulative BU COTY scorer in APDA Results",
+    ],
+  },
+  {
+    rank: 4,
+    name: "Jake Campbell",
+    era: "2007-10",
+    totalPoints: "184.5",
+    bestSeason: "2008-09: 94 COTY points",
+    accent: "bg-[#5f2b2b]",
+    sourceUrl: "https://results.apda.online/core/debaters/541",
+    accolades: [
+      "Three APDA qualifying seasons listed in BU records",
+      "Top-five cumulative BU COTY scorer in APDA Results",
+      "Part of BU's late-2000s APDA rise",
+    ],
+  },
+  {
+    rank: 5,
+    name: "Rocky Lotito",
+    era: "2007-09",
+    totalPoints: "133",
+    bestSeason: "2008-09: 94.5 COTY points",
+    accent: "bg-[#3f3331]",
+    sourceUrl: "https://results.apda.online/core/debaters/125",
+    accolades: [
+      "Two APDA qualifying seasons listed in BU records",
+      "Top-five cumulative BU COTY scorer in APDA Results",
+      "Helped anchor BU's 2008-09 national push",
+    ],
+  },
+];
+
 function HistoryPage({ trophiesContent }) {
-  const historyAccomplishments = [
-    "Tournament wins and finals appearances",
-    "Speaker awards and novice breaks",
-    "Team awards and season milestones",
-    "Alumni judging, coaching, and mentorship",
-  ];
-  const historyAlumni = [
+  const historyPulse = [
     {
-      name: "Alumni Spotlight",
-      detail: "Add a short profile on a former BUDS member, including their favorite memory and post-grad path.",
+      label: "Timeline Milestones",
+      value: trophiesContent.milestones.length,
+      detail: "Big BUDS moments saved as public history cards.",
+      icon: ScrollText,
+      color: "bg-[#CC0000]",
     },
     {
-      name: "Mentor Network",
-      detail: "Create a directory of alumni who are open to judging, coaching, career chats, or tournament support.",
+      label: "Recorded Seasons",
+      value: trophiesContent.results.length,
+      detail: "APDA seasons and tournament results preserved in the archive.",
+      icon: Trophy,
+      color: "bg-[#a91313]",
+    },
+    {
+      label: "Debater Spotlights",
+      value: trophiesContent.members.length,
+      detail: "Individual achievements that keep alumni names in the room.",
+      icon: Medal,
+      color: "bg-[#5f2b2b]",
     },
   ];
 
@@ -1924,35 +2006,138 @@ function HistoryPage({ trophiesContent }) {
           </Card>
         ))}
       </div>
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <Card>
-          <div className="mb-5 flex items-center gap-3">
-            <Medal className="text-[#CC0000]" />
-            <h2 className="min-w-0 break-words text-2xl font-black text-[#2D2926] sm:text-3xl">Accomplishments</h2>
+      <div className="mt-6 grid gap-6 md:grid-cols-[0.78fr_1.22fr]">
+        <motion.section
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="overflow-hidden border border-[#ded8d2] bg-white p-4 shadow-[0_18px_55px_rgba(45,41,38,0.06)] sm:p-6"
+        >
+          <div className="border-b-4 border-[#CC0000] pb-5">
+            <div className="flex items-center gap-3">
+              <ScrollText className="text-[#CC0000]" />
+              <Eyebrow>Archive Pulse</Eyebrow>
+            </div>
+            <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">How BUDS history gets remembered</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#5b5450]">
+              A living snapshot of the records powering this page, from team milestones to the debaters who shaped the program.
+            </p>
           </div>
-          <div className="grid gap-3">
-            {historyAccomplishments.map((item) => (
-              <div key={item} className="flex items-start gap-3 border border-[#ded8d2] bg-[#f3f4f4] px-4 py-4">
-                <span className="mt-2 h-2 w-2 shrink-0 bg-[#CC0000]" aria-hidden="true" />
-                <span className="font-bold text-[#2D2926]">{item}</span>
+          <div className="mt-5 grid gap-3">
+            {historyPulse.map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <motion.article
+                  key={item.label}
+                  initial={{ opacity: 0, x: -18 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.35, delay: index * 0.08 }}
+                  className="group overflow-hidden border border-[#ded8d2] bg-[#f3f4f4]"
+                >
+                  <div className={`${item.color} h-1.5 transition-all duration-300 group-hover:h-2.5`} />
+                  <div className="grid gap-3 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Icon size={18} className="text-[#CC0000]" />
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[#6d6560]">{item.label}</p>
+                      </div>
+                      <motion.p
+                        initial={{ scale: 0.92 }}
+                        whileInView={{ scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.35, delay: index * 0.08 + 0.1 }}
+                        className="text-4xl font-black leading-none text-[#2D2926]"
+                      >
+                        {item.value}
+                      </motion.p>
+                    </div>
+                    <p className="text-sm font-semibold leading-6 text-[#5b5450]">{item.detail}</p>
+                  </div>
+                </motion.article>
+              );
+            })}
+          </div>
+          <div className="mt-4 border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#CC0000]">Historian Note</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#5b5450]">
+              The archive is built to grow: milestones preserve team memory, APDA records document competitive seasons, and alumni spotlights keep the people visible.
+            </p>
+          </div>
+        </motion.section>
+        <motion.section
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="overflow-hidden border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-6"
+        >
+          <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <Sparkles className="text-[#CC0000]" />
+                <Eyebrow>Alumni Spotlight</Eyebrow>
               </div>
+              <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">The APDA Results Hall of Heat</h2>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#5b5450]">
+                Top five BUDS debaters by cumulative Boston University COTY points listed in official APDA Results records, with major APDA History awards called out where listed.
+              </p>
+            </div>
+            <a
+              href="https://results.apda.online/core/schools/6"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-1 text-[0.48rem] font-semibold uppercase tracking-0 text-[#6d6560] underline decoration-[#8f8781]/35 underline-offset-2 transition hover:text-[#2D2926]"
+            >
+              APDA Source <ExternalLink size={7} />
+            </a>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {alumniSpotlightDebaters.map((debater, index) => (
+              <motion.article
+                key={debater.name}
+                initial={{ opacity: 0, x: 28 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.42, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -3 }}
+                className="group grid gap-0 overflow-hidden border border-[#ded8d2] bg-white shadow-[0_10px_28px_rgba(45,41,38,0.05)] transition hover:border-[#CC0000] hover:shadow-[0_18px_45px_rgba(45,41,38,0.1)] lg:grid-cols-[6.5rem_1fr]"
+              >
+                <div className={`${debater.accent} grid place-items-center p-4 text-white`}>
+                  <div className="text-center">
+                    <p className="text-[0.6rem] font-black uppercase tracking-[0.14em] text-white/70">Rank</p>
+                    <p className="mt-1 text-5xl font-black leading-none">#{debater.rank}</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 p-4 lg:grid-cols-[1fr_11rem] lg:items-start">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-2xl font-black leading-tight text-[#2D2926]">{debater.name}</h3>
+                      <span className="bg-[#f3f4f4] px-2 py-1 text-[0.6rem] font-black uppercase tracking-[0.1em] text-[#6d6560]">{debater.era}</span>
+                    </div>
+                    <ul className="mt-3 grid gap-1.5">
+                      {debater.accolades.map((item) => (
+                        <li key={item} className="flex gap-2 text-sm font-semibold leading-6 text-[#5b5450]">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-[#CC0000]" aria-hidden="true" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="grid gap-2 border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                    <p className="text-[0.6rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">COTY points</p>
+                    <p className="text-3xl font-black leading-none text-[#2D2926]">{debater.totalPoints}</p>
+                    <p className="text-xs font-bold leading-5 text-[#5b5450]">{debater.bestSeason}</p>
+                    <a href={debater.sourceUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                      Debater record <ExternalLink size={11} />
+                    </a>
+                  </div>
+                </div>
+              </motion.article>
             ))}
           </div>
-        </Card>
-        <Card>
-          <div className="mb-5 flex items-center gap-3">
-            <Sparkles className="text-[#CC0000]" />
-            <h2 className="text-3xl font-black text-[#2D2926]">Alumni</h2>
-          </div>
-          <div className="grid gap-4">
-            {historyAlumni.map((person) => (
-              <div key={person.name} className="border border-[#ded8d2] bg-white p-5">
-                <p className="font-black text-[#2D2926]">{person.name}</p>
-                <p className="mt-2 text-sm leading-6 text-[#5b5450]">{person.detail}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+        </motion.section>
       </div>
     </Page>
   );
@@ -5127,7 +5312,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           </SmoothDetails>
 
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderEditableDropdownTitle("clubReimbursements", "Guide")}
           >
             <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -5613,7 +5798,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
       {visibleTab === "budsite" && isEboard && (
         <div className="grid gap-5">
-          <Card className="relative p-4">
+          <Card className="relative bg-[#f3f4f4] p-4">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <Eyebrow>Editing Guide</Eyebrow>
@@ -5669,14 +5854,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             <div>
               <p className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Publishing Control</p>
             </div>
-            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+            <div className="mt-4 flex gap-3 overflow-x-auto border border-[#ded8d2] bg-[#f3f4f4] p-3">
               {contentDashboardItems.map((item) => {
                 const isDirty = JSON.stringify(item.draft) !== JSON.stringify(item.published);
                 const previewKey = item.previewId || item.id;
                 const publishKey = item.publishId || item.id;
                 const revisionKey = item.revisionId || item.id;
                 return (
-                  <div key={item.id} className="grid w-[16rem] shrink-0 gap-2 border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                  <div key={item.id} className="grid w-[16rem] shrink-0 gap-2 border border-[#d9dddc] bg-[#eceeed] p-3">
                     <div>
                       <p className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#CC0000]">{isDirty ? "Draft changes" : "Published"}</p>
                       <h3 className="mt-1 text-base font-black leading-tight text-[#2D2926]">{item.title}</h3>
@@ -5730,7 +5915,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             )}
           </Card>
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("meetings")}
           >
           <div className="grid gap-5">
@@ -5914,7 +6099,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           </SmoothDetails>
 
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("novice")}
           >
           <div className="grid gap-5">
@@ -6325,7 +6510,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           </SmoothDetails>
 
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("eboard")}
           >
           <div className="grid gap-5">
@@ -6529,7 +6714,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           </SmoothDetails>
 
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("history")}
           >
           <div className="grid gap-5">
@@ -6623,11 +6808,160 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
               )}
             </AnimatePresence>
           </Card>
+          <SmoothDetails
+            className="budsite-editor-card p-4 sm:p-5"
+            title={renderEditableDropdownTitle("apdaUpdate", "Tool")}
+            defaultOpen
+          >
+          <div className="grid gap-5">
+          <div>
+            <div className="border-b-4 border-[#CC0000] pb-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-3xl">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-[#CC0000]" />
+                    <Eyebrow>Budsite Editor</Eyebrow>
+                  </div>
+                  <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Update Top BU Debaters</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                    Pull new APDA changes into a review module before saving anything. The preview says what is being added, what has a before and after change, or when nothing new is there.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={pullApdaTrophiesPreview}
+                  disabled={apdaUpdateStatus.state === "loading"}
+                  className="inline-flex items-center justify-center gap-2 bg-[#2D2926] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#CC0000] disabled:cursor-wait disabled:opacity-55"
+                >
+                  <RefreshCw size={15} className={apdaUpdateStatus.state === "loading" ? "animate-spin" : ""} />
+                  {apdaUpdateStatus.state === "loading" ? "Updating Debaters" : "Update Top BU Debaters"}
+                </button>
+              </div>
+            </div>
+            {apdaUpdateStatus.message && (
+              <p className={`mt-4 border-l-4 px-3 py-2 text-sm font-bold ${
+                apdaUpdateStatus.state === "error"
+                  ? "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
+                  : "border-[#2D2926] bg-white text-[#5b5450]"
+              }`}>
+                {apdaUpdateStatus.message}
+              </p>
+            )}
+            {apdaUpdatePreview && (
+              <div className="mt-4 grid gap-4 border border-[#ded8d2] bg-white p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Review Required</p>
+                    <h3 className="mt-1 text-lg font-black text-[#2D2926]">{apdaUpdatePreview.seasonDisplay} proposed update</h3>
+                    <p className="mt-1 text-sm leading-6 text-[#5b5450]">
+                      Source: <a href={apdaUpdatePreview.sourceUrl} className="font-black text-[#CC0000] underline">APDA Boston University standings</a>
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-4">
+                    <div className="border border-[#ded8d2] p-2 text-center">
+                      <p className="text-lg font-black">{apdaUpdatePreview.summary.tournamentCount}</p>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Tournaments</p>
+                    </div>
+                    <div className="border border-[#ded8d2] p-2 text-center">
+                      <p className="text-lg font-black">{apdaUpdatePreview.summary.highlightCount}</p>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Highlights</p>
+                    </div>
+                    <div className="border border-[#ded8d2] p-2 text-center">
+                      <p className="text-lg font-black">{apdaUpdatePreview.summary.memberCount}</p>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Members</p>
+                    </div>
+                    <div className="border border-[#ded8d2] p-2 text-center">
+                      <p className="text-lg font-black">{apdaUpdatePreview.summary.cotyContributorCount}</p>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">COTY</p>
+                    </div>
+                  </div>
+                </div>
+                {apdaUpdatePreview.warnings?.map((warning) => (
+                  <p key={warning} className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-3 py-2 text-sm font-bold text-[#8a0000]">
+                    {warning}
+                  </p>
+                ))}
+                <div className="grid gap-3">
+                  {apdaUpdatePreview.changes?.all?.length > 0 ? (
+                    <>
+                      <div className="border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Being Added</p>
+                        <div className="mt-3 grid gap-2">
+                          {apdaUpdatePreview.changes.added.length > 0 ? apdaUpdatePreview.changes.added.map((change) => (
+                            <div key={`${change.area}-${change.title}`} className="border border-[#ded8d2] bg-white p-2 text-sm">
+                              <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">{change.area}</p>
+                              <p className="mt-1 font-black text-[#2D2926]">{change.title}</p>
+                              <p className="mt-1 leading-6 text-[#5b5450]">{change.after}</p>
+                            </div>
+                          )) : (
+                            <p className="border border-dashed border-[#ded8d2] bg-white p-2 text-sm font-bold text-[#6d6560]">Nothing is being added.</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Before And After Change</p>
+                        <div className="mt-3 grid gap-2">
+                          {apdaUpdatePreview.changes.changed.length > 0 ? apdaUpdatePreview.changes.changed.map((change) => (
+                            <div key={`${change.area}-${change.title}`} className="grid gap-2 border border-[#ded8d2] bg-white p-2 text-sm">
+                              <div>
+                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">{change.area}</p>
+                                <p className="mt-1 font-black text-[#2D2926]">{change.title}</p>
+                              </div>
+                              <div className="grid gap-2 md:grid-cols-2">
+                                <div className="border border-[#ded8d2] bg-[#f3f4f4] p-2">
+                                  <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Before</p>
+                                  <p className="mt-1 leading-6 text-[#5b5450]">{change.before}</p>
+                                </div>
+                                <div className="border border-[#ded8d2] bg-[#fff1f1] p-2">
+                                  <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">After</p>
+                                  <p className="mt-1 leading-6 text-[#2D2926]">{change.after}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )) : (
+                            <p className="border border-dashed border-[#ded8d2] bg-white p-2 text-sm font-bold text-[#6d6560]">There are no before and after changes.</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-bold text-[#5b5450]">
+                      Nothing new is there. APDA matches the current Trophies draft, so there is nothing to apply.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApdaUpdatePreview(null);
+                      setApdaUpdateStatus({ state: "idle", message: "APDA preview dismissed. No changes were saved." });
+                    }}
+                    className="border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]"
+                  >
+                    Dismiss Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyApdaTrophiesPreview}
+                    disabled={!apdaUpdatePreview.changes?.all?.length}
+                    className="bg-[#CC0000] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:bg-[#bdb6b0]"
+                  >
+                    Apply Reviewed Changes
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          </div>
+          </SmoothDetails>
+
+
           </div>
           </SmoothDetails>
 
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("trophies")}
           >
           <div className="grid gap-5">
@@ -6683,7 +7017,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         ["accomplishments", "Accomplishments"],
                         ["members", "Individual Achievements"],
                         ["results", "Seasons / Results"],
-                        ["apda", "APDA Update"],
                       ].map(([id, label]) => (
                         <button
                           key={id}
@@ -6695,145 +7028,6 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                         </button>
                       ))}
                     </div>
-                    {trophyEditorSection === "apda" && (
-                    <div className="mb-5 border border-[#ded8d2] bg-[#f3f4f4] p-4">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="max-w-3xl">
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck size={18} className="text-[#CC0000]" />
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Safe APDA Update</p>
-                          </div>
-                          <h3 className="mt-2 text-xl font-black text-[#2D2926]">Pull standings, review, then apply.</h3>
-                          <p className="mt-2 text-sm leading-6 text-[#5b5450]">
-                            This pulls new APDA changes only and creates a preview before saving anything. The preview says what is being added, what has a before and after change, or when nothing new is there.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={pullApdaTrophiesPreview}
-                          disabled={apdaUpdateStatus.state === "loading"}
-                          className="inline-flex items-center justify-center gap-2 bg-[#2D2926] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#CC0000] disabled:cursor-wait disabled:opacity-55"
-                        >
-                          <RefreshCw size={15} className={apdaUpdateStatus.state === "loading" ? "animate-spin" : ""} />
-                          {apdaUpdateStatus.state === "loading" ? "Pulling APDA" : "Pull New APDA Changes"}
-                        </button>
-                      </div>
-                      {apdaUpdateStatus.message && (
-                        <p className={`mt-3 border-l-4 px-3 py-2 text-sm font-bold ${
-                          apdaUpdateStatus.state === "error"
-                            ? "border-[#CC0000] bg-[#fff1f1] text-[#8a0000]"
-                            : "border-[#2D2926] bg-white text-[#5b5450]"
-                        }`}>
-                          {apdaUpdateStatus.message}
-                        </p>
-                      )}
-                      {apdaUpdatePreview && (
-                        <div className="mt-4 grid gap-4 border border-[#ded8d2] bg-white p-4">
-                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                            <div>
-                              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Review Required</p>
-                              <h4 className="mt-1 text-lg font-black text-[#2D2926]">{apdaUpdatePreview.seasonDisplay} proposed update</h4>
-                              <p className="mt-1 text-sm leading-6 text-[#5b5450]">
-                                Source: <a href={apdaUpdatePreview.sourceUrl} className="font-black text-[#CC0000] underline">APDA Boston University standings</a>
-                              </p>
-                            </div>
-                            <div className="grid gap-2 sm:grid-cols-4">
-                              <div className="border border-[#ded8d2] p-2 text-center">
-                                <p className="text-lg font-black">{apdaUpdatePreview.summary.tournamentCount}</p>
-                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Tournaments</p>
-                              </div>
-                              <div className="border border-[#ded8d2] p-2 text-center">
-                                <p className="text-lg font-black">{apdaUpdatePreview.summary.highlightCount}</p>
-                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Highlights</p>
-                              </div>
-                              <div className="border border-[#ded8d2] p-2 text-center">
-                                <p className="text-lg font-black">{apdaUpdatePreview.summary.memberCount}</p>
-                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Members</p>
-                              </div>
-                              <div className="border border-[#ded8d2] p-2 text-center">
-                                <p className="text-lg font-black">{apdaUpdatePreview.summary.cotyContributorCount}</p>
-                                <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">COTY</p>
-                              </div>
-                            </div>
-                          </div>
-                          {apdaUpdatePreview.warnings?.map((warning) => (
-                            <p key={warning} className="border-l-4 border-[#CC0000] bg-[#fff1f1] px-3 py-2 text-sm font-bold text-[#8a0000]">
-                              {warning}
-                            </p>
-                          ))}
-                          <div className="grid gap-3">
-                            {apdaUpdatePreview.changes?.all?.length > 0 ? (
-                              <>
-                                <div className="border border-[#ded8d2] bg-[#f3f4f4] p-3">
-                                  <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Being Added</p>
-                                  <div className="mt-3 grid gap-2">
-                                    {apdaUpdatePreview.changes.added.length > 0 ? apdaUpdatePreview.changes.added.map((change) => (
-                                      <div key={`${change.area}-${change.title}`} className="border border-[#ded8d2] bg-white p-2 text-sm">
-                                        <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">{change.area}</p>
-                                        <p className="mt-1 font-black text-[#2D2926]">{change.title}</p>
-                                        <p className="mt-1 leading-6 text-[#5b5450]">{change.after}</p>
-                                      </div>
-                                    )) : (
-                                      <p className="border border-dashed border-[#ded8d2] bg-white p-2 text-sm font-bold text-[#6d6560]">Nothing is being added.</p>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="border border-[#ded8d2] bg-[#f3f4f4] p-3">
-                                  <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2D2926]">Before And After Change</p>
-                                  <div className="mt-3 grid gap-2">
-                                    {apdaUpdatePreview.changes.changed.length > 0 ? apdaUpdatePreview.changes.changed.map((change) => (
-                                      <div key={`${change.area}-${change.title}`} className="grid gap-2 border border-[#ded8d2] bg-white p-2 text-sm">
-                                        <div>
-                                          <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">{change.area}</p>
-                                          <p className="mt-1 font-black text-[#2D2926]">{change.title}</p>
-                                        </div>
-                                        <div className="grid gap-2 md:grid-cols-2">
-                                          <div className="border border-[#ded8d2] bg-[#f3f4f4] p-2">
-                                            <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#6d6560]">Before</p>
-                                            <p className="mt-1 leading-6 text-[#5b5450]">{change.before}</p>
-                                          </div>
-                                          <div className="border border-[#ded8d2] bg-[#fff1f1] p-2">
-                                            <p className="text-[0.65rem] font-black uppercase tracking-[0.08em] text-[#CC0000]">After</p>
-                                            <p className="mt-1 leading-6 text-[#2D2926]">{change.after}</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )) : (
-                                      <p className="border border-dashed border-[#ded8d2] bg-white p-2 text-sm font-bold text-[#6d6560]">There are no before and after changes.</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </>
-                            ) : (
-                              <p className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-3 text-sm font-bold text-[#5b5450]">
-                                Nothing new is there. APDA matches the current Trophies draft, so there is nothing to apply.
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setApdaUpdatePreview(null);
-                                setApdaUpdateStatus({ state: "idle", message: "APDA preview dismissed. No changes were saved." });
-                              }}
-                              className="border border-[#ded8d2] bg-[#f3f4f4] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]"
-                            >
-                              Dismiss Preview
-                            </button>
-                            <button
-                              type="button"
-                              onClick={applyApdaTrophiesPreview}
-                              disabled={!apdaUpdatePreview.changes?.all?.length}
-                              className="bg-[#CC0000] px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000] disabled:cursor-not-allowed disabled:bg-[#bdb6b0]"
-                            >
-                              Apply Reviewed Changes
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    )}
             <div className="grid justify-items-center gap-5">
               {trophyEditorSection === "stats" && (
               <div className="w-full max-w-5xl border border-[#ded8d2] bg-white p-3">
@@ -7091,7 +7285,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
           </div>
           </SmoothDetails>
           <SmoothDetails
-            className="border border-[#ded8d2] bg-white p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("home")}
           >
           <div className="grid gap-5">

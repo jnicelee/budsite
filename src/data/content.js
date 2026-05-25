@@ -15,6 +15,7 @@ export const defaultBudsiteEditorSectionTitles = {
   eboard: { eyebrow: "Public People", title: "Current e-board profiles and photos", count: "1 editor" },
   history: { eyebrow: "History Page", title: "Timeline milestone cards", count: "1 editor" },
   trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
+  apdaUpdate: { eyebrow: "APDA Update", title: "Update Top BU Debaters", count: "1 tool" },
   home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
   memberTeamLinks: { title: "BUDS Team Specific Links" },
   memberCasebook: { title: "BUDS Casebook", description: "The BUDS Casebook collects shared cases, practice shells, and examples members can study, adapt, or run in practice. Add cases with a clear case name, concise statement, useful topic tags, and a link to the full document." },
