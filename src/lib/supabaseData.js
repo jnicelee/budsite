@@ -1,6 +1,6 @@
 import { agendaItems, initialBudgetRevenueRows, initialBudgetRows, privateLinks } from "../data/content";
 import { isSupabaseConfigured, supabase } from "../supabaseClient";
-import { encodePrivateLinkForStorage, enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAdminControlSettings, normalizeAgendaItems, normalizeBudsiteEditorSectionTitles, normalizeEboardContent, normalizeHomeContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
+import { encodePrivateLinkForStorage, enrichPrivateLinks, isExpiredCompletedAgendaItem, normalizeAboutContent, normalizeAdminControlSettings, normalizeAgendaItems, normalizeBudsiteEditorSectionTitles, normalizeEboardContent, normalizeHomeContent, normalizeMeetingsContent, normalizeNoviceContent, normalizeTrophiesContent } from "./storage";
 
 const contentNormalizers = {
   trophies: normalizeTrophiesContent,
@@ -8,6 +8,7 @@ const contentNormalizers = {
   novice: normalizeNoviceContent,
   eboard: normalizeEboardContent,
   home: normalizeHomeContent,
+  about: normalizeAboutContent,
 };
 
 const contentRevisionsId = (id) => `${id}-revisions`;
@@ -53,6 +54,7 @@ export async function loadDatabaseState() {
     noviceContentResult,
     eboardContentResult,
     homeContentResult,
+    aboutContentResult,
     budsiteEditorSectionTitlesResult,
     adminControlSettingsResult,
   ] = await Promise.all([
@@ -67,11 +69,12 @@ export async function loadDatabaseState() {
     supabase.from("site_content").select("content").eq("id", "novice").maybeSingle(),
     supabase.from("site_content").select("content").eq("id", "eboard").maybeSingle(),
     supabase.from("site_content").select("content").eq("id", "home").maybeSingle(),
+    supabase.from("site_content").select("content").eq("id", "about").maybeSingle(),
     supabase.from("site_content").select("content").eq("id", "budsite-editor-section-titles").maybeSingle(),
     supabase.from("site_content").select("content").eq("id", "admin-control-settings").maybeSingle(),
   ]);
 
-  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error || trophiesContentResult.error || meetingsContentResult.error || noviceContentResult.error || eboardContentResult.error || homeContentResult.error || budsiteEditorSectionTitlesResult.error || adminControlSettingsResult.error) {
+  if (agendaResult.error || notesResult.error || budgetSettingsResult.error || budgetRowsResult.error || budgetRevenueResult.error || privateLinksResult.error || trophiesContentResult.error || meetingsContentResult.error || noviceContentResult.error || eboardContentResult.error || homeContentResult.error || aboutContentResult.error || budsiteEditorSectionTitlesResult.error || adminControlSettingsResult.error) {
     console.error("Supabase load failed", {
       agendaError: agendaResult.error,
       notesError: notesResult.error,
@@ -84,6 +87,7 @@ export async function loadDatabaseState() {
       noviceContentError: noviceContentResult.error,
       eboardContentError: eboardContentResult.error,
       homeContentError: homeContentResult.error,
+      aboutContentError: aboutContentResult.error,
       budsiteEditorSectionTitlesError: budsiteEditorSectionTitlesResult.error,
       adminControlSettingsError: adminControlSettingsResult.error,
     });
@@ -113,6 +117,7 @@ export async function loadDatabaseState() {
     noviceContent: noviceContentResult.data?.content ? normalizeNoviceContent(noviceContentResult.data.content) : null,
     eboardContent: eboardContentResult.data?.content ? normalizeEboardContent(eboardContentResult.data.content) : null,
     homeContent: homeContentResult.data?.content ? normalizeHomeContent(homeContentResult.data.content) : null,
+    aboutContent: aboutContentResult.data?.content ? normalizeAboutContent(aboutContentResult.data.content) : null,
     budsiteEditorSectionTitles: budsiteEditorSectionTitlesResult.data?.content ? normalizeBudsiteEditorSectionTitles(budsiteEditorSectionTitlesResult.data.content) : null,
     adminControlSettings: adminControlSettingsResult.data?.content ? normalizeAdminControlSettings(adminControlSettingsResult.data.content) : null,
   };
@@ -232,6 +237,24 @@ export async function upsertHomeContent(content) {
     .from("site_content")
     .upsert({ id: "home", content: normalizeHomeContent(content), updated_at: new Date().toISOString() });
   if (error) console.error("Supabase home content upsert failed", error);
+}
+
+export async function loadAboutContent() {
+  if (!isSupabaseConfigured) return null;
+  const { data, error } = await supabase.from("site_content").select("content").eq("id", "about").maybeSingle();
+  if (error) {
+    console.error("Supabase about content load failed", error);
+    return null;
+  }
+  return data?.content ? normalizeAboutContent(data.content) : null;
+}
+
+export async function upsertAboutContent(content) {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase
+    .from("site_content")
+    .upsert({ id: "about", content: normalizeAboutContent(content), updated_at: new Date().toISOString() });
+  if (error) console.error("Supabase about content upsert failed", error);
 }
 
 export async function loadContentRevisions(id) {

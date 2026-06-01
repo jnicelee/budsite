@@ -16,6 +16,7 @@ export const defaultBudsiteEditorSectionTitles = {
   history: { eyebrow: "History Page", title: "Timeline milestone cards", count: "1 editor" },
   trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
   apdaUpdate: { eyebrow: "APDA Update", title: "Update Top BU Debaters", count: "1 tool" },
+  about: { eyebrow: "About Page", title: "About page photos, captions, and quote", count: "1 editor" },
   home: { eyebrow: "Landing Page", title: "Community carousel photos and card text", count: "1 editor" },
   memberTeamLinks: { title: "BUDS Team Specific Links" },
   memberCasebook: { title: "BUDS Casebook", description: "The BUDS Casebook collects shared cases, practice shells, and examples members can study, adapt, or run in practice. Add cases with a clear case name, concise statement, useful topic tags, and a link to the full document." },
@@ -65,6 +66,31 @@ export const defaultHomeContent = {
     id: `home-slide-${index + 1}`,
     ...slide,
   })),
+};
+
+export const defaultAboutContent = {
+  photos: [
+    {
+      id: "about-photo-main",
+      src: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80",
+      alt: "Students working together at a meeting",
+      caption: "Practice rooms, case prep, and teammates who help each other sharpen ideas.",
+    },
+    {
+      id: "about-photo-collab",
+      src: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=600&q=80",
+      alt: "Students collaborating",
+      caption: "Members build arguments together before rounds, meetings, and tournaments.",
+    },
+    {
+      id: "about-photo-discussion",
+      src: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80",
+      alt: "Students in discussion",
+      caption: "Weekly practice gives new debaters room to ask questions and grow.",
+    },
+  ],
+  quote: "BUDS is where I found my people and learned to turn ideas into impact.",
+  quoteAttribution: "BUDS Member",
 };
 
 export const noviceResources = [

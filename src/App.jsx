@@ -16,6 +16,7 @@ import {
   FileText,
   Gavel,
   Handshake,
+  Heart,
   ImageIcon,
   Italic,
   Link2,
@@ -83,6 +84,7 @@ import {
   findMembershipRequestByEmail,
   insertMembershipRequest,
   insertNote,
+  loadAboutContent,
   loadContentRevisions,
   loadEboardContent,
   loadHomeContent,
@@ -99,6 +101,7 @@ import {
   updateMembershipRequestStatus,
   upsertAgendaItem,
   upsertAdminControlSettings,
+  upsertAboutContent,
   upsertBudgetRevenueRow,
   upsertBudgetRow,
   upsertBudgetSettings,
@@ -115,6 +118,7 @@ import {
 } from "./lib/supabaseData";
 import {
   clearStoredAuth,
+  getStoredAboutContent,
   getStoredAgenda,
   getStoredAuth,
   getStoredBudget,
@@ -127,6 +131,7 @@ import {
   getStoredNotes,
   getStoredPrivateLinks,
   getStoredTrophiesContent,
+  normalizeAboutContent,
   normalizeEboardContent,
   normalizeHomeContent,
   normalizeMeetingsContent,
@@ -136,6 +141,7 @@ import {
   normalizeTrophiesContent,
   saveStoredAgenda,
   saveStoredAuth,
+  saveStoredAboutContent,
   saveStoredBudget,
   saveStoredEboardContent,
   saveStoredHomeContent,
@@ -224,13 +230,13 @@ function HomePage({ homeContent }) {
             </SecondaryButton>
           </div>
 
-          <div className="mt-10 grid overflow-hidden rounded-lg border border-[#ebe5df] bg-white shadow-[0_14px_32px_rgba(45,41,38,0.08)] sm:grid-cols-2 xl:grid-cols-[1.08fr_1.05fr_1.05fr_1.12fr]">
+          <div className="mt-10 grid overflow-hidden rounded-lg border border-[#ebe5df] bg-white shadow-[0_14px_32px_rgba(45,41,38,0.08)] sm:grid-cols-2 xl:grid-cols-4">
             {featureItems.map((item, index) => (
-              <div key={item.title} className={`flex min-h-[4.25rem] items-center gap-3 px-4 py-3 sm:px-5 xl:px-5 2xl:px-6 ${index < 2 ? "border-b border-[#ebe5df] xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-[#ebe5df]" : ""} ${index < featureItems.length - 1 ? "xl:border-r xl:border-[#ebe5df]" : ""}`}>
+              <div key={item.title} className={`flex min-h-[4.75rem] items-center gap-3 px-4 py-3 sm:px-5 xl:px-4 2xl:px-5 ${index < 2 ? "border-b border-[#ebe5df] xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-[#ebe5df]" : ""} ${index < featureItems.length - 1 ? "xl:border-r xl:border-[#ebe5df]" : ""}`}>
                 <img src={item.icon} alt="" className="h-7 w-7 shrink-0 object-contain 2xl:h-8 2xl:w-8" />
                 <div className="min-w-0">
-                  <p className="whitespace-nowrap text-[0.82rem] font-black leading-tight text-[#15120f] 2xl:text-sm">{item.title}</p>
-                  <p className="whitespace-nowrap text-[0.82rem] font-medium leading-5 text-[#2D2926] 2xl:text-sm">{item.body}</p>
+                  <p className="text-[0.82rem] font-black leading-tight text-[#15120f] 2xl:text-sm">{item.title}</p>
+                  <p className="text-[0.82rem] font-medium leading-5 text-[#2D2926] 2xl:text-sm">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -798,8 +804,9 @@ const contentRevisionNormalizers = {
   novice: normalizeNoviceContent,
   eboard: normalizeEboardContent,
   home: normalizeHomeContent,
+  about: normalizeAboutContent,
 };
-const contentRevisionIds = ["trophies", "meetings", "novice", "eboard", "home"];
+const contentRevisionIds = ["trophies", "meetings", "novice", "eboard", "home", "about"];
 const resourceDescriptionEditIds = ["memberCasebook", "memberPrepOuts", "memberRecordings"];
 
 function getResourceEditModeStorageKey(email = "") {
@@ -904,6 +911,12 @@ function getPublishChangeSummary(id, draft, published) {
   }
   if (id === "home") {
     return summarizeArrayChanges("Landing community carousel cards", draft.carouselSlides, published.carouselSlides) || "Landing page community carousel changed.";
+  }
+  if (id === "about") {
+    return [
+      summarizeArrayChanges("About photos", draft.photos, published.photos),
+      draft.quote !== published.quote || draft.quoteAttribution !== published.quoteAttribution ? "testimonial quote changed" : "",
+    ].filter(Boolean).join("; ") || "About page content changed.";
   }
   if (id === "trophies") {
     return [
@@ -1365,151 +1378,192 @@ function normalizeSeasonId(value) {
   return `${startYear}-${endYear}`;
 }
 
-function AboutPage() {
+function AboutPage({ aboutContent }) {
+  const normalizedAboutContent = normalizeAboutContent(aboutContent);
   const aboutHighlights = [
-    { value: "1999", label: "Modern BUDS era" },
-    { value: "APDA", label: "National debate circuit" },
-    { value: "$0", label: "Membership dues" },
-    { value: "0", label: "Tryouts required" },
+    { icon: CalendarDays, value: "1999", label: "Founded", detail: "Modern BUDS Era" },
+    { icon: Trophy, value: "APDA", label: "National", detail: "Debate Circuit" },
+    { icon: DollarSign, value: "$0", label: "Membership", detail: "Dues" },
+    { icon: Users, value: "0", label: "Tryouts", detail: "Required" },
+  ];
+  const whatWeDoItems = [
+    { icon: CalendarDays, label: "Practice", detail: "weekly" },
+    { icon: Plane, label: "Travel to", detail: "tournaments" },
+    { icon: FileText, label: "Write", detail: "cases" },
+    { icon: Heart, label: "Help each", detail: "other improve" },
   ];
   const joinBenefits = [
-    {
-      icon: Sparkles,
-      title: "Beginner-friendly training",
-      copy: "You do not need previous debate experience to join. Practices teach case construction, rebuttal, weighing, flowing, speaking style, and tournament strategy from the ground up.",
-    },
-    {
-      icon: Trophy,
-      title: "Competitive travel",
-      copy: "BUDS competes on the American Parliamentary Debate Association circuit, giving members the chance to debate students from colleges across the country and build a real competitive record.",
-    },
-    {
-      icon: Medal,
-      title: "Skills That Transfer",
-      copy: "Debate sharpens public speaking, research instincts, persuasion, fast thinking, teamwork, and confidence under pressure. Those skills show up everywhere from class discussions to interviews.",
-    },
-    {
-      icon: MapPin,
-      title: "A Social Home at BU",
-      copy: "The team is also a community: weekly practices, mentorship, tournament weekends, team events, and older members who help new debaters find their footing.",
-    },
+    { icon: Users, title: "Beginner-friendly training", copy: "You do not need previous debate experience to join. We teach case construction, rebuttal, speaking style, and more." },
+    { icon: Trophy, title: "Competitive travel", copy: "BUDS competes on the APDA circuit, giving members the chance to debate students from colleges across the country." },
+    { icon: Medal, title: "Skills That Transfer", copy: "Debate sharpens public speaking, research instincts, persuasion, fast thinking, teamwork, and confidence under pressure." },
+    { icon: MapPin, title: "A Social Home at BU", copy: "Weekly practices, mentorship, tournament weekends, team events, and older members who help new debaters find their footing." },
+    { icon: Sparkles, title: "Build Your Resume", copy: "Leadership opportunities, speaking awards, and real accomplishments that stand out in internships, grad school, and beyond." },
+    { icon: Handshake, title: "Supportive Community", copy: "We celebrate wins, learn from losses, and lift each other up every step of the way." },
   ];
   const aboutTimeline = [
-    {
-      year: "Before 1999",
-      title: "A Longer BU Debating Tradition",
-      copy: "Boston University students competed in earlier forms of collegiate debate before the current parliamentary team took shape.",
-    },
-    {
-      year: "1999",
-      title: "The Modern Society Forms",
-      copy: "The current Boston University Debate Society began its modern chapter in 1999, building a home for APDA-style parliamentary debate on campus.",
-    },
-    {
-      year: "Today",
-      title: "Open, Competitive, and Growing",
-      copy: "BUDS now combines novice training, tournament travel, member mentorship, and a culture built around learning out loud.",
-    },
+    { year: "Before 1999", title: "A Longer BU Debating Tradition", copy: "Boston University students competed in earlier forms of collegiate debate before the current parliamentary team took shape." },
+    { year: "1999", title: "The Modern Society Forms", copy: "The current Boston University Debate Society began its modern chapter in 1999, building a home for APDA-style parliamentary debate on campus." },
+    { year: "Today", title: "Open, Competitive, and Growing", copy: "BUDS now combines novice training, tournament travel, member mentorship, and a culture built around learning out loud." },
   ];
+  const aboutPhotos = normalizedAboutContent.photos;
 
   return (
-    <Page>
-      <div className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
-        <section className="relative min-w-0 overflow-hidden border border-[#ded8d2] bg-[#CC0000] p-5 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] sm:p-7 md:p-10">
-          <img
-            src="/about-buds-logo.png"
-            alt="BUDS logo"
-            className="absolute right-5 top-5 hidden h-24 w-24 border-2 border-white/30 object-cover shadow-[0_12px_34px_rgba(45,41,38,0.18)] sm:right-6 sm:top-6 sm:block md:h-32 md:w-32"
-          />
-          <div className="max-w-2xl sm:pr-24 md:pr-36">
-            <Eyebrow light>About BUDS</Eyebrow>
-            <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
-              Debate hard. Learn fast. Find your people.
-            </h1>
-            <p className="mt-6 text-lg font-medium leading-8 text-white/86">
-              The Boston University Debate Society is BU's home for parliamentary debate, competitive travel, novice development, and the kind of argument that makes people sharper without making them smaller.
-            </p>
+    <Page className="max-w-[118rem]">
+      <div className="grid gap-8 lg:grid-cols-[0.98fr_1.02fr]">
+        <section className="grid min-w-0 gap-8">
+          <div className="grid items-center gap-8 md:grid-cols-[1fr_16rem]">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.14em] text-[#CC0000]">About BUDS</p>
+              <h1 className="mt-5 max-w-[38rem] font-serif text-5xl font-black leading-[0.98] tracking-normal text-[#111] sm:text-6xl xl:text-[4.6rem]">
+                Debate hard.
+                <span className="block text-[#CC0000]">Learn fast. Find your people.</span>
+              </h1>
+              <p className="mt-7 max-w-[41rem] text-lg font-medium leading-8 text-[#201d1a]">
+                The Boston University Debate Society is BU's home for parliamentary debate, competitive travel, novice development, and the kind of argument that makes people sharper without making them smaller.
+              </p>
+            </div>
+            <div className="hidden -translate-y-5 justify-items-center md:grid">
+              <div className="relative grid h-56 w-56 place-items-center">
+                <div className="absolute inset-8 rounded-full border border-[#eadfd6] bg-white/60" />
+                <img src="/buds-logo.png" alt="BUDS logo" className="relative h-32 w-32 object-contain" />
+                <p className="absolute bottom-8 text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Est. 1999</p>
+              </div>
+            </div>
           </div>
-          <div className="mt-10 grid border border-white/25 sm:grid-cols-4">
+
+          <div className="grid overflow-hidden !rounded-lg bg-[#CC0000] text-white shadow-[0_18px_42px_rgba(45,41,38,0.11)] sm:grid-cols-2 xl:grid-cols-4">
             {aboutHighlights.map((item, index) => (
-              <div key={item.label} className={`p-4 ${index < aboutHighlights.length - 1 ? "border-b border-white/25 sm:border-b-0 sm:border-r" : ""}`}>
-                <p className="text-3xl font-black leading-none">{item.value}</p>
-                <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-white/70">{item.label}</p>
+              <div key={item.label} className={`flex items-center gap-5 p-6 ${index < 2 ? "border-b border-white/18 xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-white/18" : ""} ${index < aboutHighlights.length - 1 ? "xl:border-r xl:border-white/18" : ""}`}>
+                <item.icon className="text-white/32" size={33} strokeWidth={1.8} />
+                <div>
+                  <p className="text-3xl font-black leading-none">{item.value}</p>
+                  <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-white">{item.label}</p>
+                  <p className="mt-1 text-xs font-medium text-white/86">{item.detail}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="grid gap-4">
-          <Card className="p-7 md:p-8">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#2D2926] text-white">
-                <Trophy size={22} />
+        <section className="grid gap-5">
+          <Card className="p-7 shadow-[0_18px_42px_rgba(45,41,38,0.08)] md:p-8">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+              <div className="grid h-16 w-16 shrink-0 place-items-center !rounded-lg bg-[#202020] text-white">
+                <Trophy size={25} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <Eyebrow>What We Do</Eyebrow>
-              <h2 className="mt-3 text-2xl font-black leading-tight text-[#2D2926] sm:text-3xl">APDA Parliamentary Debate, Built for BU Students.</h2>
-                <p className="mt-4 text-base leading-7 text-[#5b5450]">
-                  BUDS competes in the American Parliamentary Debate Association, a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity. Members practice weekly, travel to tournaments, write cases, judge rounds, and help each other improve.
+                <h2 className="mt-3 text-3xl font-black leading-tight text-[#111]">APDA Parliamentary Debate, Built for BU Students.</h2>
+                <p className="mt-5 max-w-[44rem] text-lg font-medium leading-8 text-[#3e3934]">
+                  We compete in the American Parliamentary Debate Association in a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity.
                 </p>
               </div>
             </div>
+            <div className="mt-10 grid min-h-[7rem] items-center border-t border-[#ded8d2] pt-8 sm:grid-cols-2 xl:grid-cols-4">
+              {whatWeDoItems.map((item, index) => (
+                <div key={`${item.label}-${item.detail}`} className={`flex h-full items-center justify-center gap-4 px-4 py-5 ${index < 2 ? "border-b border-[#ebe5df] xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-[#ebe5df]" : ""} ${index < whatWeDoItems.length - 1 ? "xl:border-r xl:border-[#ebe5df]" : ""}`}>
+                  <item.icon className="shrink-0 text-[#CC0000]" size={36} strokeWidth={1.8} />
+                  <p className="text-base font-black leading-tight text-[#111]">
+                    {item.label}
+                    <span className="block font-medium text-[#2D2926]">{item.detail}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
           </Card>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Card className="!bg-[#2D2926] p-6 text-white">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-white/60">Best For</p>
-              <p className="mt-4 text-2xl font-black leading-tight">Curious people who like ideas like feminism, politics, philosophy, law, comedy, or economics.</p>
+            <Card className="relative overflow-hidden !rounded-lg !bg-[#202020] p-7 text-white">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#ff4a4a]">Best For</p>
+              <p className="mt-4 text-2xl font-bold leading-8">Curious people who like ideas like feminism, politics, philosophy, law, comedy, or economics.</p>
+              <p className="absolute bottom-3 right-6 text-8xl font-serif leading-none text-white/10">”</p>
             </Card>
-            <Card className="p-6">
+            <Card className="relative overflow-hidden p-7">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-[#CC0000]">Start Here</p>
-              <p className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">Show up to practice. No tryout, no dues, no prior debate resume.</p>
+              <p className="mt-4 pr-12 text-2xl font-bold leading-8 text-[#111]">Show up to practice. No tryout, no dues, no prior debate resume.</p>
+              <Handshake className="absolute bottom-6 right-6 text-[#CC0000]/35" size={72} strokeWidth={1.5} />
             </Card>
           </div>
         </section>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+      <div className="mt-8 grid items-stretch gap-8 lg:grid-cols-[0.26fr_0.74fr]">
         <SiteLink href="/history" className="group block">
-          <Card className="p-5 transition hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] sm:p-7 md:p-8">
-            <Eyebrow>History</Eyebrow>
-            <h2 className="mt-3 text-3xl font-black leading-tight text-[#2D2926] transition group-hover:text-[#CC0000]">A BU team with memory and momentum.</h2>
-            <div className="mt-6 grid gap-4">
+          <Card className="flex h-full flex-col p-5 transition hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] sm:p-6">
+            <Eyebrow>Our History</Eyebrow>
+            <h2 className="mt-3 text-3xl font-black leading-tight text-[#111] transition group-hover:text-[#CC0000]">A BU team with memory and momentum.</h2>
+            <div className="relative mt-8 grid flex-1 content-between gap-7 pl-7">
+              <div className="absolute bottom-5 left-3 top-2 w-px bg-[#efb0b0]" />
               {aboutTimeline.map((item) => (
-                <div key={item.year} className="grid gap-3 border-t border-[#ded8d2] pt-4 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
+                <div key={item.year} className="relative">
+                  <span className="absolute -left-[1.85rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-[#f7dede]">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#CC0000]" />
+                  </span>
                   <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">{item.year}</p>
-                  <div>
-                    <h3 className="text-lg font-black text-[#2D2926]">{item.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
-                  </div>
+                  <h3 className="mt-2 text-lg font-black leading-tight text-[#111]">{item.title}</h3>
+                  <p className="mt-2 text-sm font-medium leading-6 text-[#3e3934]">{item.copy}</p>
                 </div>
               ))}
             </div>
+            <span className="mt-6 inline-flex items-center justify-center gap-2 border border-[#CC0000]/40 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-[#CC0000] shadow-none transition group-hover:bg-[#CC0000] group-hover:text-white">
+              View Our History <ArrowRight size={14} />
+            </span>
           </Card>
         </SiteLink>
 
-        <section>
-          <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <Eyebrow>Why Join</Eyebrow>
-              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">The Practical Upside of BUDS</h2>
+        <section className="grid gap-5 xl:grid-cols-[1fr_0.68fr]">
+          <div>
+            <div className="mb-6 flex flex-col gap-4 border-b border-[#CC0000] pb-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <Eyebrow>Why Join</Eyebrow>
+                <h2 className="mt-3 text-4xl font-black leading-tight text-[#111]">The Practical Upside of BUDS</h2>
+              </div>
+              <PrimaryButton href="/join" className="mt-5 px-4 py-2 text-[0.68rem] shadow-none sm:self-end">
+                Request to Join <ArrowRight size={13} />
+              </PrimaryButton>
             </div>
-            <PrimaryButton href="/join" className="sm:self-center">
-              Request to Join <ArrowRight size={16} />
-            </PrimaryButton>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {joinBenefits.map((benefit) => {
+                const Icon = benefit.icon;
+                return (
+                  <Card key={benefit.title} className="group min-h-[14.5rem] p-6 transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)]">
+                    <div className="mb-5 grid h-16 w-16 place-items-center !rounded-full bg-[#fde9e9] text-[#CC0000] transition group-hover:bg-[#CC0000] group-hover:text-white">
+                      <Icon size={30} strokeWidth={1.8} />
+                    </div>
+                    <h3 className="text-xl font-black leading-tight text-[#111]">{benefit.title}</h3>
+                    <p className="mt-4 text-sm font-medium leading-6 text-[#3e3934]">{benefit.copy}</p>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {joinBenefits.map((benefit) => {
-              const Icon = benefit.icon;
-              return (
-                <Card key={benefit.title} className="group min-h-64 p-6 transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)]">
-                  <div className="mb-6 flex h-12 w-12 items-center justify-center bg-[#CC0000] text-white transition group-hover:bg-[#2D2926]">
-                    <Icon size={22} />
-                  </div>
-                  <h3 className="text-2xl font-black leading-tight text-[#2D2926]">{benefit.title}</h3>
-                  <p className="mt-4 text-sm leading-6 text-[#5b5450]">{benefit.copy}</p>
-                </Card>
-              );
-            })}
+
+          <div className="grid content-start gap-3">
+            <div className="group relative aspect-[1.8/1] overflow-hidden !rounded-lg border border-[#eadfd6] bg-white">
+              <img src={aboutPhotos[0]?.src} alt={aboutPhotos[0]?.alt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+              <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#2D2926]/86 p-4 text-sm font-bold leading-6 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                {aboutPhotos[0]?.caption}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="group relative aspect-[1.35/1] overflow-hidden !rounded-lg bg-white">
+                <img src={aboutPhotos[1]?.src} alt={aboutPhotos[1]?.alt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#2D2926]/86 p-3 text-xs font-bold leading-5 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                  {aboutPhotos[1]?.caption}
+                </div>
+              </div>
+              <div className="group relative aspect-[1.35/1] overflow-hidden !rounded-lg bg-white">
+                <img src={aboutPhotos[2]?.src} alt={aboutPhotos[2]?.alt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#2D2926]/86 p-3 text-xs font-bold leading-5 text-white opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                  {aboutPhotos[2]?.caption}
+                </div>
+              </div>
+            </div>
+            <div className="relative overflow-hidden !rounded-lg bg-[#CC0000] p-6 pb-8 text-white">
+              <p className="text-6xl font-serif leading-none text-white">&ldquo;</p>
+              <p className="-mt-7 pl-12 pr-10 text-2xl font-semibold italic leading-9 text-white">{normalizedAboutContent.quote}</p>
+              <p className="mt-4 pl-12 text-base font-extrabold tracking-normal text-white/88">- {normalizedAboutContent.quoteAttribution}</p>
+              <p className="absolute bottom-3 right-6 text-6xl font-serif leading-none text-white">&rdquo;</p>
+            </div>
           </div>
         </section>
       </div>
@@ -3222,18 +3276,20 @@ function LoginPage({ onLogin, onRequestConfirmation }) {
   );
 }
 
-function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, homeContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onHomeContentChange, onRequestConfirmation, onLogout }) {
+function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent, eboardContent, homeContent, aboutContent, onTrophiesContentChange, onMeetingsContentChange, onNoviceContentChange, onEboardContentChange, onHomeContentChange, onAboutContentChange, onRequestConfirmation, onLogout }) {
   const [activeTab, setActiveTab] = useState("member");
   const [draftTrophiesContent, setDraftTrophiesContent] = useState(() => getStoredDraftContent("trophies", trophiesContent, normalizeTrophiesContent));
   const [draftMeetingsContent, setDraftMeetingsContent] = useState(() => getStoredDraftContent("meetings", meetingsContent, normalizeMeetingsContent));
   const [draftNoviceContent, setDraftNoviceContent] = useState(() => getStoredDraftContent("novice", noviceContent, normalizeNoviceContent));
   const [draftEboardContent, setDraftEboardContent] = useState(() => getStoredDraftContent("eboard", eboardContent, normalizeEboardContent));
   const [draftHomeContent, setDraftHomeContent] = useState(() => getStoredDraftContent("home", homeContent, normalizeHomeContent));
+  const [draftAboutContent, setDraftAboutContent] = useState(() => getStoredDraftContent("about", aboutContent, normalizeAboutContent));
   const [contentRevisions, setContentRevisions] = useState(() => ({
     trophies: getStoredContentRevisions("trophies", normalizeTrophiesContent),
     meetings: getStoredContentRevisions("meetings", normalizeMeetingsContent),
     novice: getStoredContentRevisions("novice", normalizeNoviceContent),
     eboard: getStoredContentRevisions("eboard", normalizeEboardContent),
+    about: getStoredContentRevisions("about", normalizeAboutContent),
   }));
   const [notes, setNotes] = useState(() => getStoredNotes());
   const [selectedNoteId, setSelectedNoteId] = useState("");
@@ -3378,6 +3434,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
   const contentDashboardItems = [
     { id: "home", title: "Landing Page", href: "/", draft: draftHomeContent, published: homeContent },
+    { id: "about", title: "About Page", href: "/about", draft: draftAboutContent, published: aboutContent },
     { id: "history", title: "History", href: "/history", draft: { milestones: draftTrophiesContent.milestones }, published: { milestones: trophiesContent.milestones }, publishId: "history", revisionId: "trophies", previewId: "history" },
     { id: "trophies", title: "Trophies", href: "/trophies", draft: draftTrophiesContent, published: trophiesContent },
     { id: "meetings", title: "Meetings Announcement", href: "/meetings", draft: draftMeetingsContent, published: meetingsContent },
@@ -3624,6 +3681,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         storageId: "home",
         revisionId: "home",
       },
+      about: {
+        label: "About page",
+        published: aboutContent,
+        draft: draftAboutContent,
+        normalizer: normalizeAboutContent,
+        publish: onAboutContentChange,
+        storageId: "about",
+        revisionId: "about",
+      },
     };
     const target = publishMap[id];
     if (!target) return;
@@ -3652,6 +3718,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       novice: { setDraft: setDraftNoviceContent, normalizer: normalizeNoviceContent },
       eboard: { setDraft: setDraftEboardContent, normalizer: normalizeEboardContent },
       home: { setDraft: setDraftHomeContent, normalizer: normalizeHomeContent },
+      about: { setDraft: setDraftAboutContent, normalizer: normalizeAboutContent },
     };
     const target = restoreMap[id];
     if (!target) return;
@@ -3774,6 +3841,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         setDraftHomeContent((current) => current || databaseState.homeContent);
         onHomeContentChange(databaseState.homeContent);
       }
+      if (databaseState.aboutContent) {
+        setDraftAboutContent((current) => current || databaseState.aboutContent);
+        onAboutContentChange(databaseState.aboutContent);
+      }
       if (databaseState.budsiteEditorSectionTitles) {
         setBudsiteEditorSectionTitles(databaseState.budsiteEditorSectionTitles);
         saveStoredBudsiteEditorSectionTitles(databaseState.budsiteEditorSectionTitles);
@@ -3789,6 +3860,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       saveStoredPrivateLinks(databaseState.privateLinks);
       if (databaseState.eboardContent) saveStoredEboardContent(databaseState.eboardContent);
       if (databaseState.homeContent) saveStoredHomeContent(databaseState.homeContent);
+      if (databaseState.aboutContent) saveStoredAboutContent(databaseState.aboutContent);
     }
 
     hydrateFromDatabase();
@@ -3796,7 +3868,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     return () => {
       ignore = true;
     };
-  }, [isAdmin, onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
+  }, [isAdmin, onAboutContentChange, onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
 
   const hydrateMemberAccounts = useCallback(async () => {
     if (!canManageMembers) return;
@@ -4578,6 +4650,32 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       carouselSlides: reorderArrayById(content.carouselSlides, dragItem.id, targetId),
     }));
     finishEditorDrag();
+  };
+
+  const persistAboutContent = (updater) => {
+    if (!canWriteNotes) return;
+    const nextContent = typeof updater === "function" ? updater(draftAboutContent) : updater;
+    const normalizedContent = normalizeAboutContent(nextContent);
+    setDraftAboutContent(normalizedContent);
+    saveStoredDraftContent("about", normalizedContent);
+    showEditorNotice("About page draft saved. Publish it when ready.");
+  };
+
+  const updateAboutPhoto = (id, field, value) => {
+    persistAboutContent((content) => ({
+      ...content,
+      photos: content.photos.map((photo) => (
+        photo.id === id ? { ...photo, [field]: value } : photo
+      )),
+    }));
+  };
+
+  const handleAboutPhotoUpload = async (id, file) => {
+    if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
+    const storedUrl = await uploadPublicImage(file, "about-page");
+    const photo = storedUrl || await readFileAsDataUrl(file);
+    updateAboutPhoto(id, "src", photo);
+    showEditorNotice(storedUrl ? "About photo uploaded to Supabase Storage." : "Photo saved locally for preview. Supabase Storage is not configured.", storedUrl ? "success" : "error");
   };
 
   const persistTrophiesContent = (updater) => {
@@ -6170,9 +6268,103 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                 {previewDraftId === "novice" && <NoviceHubPage noviceContent={draftNoviceContent} />}
                 {previewDraftId === "eboard" && <EBoardPage eboardContent={draftEboardContent} />}
                 {previewDraftId === "home" && <HomePage homeContent={draftHomeContent} />}
+                {previewDraftId === "about" && <AboutPage aboutContent={draftAboutContent} />}
               </div>
             )}
           </Card>
+          <SmoothDetails
+            className="order-last border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
+            title={renderBudsiteEditorSectionTitle("about")}
+          >
+            <div className="grid gap-5">
+              <Card className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
+                <div className="border-b-4 border-[#CC0000] pb-4">
+                  <div className="flex items-center gap-3">
+                    <ImageIcon className="text-[#CC0000]" />
+                    <Eyebrow>Budsite Editor</Eyebrow>
+                  </div>
+                  <h2 className="mt-2 text-2xl font-black text-[#2D2926]">About Page Photos and Quote</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                    Edit the right-side photo collage hover captions and the red testimonial quote block.
+                  </p>
+                </div>
+
+                <fieldset disabled={!canWriteNotes} className="mt-5 grid gap-5 disabled:opacity-55">
+                  <div className="grid gap-4">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Photo Hover Captions</p>
+                    {draftAboutContent.photos.map((photo, index) => (
+                      <div key={photo.id} className="grid gap-4 border border-[#ded8d2] bg-[#f3f4f4] p-3 lg:grid-cols-[12rem_1fr]">
+                        <div className="grid gap-2">
+                          <div className="aspect-[4/3] overflow-hidden bg-[#2D2926]">
+                            {photo.src ? (
+                              <img src={photo.src} alt={photo.alt || "About page preview"} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="grid h-full place-items-center text-sm font-black uppercase tracking-[0.08em] text-white">No photo</div>
+                            )}
+                          </div>
+                          <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                            <Upload size={14} /> Upload Photo
+                            <input type="file" accept="image/*" onChange={(event) => handleAboutPhotoUpload(photo.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
+                          </label>
+                        </div>
+                        <div className="grid gap-3">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Image URL
+                              <input
+                                value={photo.src}
+                                onChange={(event) => updateAboutPhoto(photo.id, "src", event.target.value)}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                              Alt Text
+                              <input
+                                value={photo.alt}
+                                onChange={(event) => updateAboutPhoto(photo.id, "alt", event.target.value)}
+                                placeholder={`About photo ${index + 1}`}
+                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              />
+                            </label>
+                          </div>
+                          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                            Hover Caption
+                            <textarea
+                              value={photo.caption}
+                              onChange={(event) => updateAboutPhoto(photo.id, "caption", event.target.value)}
+                              rows={3}
+                              className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-3 border-t border-[#ded8d2] pt-5">
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Quote Block</p>
+                    <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      Quote
+                      <textarea
+                        value={draftAboutContent.quote}
+                        onChange={(event) => persistAboutContent((content) => ({ ...content, quote: event.target.value }))}
+                        rows={3}
+                        className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                      Attribution
+                      <input
+                        value={draftAboutContent.quoteAttribution}
+                        onChange={(event) => persistAboutContent((content) => ({ ...content, quoteAttribution: event.target.value }))}
+                        className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                      />
+                    </label>
+                  </div>
+                </fieldset>
+              </Card>
+            </div>
+          </SmoothDetails>
           <SmoothDetails
             className="border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_16px_45px_rgba(45,41,38,0.06)]"
             title={renderBudsiteEditorSectionTitle("meetings")}
@@ -7608,8 +7800,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               value={newCarouselSlide.kicker}
                               onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
                               placeholder="Travel & Compete"
-                              disabled={!canEditBudsiteTitles}
-                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
+                              className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                             />
                           </label>
                         </div>
@@ -7682,8 +7873,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                                 <input
                                   value={slide.kicker}
                                   onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
-                                  disabled={!canEditBudsiteTitles}
-                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
                                 />
                               </label>
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
@@ -7806,6 +7996,7 @@ export default function App() {
   const [noviceContent, setNoviceContent] = useState(() => getStoredNoviceContent());
   const [eboardContent, setEboardContent] = useState(() => getStoredEboardContent());
   const [homeContent, setHomeContent] = useState(() => getStoredHomeContent());
+  const [aboutContent, setAboutContent] = useState(() => getStoredAboutContent());
   const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
@@ -7826,12 +8017,13 @@ export default function App() {
     let ignore = false;
 
     async function hydrateSiteContent() {
-      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent, databaseEboardContent, databaseHomeContent] = await Promise.all([
+      const [databaseTrophiesContent, databaseMeetingsContent, databaseNoviceContent, databaseEboardContent, databaseHomeContent, databaseAboutContent] = await Promise.all([
         loadTrophiesContent(),
         loadMeetingsContent(),
         loadNoviceContent(),
         loadEboardContent(),
         loadHomeContent(),
+        loadAboutContent(),
       ]);
       if (ignore) return;
       if (databaseTrophiesContent) {
@@ -7853,6 +8045,10 @@ export default function App() {
       if (databaseHomeContent) {
         setHomeContent(databaseHomeContent);
         saveStoredHomeContent(databaseHomeContent);
+      }
+      if (databaseAboutContent) {
+        setAboutContent(databaseAboutContent);
+        saveStoredAboutContent(databaseAboutContent);
       }
     }
 
@@ -7893,6 +8089,12 @@ export default function App() {
     upsertHomeContent(nextContent);
   }, []);
 
+  const updateAboutContent = useCallback((nextContent) => {
+    setAboutContent(nextContent);
+    saveStoredAboutContent(nextContent);
+    upsertAboutContent(nextContent);
+  }, []);
+
   const requestConfirmation = useCallback(({ title, body, actionLabel = "Delete", onConfirm }) => {
     setConfirmation({ title, body, actionLabel, onConfirm });
   }, []);
@@ -7907,7 +8109,7 @@ export default function App() {
       case "/":
         return <HomePage homeContent={homeContent} />;
       case "/about":
-        return <AboutPage />;
+        return <AboutPage aboutContent={aboutContent} />;
       case "/novice-hub":
         return <NoviceHubPage noviceContent={noviceContent} />;
       case "/calendar":
@@ -7927,7 +8129,7 @@ export default function App() {
       case "/login":
         return <LoginPage onLogin={setAuth} onRequestConfirmation={requestConfirmation} />;
       case "/hub":
-        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} homeContent={homeContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onHomeContentChange={updateHomeContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
+        return <PrivateHubPage auth={auth} trophiesContent={trophiesContent} meetingsContent={meetingsContent} noviceContent={noviceContent} eboardContent={eboardContent} homeContent={homeContent} aboutContent={aboutContent} onTrophiesContentChange={updateTrophiesContent} onMeetingsContentChange={updateMeetingsContent} onNoviceContentChange={updateNoviceContent} onEboardContentChange={updateEboardContent} onHomeContentChange={updateHomeContent} onAboutContentChange={updateAboutContent} onRequestConfirmation={requestConfirmation} onLogout={() => {
           if (isSupabaseConfigured) supabase.auth.signOut();
           clearStoredAuth();
           setAuth(null);
@@ -7936,7 +8138,7 @@ export default function App() {
       default:
         return <NotFoundPage />;
     }
-  }, [auth, calendarEmbedUrl, eboardContent, homeContent, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateEboardContent, updateHomeContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
+  }, [aboutContent, auth, calendarEmbedUrl, eboardContent, homeContent, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateAboutContent, updateEboardContent, updateHomeContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
 
   return (
     <main className="min-h-screen bg-[#f7f4f1] text-[#2D2926]">
@@ -8054,3 +8256,4 @@ export default function App() {
     </main>
   );
 }
+

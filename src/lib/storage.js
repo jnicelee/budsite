@@ -1,5 +1,6 @@
 import {
   COMPLETED_AGENDA_RETENTION_MS,
+  ABOUT_CONTENT_STORAGE_KEY,
   EBOARD_AGENDA_STORAGE_KEY,
   EBOARD_BUDGET_STORAGE_KEY,
   EBOARD_CONTENT_STORAGE_KEY,
@@ -15,6 +16,7 @@ import {
 } from "../data/config";
 import {
   agendaItems,
+  defaultAboutContent,
   defaultBudsiteEditorSectionTitles,
   defaultEboardContent,
   defaultHomeContent,
@@ -208,6 +210,19 @@ export function saveStoredHomeContent(content) {
   window.localStorage.setItem(HOME_CONTENT_STORAGE_KEY, JSON.stringify(normalizeHomeContent(content)));
 }
 
+export function getStoredAboutContent() {
+  try {
+    const stored = window.localStorage.getItem(ABOUT_CONTENT_STORAGE_KEY);
+    return normalizeAboutContent(stored ? JSON.parse(stored) : defaultAboutContent);
+  } catch {
+    return normalizeAboutContent(defaultAboutContent);
+  }
+}
+
+export function saveStoredAboutContent(content) {
+  window.localStorage.setItem(ABOUT_CONTENT_STORAGE_KEY, JSON.stringify(normalizeAboutContent(content)));
+}
+
 export function normalizeBudsiteEditorSectionTitles(titles = defaultBudsiteEditorSectionTitles) {
   return Object.fromEntries(
     Object.entries(defaultBudsiteEditorSectionTitles).map(([id, defaults]) => {
@@ -280,6 +295,25 @@ function normalizeHomeSlideText(value, index, field) {
     return HOME_SLIDE_TEXT_FALLBACKS[index % HOME_SLIDE_TEXT_FALLBACKS.length][field];
   }
   return text;
+}
+
+export function normalizeAboutContent(content = defaultAboutContent) {
+  const source = { ...defaultAboutContent, ...content };
+  const defaultPhotosById = new Map(defaultAboutContent.photos.map((photo) => [photo.id, photo]));
+  const sourcePhotos = Array.isArray(source.photos) && source.photos.length > 0 ? source.photos : defaultAboutContent.photos;
+  return {
+    photos: normalizeTrophyItems(sourcePhotos, (item, index) => {
+      const fallback = defaultPhotosById.get(item.id) || defaultAboutContent.photos[index] || defaultAboutContent.photos[0];
+      return {
+        id: item.id || fallback.id || `about-photo-${index + 1}`,
+        src: item.src || fallback.src || "",
+        alt: item.alt || fallback.alt || "BUDS team photo",
+        caption: item.caption || fallback.caption || "",
+      };
+    }),
+    quote: source.quote || defaultAboutContent.quote,
+    quoteAttribution: source.quoteAttribution || defaultAboutContent.quoteAttribution,
+  };
 }
 
 export function normalizeMeetingsContent(content = defaultMeetingsContent) {
