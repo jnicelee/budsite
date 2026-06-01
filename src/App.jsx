@@ -235,8 +235,8 @@ function HomePage({ homeContent }) {
               <div key={item.title} className={`flex min-h-[4.75rem] items-center gap-3 px-4 py-3 sm:px-5 xl:px-4 2xl:px-5 ${index < 2 ? "border-b border-[#ebe5df] xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-[#ebe5df]" : ""} ${index < featureItems.length - 1 ? "xl:border-r xl:border-[#ebe5df]" : ""}`}>
                 <img src={item.icon} alt="" className="h-7 w-7 shrink-0 object-contain 2xl:h-8 2xl:w-8" />
                 <div className="min-w-0">
-                  <p className="text-[0.82rem] font-black leading-tight text-[#15120f] 2xl:text-sm">{item.title}</p>
-                  <p className="text-[0.82rem] font-medium leading-5 text-[#2D2926] 2xl:text-sm">{item.body}</p>
+                  <p className="text-[0.92rem] font-black leading-tight text-[#15120f] 2xl:text-base">{item.title}</p>
+                  <p className="text-[0.92rem] font-medium leading-5 text-[#2D2926] 2xl:text-base">{item.body}</p>
                 </div>
               </div>
             ))}
@@ -302,7 +302,7 @@ function HomePage({ homeContent }) {
                     <Icon size={39} strokeWidth={1.8} />
                   </div>
                   <div>
-                    <p className="text-xl font-black leading-none text-[#CC0000]">{index + 1}</p>
+                    <p className="mb-1 text-2xl font-black leading-none text-[#CC0000]">{index + 1}</p>
                     <h3 className="text-lg font-black uppercase leading-tight tracking-[0.05em] text-[#111]">{step.title}</h3>
                     <p className="mt-2 text-base font-medium leading-6 text-[#3e3934]">{step.body}</p>
                   </div>
@@ -315,20 +315,23 @@ function HomePage({ homeContent }) {
 
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.22 }} className="mt-8 rounded-lg border border-[#ebe5df] bg-white p-8 shadow-[0_18px_38px_rgba(45,41,38,0.08)]">
         <div className="grid gap-8 xl:grid-cols-[0.27fr_0.73fr]">
-          <div className="relative flex min-h-[24rem] flex-col justify-between overflow-hidden !rounded-[1.15rem] border border-[#eadfd6] bg-[#fbf2ea] p-7">
-            <div className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-[#CC0000]/8" />
+          <div className="relative flex min-h-[24rem] flex-col justify-between overflow-hidden !rounded-[1.25rem] border border-[#ebe5df] bg-white p-7">
+            <div className="absolute inset-x-0 top-0 h-1.5 bg-[#CC0000]" />
             <div>
-              <div className="grid h-14 w-14 place-items-center !rounded-full border border-[#f0d7c3] bg-white text-[#CC0000]">
+              <div className="grid h-14 w-14 place-items-center !rounded-lg bg-[#CC0000] text-white">
                 <Users size={28} strokeWidth={1.9} />
               </div>
               <p className="mt-6 text-sm font-black uppercase tracking-[0.14em] text-[#CC0000]">Community</p>
-              <h2 className="mt-3 text-3xl font-black leading-tight text-[#111]">More than debate. It's a community.</h2>
-              <div className="mt-5 h-1.5 w-24 bg-[#ffd247]" />
-              <p className="mt-5 text-base font-medium leading-7 text-[#3e3934]">From late-night prep to tournament victories, we do it together.</p>
+              <h2 className="mt-3 text-[2rem] font-black leading-tight text-[#111]">More than debate. It's a community.</h2>
+              <div className="mt-5 flex items-center gap-3">
+                <div className="h-1.5 w-24 bg-[#ffd247]" />
+                <div className="h-px flex-1 bg-[#ebe5df]" />
+              </div>
+              <p className="mt-5 text-lg font-medium leading-8 text-[#3e3934]">From late-night prep to tournament victories, we do it together.</p>
             </div>
             <div className="mt-8 border-t border-[#eadfd6] pt-5">
               <SecondaryButton href="/about" className="rounded-md border-[#CC0000]/40 bg-white px-6 py-3 text-sm text-[#CC0000] shadow-none">
-                See our community
+                See our community <ArrowRight size={15} />
               </SecondaryButton>
             </div>
           </div>
@@ -1454,12 +1457,12 @@ function AboutPage({ aboutContent }) {
               <div className="min-w-0">
                 <Eyebrow>What We Do</Eyebrow>
                 <h2 className="mt-3 text-3xl font-black leading-tight text-[#111]">APDA Parliamentary Debate, Built for BU Students.</h2>
-                <p className="mt-5 max-w-[44rem] text-lg font-medium leading-8 text-[#3e3934]">
+                <p className="mt-5 max-w-[44rem] text-xl font-medium leading-9 text-[#3e3934]">
                   We compete in the American Parliamentary Debate Association in a limited-prep format with two-person teams, fast adaptation, and lots of room for creativity.
                 </p>
               </div>
             </div>
-            <div className="mt-10 grid min-h-[7rem] items-center border-t border-[#ded8d2] pt-8 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-12 grid min-h-[7rem] items-center border-t border-[#ded8d2] pt-8 sm:grid-cols-2 xl:grid-cols-4">
               {whatWeDoItems.map((item, index) => (
                 <div key={`${item.label}-${item.detail}`} className={`flex h-full items-center justify-center gap-4 px-4 py-5 ${index < 2 ? "border-b border-[#ebe5df] xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-[#ebe5df]" : ""} ${index < whatWeDoItems.length - 1 ? "xl:border-r xl:border-[#ebe5df]" : ""}`}>
                   <item.icon className="shrink-0 text-[#CC0000]" size={36} strokeWidth={1.8} />
@@ -8000,7 +8003,7 @@ export default function App() {
   const [confirmation, setConfirmation] = useState(null);
 
   const calendarEmbedUrl = useMemo(() => {
-    return "https://calendar.google.com/calendar/embed?src=c_2be8297a9561724f2234792e9cd68ed9f2fc5d6c6be910056b5a728d5098cf7%40group.calendar.google.com&ctz=America%2FNew_York";
+    return "https://calendar.google.com/calendar/embed?src=c_2be8297a9561724f2234792e9cd68ed9f2fc5d6c6be910056b5a7258d5098cf7%40group.calendar.google.com&ctz=America%2FNew_York";
   }, []);
 
   useEffect(() => {
