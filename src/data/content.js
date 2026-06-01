@@ -16,7 +16,7 @@ export const defaultBudsiteEditorSectionTitles = {
   history: { eyebrow: "History Page", title: "Timeline milestone cards", count: "1 editor" },
   trophies: { eyebrow: "Trophies / APDA", title: "Results, achievements, and standings updates", count: "1 editor" },
   apdaUpdate: { eyebrow: "APDA Update", title: "Update Top BU Debaters", count: "1 tool" },
-  home: { eyebrow: "Landing Page", title: "Homepage carousel photos and captions", count: "1 editor" },
+  home: { eyebrow: "Landing Page", title: "Community carousel photos and card text", count: "1 editor" },
   memberTeamLinks: { title: "BUDS Team Specific Links" },
   memberCasebook: { title: "BUDS Casebook", description: "The BUDS Casebook collects shared cases, practice shells, and examples members can study, adapt, or run in practice. Add cases with a clear case name, concise statement, useful topic tags, and a link to the full document." },
   memberPrepOuts: { title: "BUDS Prep Outs", description: "The purpose of this section is to make and collect pre-prepared LOCs for cases that come up frequently in the league. Some of the cases also have copies of the PMC or MG spikes and overview (if we have access to them) or potential ideas for MO ballots. Each of the prep outs should have a relatively standardized heading with the case name and which team wrote/runs the case. Everyone is welcome to add or request prep outs but we ask that you do your best to adhere to the headings so we have sources and clear labels for everything." },
@@ -37,26 +37,26 @@ export const homeCarouselSlides = [
   {
     src: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1200&q=80",
     alt: "Students walking together on a college campus",
-    kicker: "Team Life",
-    caption: "Temporary photo: BU students finding their people between classes and practice.",
+    kicker: "Build Lifelong Friendships",
+    caption: "Find a close-knit team that supports you through practices, tournaments, and everything in between.",
   },
   {
     src: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80",
     alt: "Students seated in a classroom discussion",
-    kicker: "Practice",
-    caption: "Temporary photo: weekly drills, practice rounds, and fast feedback.",
+    kicker: "Travel & Compete",
+    caption: "Represent BU at tournaments, explore new campuses, and make memories with teammates on the road.",
   },
   {
     src: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80",
     alt: "A group working around a table with notebooks and laptops",
-    kicker: "Prep",
-    caption: "Temporary photo: teammates building cases, blocks, and tournament plans.",
+    kicker: "Grow Your Skills",
+    caption: "Think critically, speak confidently, and learn how to build arguments under pressure.",
   },
   {
     src: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=1200&q=80",
     alt: "Students gathered together in conversation",
-    kicker: "Community",
-    caption: "Temporary photo: debate friends, tournament weekends, and a team that travels together.",
+    kicker: "Be Part of Our Legacy",
+    caption: "Join a tradition of competitive excellence and help carry Boston University debate forward.",
   },
 ];
 

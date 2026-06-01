@@ -238,10 +238,48 @@ export function normalizeHomeContent(content = defaultHomeContent) {
       id: item.id || `home-slide-${index}-${slugify(item.caption || item.kicker || "photo")}`,
       src: item.src || "",
       alt: item.alt || "",
-      kicker: item.kicker || "",
-      caption: item.caption || "",
+      kicker: normalizeHomeSlideText(item.kicker, index, "kicker"),
+      caption: normalizeHomeSlideText(item.caption, index, "caption"),
     })).filter((slide) => slide.src || slide.caption || slide.kicker),
   };
+}
+
+const HOME_SLIDE_TEXT_FALLBACKS = [
+  {
+    kicker: "Build Lifelong Friendships",
+    caption: "Find a close-knit team that supports you through practices, tournaments, and everything in between.",
+  },
+  {
+    kicker: "Travel & Compete",
+    caption: "Represent BU at tournaments, explore new campuses, and make memories with teammates on the road.",
+  },
+  {
+    kicker: "Grow Your Skills",
+    caption: "Think critically, speak confidently, and learn how to build arguments under pressure.",
+  },
+  {
+    kicker: "Be Part of Our Legacy",
+    caption: "Join a tradition of competitive excellence and help carry Boston University debate forward.",
+  },
+];
+
+const LEGACY_HOME_SLIDE_TEXT = new Set([
+  "Team Life",
+  "Practice",
+  "Prep",
+  "Community",
+  "Temporary photo: BU students finding their people between classes and practice.",
+  "Temporary photo: weekly drills, practice rounds, and fast feedback.",
+  "Temporary photo: teammates building cases, blocks, and tournament plans.",
+  "Temporary photo: debate friends, tournament weekends, and a team that travels together.",
+]);
+
+function normalizeHomeSlideText(value, index, field) {
+  const text = value || "";
+  if (!text || LEGACY_HOME_SLIDE_TEXT.has(text)) {
+    return HOME_SLIDE_TEXT_FALLBACKS[index % HOME_SLIDE_TEXT_FALLBACKS.length][field];
+  }
+  return text;
 }
 
 export function normalizeMeetingsContent(content = defaultMeetingsContent) {

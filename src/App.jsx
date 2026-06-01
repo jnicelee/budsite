@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
   Bold,
+  BookOpenText,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   ArrowUp,
@@ -13,6 +15,7 @@ import {
   ExternalLink,
   FileText,
   Gavel,
+  Handshake,
   ImageIcon,
   Italic,
   Link2,
@@ -25,18 +28,21 @@ import {
   Medal,
   Menu,
   Mic2,
+  Plane,
   RefreshCw,
   ScrollText,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   Trash2,
   Trophy,
   Underline,
   Upload,
+  Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import { isSupabaseConfigured, supabase } from "./supabaseClient";
-import { PhotoCarousel } from "./components/PhotoCarousel";
 import {
   Card,
   Eyebrow,
@@ -144,91 +150,283 @@ import {
 
 function HomePage({ homeContent }) {
   const carouselSlides = normalizeHomeContent(homeContent).carouselSlides;
-  return (
-    <section className="mx-auto grid w-full max-w-[92rem] items-start gap-8 px-4 py-8 sm:px-5 md:px-8 md:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="max-w-4xl">
-        <div className="mb-6 inline-flex items-center gap-2 border border-[#ded8d2] bg-white/75 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#2D2926] shadow-sm">
-          <Trophy size={16} className="text-[#CC0000]" /> Ranked #4 nationally in 2026
-        </div>
-        <h1 className="text-4xl font-black leading-[1.02] tracking-tight text-[#2D2926] sm:text-5xl md:text-6xl xl:text-[4rem]">
-          Nationally ranked debate, open to anyone at BU.
-        </h1>
-        <p className="mt-6 max-w-2xl text-base leading-7 text-[#5b5450] sm:text-lg sm:leading-8">
-          BUDS competes in APDA, the American Parliamentary Debate Association. No tryouts, no dues, no experience required, just weekly chances to travel, argue, learn, and represent Boston University.
-        </p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <PrimaryButton href="/join" className="px-6">
-            Join BUDS <ArrowRight size={16} />
-          </PrimaryButton>
-          <SecondaryButton href="/novice-hub" className="px-6">
-            New to debate? <Sparkles size={16} />
-          </SecondaryButton>
-        </div>
-        <div className="mt-8 inline-flex max-w-full flex-wrap gap-x-5 gap-y-2 border-l-4 border-[#CC0000] bg-white/65 px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] shadow-sm">
-          {["No tryouts", "No dues", "Weekly tournaments"].map((item) => (
-            <span key={item} className="whitespace-nowrap">
-              {item}
-            </span>
-          ))}
-        </div>
-      </motion.div>
+  const [activeCommunityIndex, setActiveCommunityIndex] = useState(0);
+  const [communityDirection, setCommunityDirection] = useState(1);
+  const [isCommunityPaused, setIsCommunityPaused] = useState(false);
+  const featureItems = [
+    { icon: "/icons/users.svg", title: "Open to all majors", body: "and experience levels" },
+    { icon: "/icons/calendar.svg", title: "Weekly meetings", body: "& flexible schedule" },
+    { icon: "/icons/trophy.svg", title: "Travel, compete,", body: "and make friends" },
+    { icon: "/icons/heart.svg", title: "Supportive community", body: "that has your back" },
+  ];
+  const pathwaySteps = [
+    { icon: BookOpenText, title: "Read Novice Hub", body: "Learn the basics at your own pace." },
+    { icon: UsersRound, title: "Come to Practice", body: "No pressure, just come and observe!" },
+    { icon: Handshake, title: "Find a Partner", body: "We'll help you find the right partner." },
+    { icon: Trophy, title: "Try a Tournament", body: "Jump in and have fun competing!" },
+  ];
+  const communityIconCycle = [Users, Plane, TrendingUp, Trophy];
+  const communityFallbacks = [
+    { title: "Build Lifelong Friendships", body: "Find a close-knit team that supports you through practices, tournaments, and everything in between." },
+    { title: "Travel & Compete", body: "Represent BU at tournaments, explore new campuses, and make memories with teammates on the road." },
+    { title: "Grow Your Skills", body: "Think critically, speak confidently, and learn how to build arguments under pressure." },
+    { title: "Be Part of Our Legacy", body: "Join a tradition of competitive excellence and help carry Boston University debate forward." },
+  ];
+  const communitySlides = carouselSlides.length ? carouselSlides : normalizeHomeContent().carouselSlides;
+  const communityCards = communitySlides.map((slide, index) => ({
+    icon: communityIconCycle[index % communityIconCycle.length],
+    title: slide.kicker || communityFallbacks[index % communityFallbacks.length].title,
+    body: slide.caption || communityFallbacks[index % communityFallbacks.length].body,
+    image: slide.src || communitySlides.find((item) => item.src)?.src || "",
+    alt: slide.alt || slide.kicker || "BUDS community photo",
+  }));
+  const safeCommunityIndex = Math.min(activeCommunityIndex, communityCards.length - 1);
+  const activeCommunityCard = communityCards[safeCommunityIndex] || communityCards[0];
+  const ActiveCommunityIcon = activeCommunityCard.icon;
+  const selectCommunityCard = (index) => {
+    if (index === safeCommunityIndex) return;
+    setCommunityDirection(index > safeCommunityIndex ? 1 : -1);
+    setActiveCommunityIndex(index);
+  };
+  const rotateCommunityCard = (direction) => {
+    setCommunityDirection(direction);
+    setActiveCommunityIndex((current) => (current + direction + communityCards.length) % communityCards.length);
+  };
+  useEffect(() => {
+    if (isCommunityPaused) return undefined;
+    const timer = window.setInterval(() => {
+      setCommunityDirection(1);
+      setActiveCommunityIndex((current) => (current + 1) % communityCards.length);
+    }, 6200);
+    return () => window.clearInterval(timer);
+  }, [communityCards.length, isCommunityPaused]);
 
-      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}>
-        <div className="min-h-[26rem] overflow-hidden border border-[#2D2926]/90 bg-[#2D2926] text-white shadow-[0_18px_48px_rgba(45,41,38,0.12)] sm:min-h-[31rem] lg:min-h-[33rem]">
-          <div className="grid h-full gap-0 sm:grid-cols-[0.82fr_1.18fr]">
-            <div className="flex min-h-48 flex-col justify-between bg-[#CC0000] p-6 text-white sm:min-h-[31rem] lg:min-h-[33rem] md:p-8">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/78">2026 national rank</p>
-              <p className="text-[7rem] font-black leading-none tracking-tight sm:text-[9rem] lg:text-[10rem]">#4</p>
+  return (
+    <section className="mx-auto w-full max-w-[118rem] px-5 py-12 sm:px-8 md:py-16">
+      <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] xl:gap-16">
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="min-w-0">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-[#CC0000] shadow-[0_10px_30px_rgba(45,41,38,0.08)]">
+            <Trophy size={15} /> Ranked #4 nationally in 2026
+          </div>
+          <h1 className="max-w-[42rem] font-serif text-5xl font-black leading-[0.92] tracking-normal text-[#070707] sm:text-6xl lg:text-[5.2rem] xl:text-[5.8rem]">
+            Debate.
+            <span className="block whitespace-nowrap"><span className="text-[#CC0000]">Learn.</span> Lead.</span>
+          </h1>
+          <p className="mt-8 max-w-[43rem] text-xl font-medium leading-9 text-[#201d1a]">
+            BUDS is Boston University's parliamentary debate team. No experience needed, just curiosity and a willingness to grow.
+          </p>
+          <div className="mt-9 flex flex-col gap-5 sm:flex-row">
+            <PrimaryButton href="/join" className="rounded-md px-9 py-4 text-[1.02rem] !font-extrabold tracking-[0.14em]">
+              Join BUDS <ArrowRight size={18} />
+            </PrimaryButton>
+            <SecondaryButton href="/novice-hub" className="rounded-md border-[#cc0000]/35 px-8 py-4 text-[1.02rem] !font-extrabold tracking-[0.14em] text-[#CC0000]">
+              New to debate? <Sparkles size={17} />
+            </SecondaryButton>
+          </div>
+
+          <div className="mt-10 grid overflow-hidden rounded-lg border border-[#ebe5df] bg-white shadow-[0_14px_32px_rgba(45,41,38,0.08)] sm:grid-cols-2 xl:grid-cols-[1.08fr_1.05fr_1.05fr_1.12fr]">
+            {featureItems.map((item, index) => (
+              <div key={item.title} className={`flex min-h-[4.25rem] items-center gap-3 px-4 py-3 sm:px-5 xl:px-5 2xl:px-6 ${index < 2 ? "border-b border-[#ebe5df] xl:border-b-0" : ""} ${index % 2 === 0 ? "sm:border-r sm:border-[#ebe5df]" : ""} ${index < featureItems.length - 1 ? "xl:border-r xl:border-[#ebe5df]" : ""}`}>
+                <img src={item.icon} alt="" className="h-7 w-7 shrink-0 object-contain 2xl:h-8 2xl:w-8" />
+                <div className="min-w-0">
+                  <p className="whitespace-nowrap text-[0.82rem] font-black leading-tight text-[#15120f] 2xl:text-sm">{item.title}</p>
+                  <p className="whitespace-nowrap text-[0.82rem] font-medium leading-5 text-[#2D2926] 2xl:text-sm">{item.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.08 }}>
+          <div className="overflow-hidden !rounded-[1.35rem] bg-[#1f1f1f] shadow-[0_22px_48px_rgba(45,41,38,0.16)] sm:grid sm:min-h-[31rem] sm:grid-cols-[45%_55%]">
+            <div className="relative flex min-h-[29rem] flex-col justify-between overflow-hidden bg-[#B70503] p-10 text-white">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_70%_80%,rgba(0,0,0,0.22),transparent_35%)]" />
+              <div className="relative text-center">
+                <p className="text-sm font-black uppercase tracking-[0.22em] text-white">2026 National Rank</p>
+                <p className="mt-7 text-[8.5rem] font-black leading-[0.75] tracking-tight text-white drop-shadow-[0_8px_0_rgba(0,0,0,0.16)] lg:text-[9.5rem]">#4</p>
+              </div>
+              <div className="relative">
+                <img src="/trophy-red.png" alt="" className="mx-auto mb-6 h-44 w-64 object-contain" />
+                <p className="max-w-[10rem] text-lg font-black leading-tight">Proven. Competitive. Boston Strong.</p>
+              </div>
             </div>
-            <div className="grid content-center gap-7 p-6 md:p-8 lg:p-10">
+            <div className="grid content-center gap-7 bg-[#202020] p-8 text-white sm:p-10">
               <div>
-                <Eyebrow light>Format</Eyebrow>
-                <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">APDA Parliamentary Debate</h2>
-                <p className="mt-4 max-w-md text-sm leading-6 text-white/72">
+                <p className="text-sm font-black uppercase tracking-[0.22em] text-white/72">Format</p>
+                <h2 className="mt-4 text-3xl font-black leading-tight text-white md:text-4xl">
+                  APDA
+                  <span className="block">Parliamentary</span>
+                  <span className="block">Debate</span>
+                </h2>
+                <p className="mt-4 max-w-[20rem] text-base font-medium leading-7 text-white/75">
                   Two-person teams, limited prep, and tournaments across the collegiate debate circuit.
                 </p>
               </div>
-              <div className="grid gap-3 text-sm font-black uppercase tracking-[0.12em] text-white/72">
-                <div className="flex items-center justify-between border-t border-white/15 pt-3">
-                  <span>Tryouts</span>
-                  <span className="text-xl leading-none text-white">0</span>
+              <div className="grid gap-0 text-sm font-black uppercase tracking-[0.12em] text-white/80">
+                {[
+                  ["Tryouts", "0", Sparkles],
+                  ["Member Fees", "$0", CalendarDays],
+                  ["League Format", "APDA", Trophy],
+                ].map(([label, value, Icon]) => (
+                  <div key={label} className="flex items-center justify-between border-t border-white/12 py-4">
+                    <span className="inline-flex items-center gap-3"><Icon className="text-[#ffdddd]" size={18} /> {label}</span>
+                    <span className="text-xl leading-none text-white">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }} className="mt-10 rounded-lg border border-[#ebe5df] bg-white p-8 shadow-[0_18px_38px_rgba(45,41,38,0.08)]">
+        <div className="grid gap-9 lg:grid-cols-[0.2fr_0.8fr] lg:items-center">
+          <div className="border-b border-[#e5ded7] pb-7 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-10">
+            <p className="text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">New to debate?</p>
+            <h2 className="mt-4 text-3xl font-black leading-tight text-[#111]">It's easier than you think.</h2>
+            <div className="mt-2 h-1.5 w-36 bg-[#ffd247]" />
+            <p className="mt-5 text-lg font-medium leading-8 text-[#3e3934]">We'll guide you every step of the way.</p>
+          </div>
+          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+            {pathwaySteps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.title} className="grid gap-4 sm:grid-cols-[5.75rem_1fr] sm:items-center xl:grid-cols-1">
+                  <div className="grid h-24 w-24 place-items-center overflow-hidden !rounded-full border border-[#f0d7c3] bg-[#fbf2ea] text-[#CC0000]">
+                    <Icon size={39} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <p className="text-xl font-black leading-none text-[#CC0000]">{index + 1}</p>
+                    <h3 className="text-lg font-black uppercase leading-tight tracking-[0.05em] text-[#111]">{step.title}</h3>
+                    <p className="mt-2 text-base font-medium leading-6 text-[#3e3934]">{step.body}</p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between border-t border-white/15 pt-3">
-                  <span>Member fees</span>
-                  <span className="text-xl leading-none text-white">$0</span>
+              );
+            })}
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.22 }} className="mt-8 rounded-lg border border-[#ebe5df] bg-white p-8 shadow-[0_18px_38px_rgba(45,41,38,0.08)]">
+        <div className="grid gap-8 xl:grid-cols-[0.27fr_0.73fr]">
+          <div className="relative flex min-h-[24rem] flex-col justify-between overflow-hidden !rounded-[1.15rem] border border-[#eadfd6] bg-[#fbf2ea] p-7">
+            <div className="absolute right-0 top-0 h-28 w-28 translate-x-10 -translate-y-10 rounded-full bg-[#CC0000]/8" />
+            <div>
+              <div className="grid h-14 w-14 place-items-center !rounded-full border border-[#f0d7c3] bg-white text-[#CC0000]">
+                <Users size={28} strokeWidth={1.9} />
+              </div>
+              <p className="mt-6 text-sm font-black uppercase tracking-[0.14em] text-[#CC0000]">Community</p>
+              <h2 className="mt-3 text-3xl font-black leading-tight text-[#111]">More than debate. It's a community.</h2>
+              <div className="mt-5 h-1.5 w-24 bg-[#ffd247]" />
+              <p className="mt-5 text-base font-medium leading-7 text-[#3e3934]">From late-night prep to tournament victories, we do it together.</p>
+            </div>
+            <div className="mt-8 border-t border-[#eadfd6] pt-5">
+              <SecondaryButton href="/about" className="rounded-md border-[#CC0000]/40 bg-white px-6 py-3 text-sm text-[#CC0000] shadow-none">
+                See our community
+              </SecondaryButton>
+            </div>
+          </div>
+          <div
+            className="grid overflow-hidden !rounded-[1.25rem] border border-[#ebe5df] bg-[#f8f5f2] shadow-[0_18px_42px_rgba(45,41,38,0.08)] md:grid-cols-[1.2fr_0.8fr]"
+            onMouseEnter={() => setIsCommunityPaused(true)}
+            onMouseLeave={() => setIsCommunityPaused(false)}
+          >
+            <div className="relative min-h-[24rem] overflow-hidden bg-[#2D2926]">
+              <AnimatePresence mode="popLayout" custom={communityDirection}>
+                <motion.img
+                  key={activeCommunityCard.image}
+                  src={activeCommunityCard.image}
+                  alt={activeCommunityCard.alt}
+                  custom={communityDirection}
+                  initial={{ opacity: 0, x: communityDirection * 58, scale: 1.08 }}
+                  animate={{ opacity: 1, x: 0, scale: 1.02 }}
+                  exit={{ opacity: 0, x: communityDirection * -58, scale: 1.06 }}
+                  transition={{ duration: 0.62, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </AnimatePresence>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#2D2926]/60 via-[#2D2926]/8 to-transparent" />
+              <motion.div
+                key={`${activeCommunityCard.title}-caption`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1], delay: 0.12 }}
+                className="absolute bottom-12 left-5 max-w-[22rem] text-white"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-white/80">BUDS Community</p>
+                <p className="mt-2 text-2xl font-black leading-tight">{activeCommunityCard.title}</p>
+              </motion.div>
+              <div className="absolute bottom-5 left-5 right-5">
+                <div className="flex gap-2">
+                  {communityCards.map((card, index) => (
+                    <button
+                      key={card.title}
+                      type="button"
+                      onClick={() => selectCommunityCard(index)}
+                      className={`h-2.5 flex-1 !rounded-full shadow-none transition duration-300 ${index === activeCommunityIndex ? "bg-white" : "bg-white/40 hover:bg-white/70"}`}
+                      aria-label={`Show ${card.title}`}
+                    />
+                  ))}
                 </div>
-                <div className="flex items-center justify-between border-t border-white/15 pt-3">
-                  <span>League format</span>
-                  <span className="text-xl leading-none text-white">APDA</span>
+              </div>
+            </div>
+            <div className="relative flex min-h-[24rem] flex-col justify-between overflow-hidden p-8">
+              <AnimatePresence mode="wait" custom={communityDirection}>
+                <motion.div
+                  key={activeCommunityCard.title}
+                  custom={communityDirection}
+                  initial={{ opacity: 0, x: communityDirection * 28 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: communityDirection * -28 }}
+                  transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="grid h-16 w-16 place-items-center !rounded-full border border-[#f0d7c3] bg-white text-[#CC0000]">
+                    <ActiveCommunityIcon size={32} strokeWidth={1.8} />
+                  </div>
+                  <p className="mt-6 text-sm font-black uppercase tracking-[0.12em] text-[#CC0000]">
+                    {safeCommunityIndex + 1} / {communityCards.length}
+                  </p>
+                  <h3 className="mt-3 text-3xl font-black leading-tight text-[#111]">{activeCommunityCard.title}</h3>
+                  <p className="mt-4 text-lg font-medium leading-8 text-[#3e3934]">{activeCommunityCard.body}</p>
+                </motion.div>
+              </AnimatePresence>
+
+              <div className="mt-7 grid gap-5">
+                <div className="grid grid-cols-4 gap-2">
+                  {communityCards.map((card, index) => (
+                    <button
+                      key={card.title}
+                      type="button"
+                      onClick={() => selectCommunityCard(index)}
+                      className={`group overflow-hidden !rounded-lg border bg-white p-0 shadow-none transition duration-300 ${index === activeCommunityIndex ? "border-[#CC0000] ring-2 ring-[#CC0000]/12" : "border-[#e1d7ce] hover:border-[#CC0000]/55"}`}
+                      aria-label={`Preview ${card.title}`}
+                    >
+                      <img src={card.image} alt="" className={`h-14 w-full object-cover transition duration-500 ${index === activeCommunityIndex ? "scale-110" : "opacity-70 group-hover:scale-105 group-hover:opacity-100"}`} />
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => rotateCommunityCard(-1)}
+                    className="grid h-11 w-11 place-items-center !rounded-full border border-[#d7cbc3] bg-white text-[#2D2926] shadow-none transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                    aria-label="Previous community photo"
+                  >
+                    <ArrowRight className="rotate-180" size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => rotateCommunityCard(1)}
+                    className="grid h-11 w-11 place-items-center !rounded-full border border-[#d7cbc3] bg-white text-[#2D2926] shadow-none transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                    aria-label="Next community photo"
+                  >
+                    <ArrowRight size={18} />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.16 }}
-        className="grid gap-5 pt-2 lg:col-span-2 lg:pt-4"
-      >
-        <div className="border border-[#ded8d2] bg-white p-5 shadow-[0_16px_42px_rgba(45,41,38,0.06)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <Eyebrow>New Debater Path</Eyebrow>
-              <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Start with one practice, then one round.</h2>
-            </div>
-            <div className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926] sm:grid-cols-4">
-              {["Read Novice Hub", "Come to Practice", "Find a Partner", "Try a Tournament"].map((step, index) => (
-                <div key={step} className="border-l-4 border-[#CC0000] bg-[#f3f4f4] px-3 py-2">
-                  <span className="mr-2 text-[#CC0000]">{index + 1}</span>{step}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <PhotoCarousel slides={carouselSlides} />
       </motion.div>
     </section>
   );
@@ -705,7 +903,7 @@ function getPublishChangeSummary(id, draft, published) {
     return summarizeArrayChanges("E-board members", draft.members, published.members) || "E-Board page content changed.";
   }
   if (id === "home") {
-    return summarizeArrayChanges("Landing carousel photos", draft.carouselSlides, published.carouselSlides) || "Landing page carousel changed.";
+    return summarizeArrayChanges("Landing community carousel cards", draft.carouselSlides, published.carouselSlides) || "Landing page community carousel changed.";
   }
   if (id === "trophies") {
     return [
@@ -4300,7 +4498,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     const normalizedContent = normalizeHomeContent(nextContent);
     setDraftHomeContent(normalizedContent);
     saveStoredDraftContent("home", normalizedContent);
-    showEditorNotice("Landing page carousel draft saved. Publish it when ready.");
+    showEditorNotice("Landing page community carousel draft saved. Publish it when ready.");
   };
 
   const updateCarouselSlide = (id, field, value) => {
@@ -4334,12 +4532,19 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       showEditorNotice("Upload a photo or paste an image URL before adding a carousel slide.", "error");
       return;
     }
+    const carouselCardDefaults = [
+      { title: "Build Lifelong Friendships", body: "Find a close-knit team that supports you through practices, tournaments, and everything in between." },
+      { title: "Travel & Compete", body: "Represent BU at tournaments, explore new campuses, and make memories with teammates on the road." },
+      { title: "Grow Your Skills", body: "Think critically, speak confidently, and learn how to build arguments under pressure." },
+      { title: "Be Part of Our Legacy", body: "Join a tradition of competitive excellence and help carry Boston University debate forward." },
+    ];
+    const fallbackCard = carouselCardDefaults[draftHomeContent.carouselSlides.length % carouselCardDefaults.length];
     const nextSlide = {
       id: `home-slide-${Date.now()}`,
       src: newCarouselSlide.src.trim(),
       alt: newCarouselSlide.alt.trim() || "BUDS team photo",
-      kicker: newCarouselSlide.kicker.trim() || "Team Photo",
-      caption: newCarouselSlide.caption.trim(),
+      kicker: newCarouselSlide.kicker.trim() || fallbackCard.title,
+      caption: newCarouselSlide.caption.trim() || fallbackCard.body,
     };
     persistHomeContent((content) => ({ ...content, carouselSlides: [...content.carouselSlides, nextSlide] }));
     setNewCarouselSlide({ src: "", alt: "", kicker: "", caption: "" });
@@ -4348,8 +4553,8 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const removeCarouselSlide = (slide) => {
     if (!canWriteNotes) return;
     requestDeleteConfirmation({
-      title: `Delete ${slide.kicker || "this carousel photo"}?`,
-      body: "This will remove the photo from the landing page carousel draft.",
+      title: `Delete ${slide.kicker || "this community card"}?`,
+      body: "This will remove the card from the landing page community carousel draft.",
       onConfirm: () => {
         persistHomeContent((content) => ({
           ...content,
@@ -7355,9 +7560,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <ImageIcon className="text-[#CC0000]" />
                   <Eyebrow>Budsite Editor</Eyebrow>
                 </div>
-                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Landing Page Carousel</h2>
+                <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Landing Page Community Carousel</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5b5450]">
-                  Upload photos, edit captions, and reorder the homepage carousel.
+                  Upload photos, edit card titles and descriptions, and reorder the rotating community carousel.
                 </p>
               </div>
               <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
@@ -7375,10 +7580,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   className="overflow-hidden"
                 >
                   <div className="mt-5 grid gap-4">
-                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add Carousel Photo</p>
+                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Add Community Card</p>
                     <form onSubmit={addCarouselSlide} className="grid gap-3 border border-[#CC0000]/45 bg-white p-3">
                       <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
-                        <HelperText>Upload a photo or paste an image URL. Captions are optional, but alt text keeps the carousel accessible.</HelperText>
+                        <HelperText>Upload a photo or paste an image URL. The title and description appear beside the photo in the community carousel.</HelperText>
                         <div className="grid gap-3 lg:grid-cols-[0.75fr_1fr_1fr]">
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
                             Photo
@@ -7398,11 +7603,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Label
+                            Card Title
                             <input
                               value={newCarouselSlide.kicker}
                               onChange={(event) => setNewCarouselSlide((current) => ({ ...current, kicker: event.target.value }))}
-                              placeholder="Tournament"
+                              placeholder="Travel & Compete"
                               disabled={!canEditBudsiteTitles}
                               className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000] disabled:cursor-not-allowed disabled:bg-[#f3f4f4] disabled:text-[#8f8781]"
                             />
@@ -7419,11 +7624,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             />
                           </label>
                           <label className="grid gap-2 text-sm font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Caption
+                            Card Description
                             <input
                               value={newCarouselSlide.caption}
                               onChange={(event) => setNewCarouselSlide((current) => ({ ...current, caption: event.target.value }))}
-                              placeholder="Short public caption"
+                              placeholder="Short public description"
                               className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                             />
                           </label>
@@ -7437,12 +7642,12 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           </div>
                         )}
                         <button type="submit" className="w-fit bg-[#CC0000] px-5 py-3 text-sm font-black uppercase tracking-[0.08em] text-white hover:bg-[#A00000]">
-                          Add Carousel Photo
+                          Add Community Card
                         </button>
                       </fieldset>
                     </form>
 
-                    <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Carousel Photos</p>
+                    <p className="border-t border-[#ded8d2] pt-3 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#6d6560]">Existing Community Cards</p>
                     <div className="grid gap-4">
                       {draftHomeContent.carouselSlides.map((slide, index) => (
                         <div
@@ -7473,7 +7678,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                           <fieldset disabled={!canWriteNotes} className="grid gap-3 disabled:opacity-55">
                             <div className="grid gap-3 md:grid-cols-2">
                               <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                                Label
+                                Card Title
                                 <input
                                   value={slide.kicker}
                                   onChange={(event) => updateCarouselSlide(slide.id, "kicker", event.target.value)}
@@ -7499,7 +7704,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               />
                             </label>
                             <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                              Caption
+                              Card Description
                               <textarea
                                 value={slide.caption}
                                 onChange={(event) => updateCarouselSlide(slide.id, "caption", event.target.value)}
@@ -7513,7 +7718,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             onClick={() => removeCarouselSlide(slide)}
                             disabled={!canWriteNotes}
                             className="grid h-10 w-10 place-items-center border border-[#ded8d2] bg-white text-[#CC0000] disabled:opacity-40 lg:self-start"
-                            aria-label={`Remove ${slide.kicker || "carousel photo"}`}
+                            aria-label={`Remove ${slide.kicker || "community card"}`}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -7734,34 +7939,32 @@ export default function App() {
   }, [auth, calendarEmbedUrl, eboardContent, homeContent, meetingsContent, noviceContent, path, requestConfirmation, trophiesContent, updateEboardContent, updateHomeContent, updateMeetingsContent, updateNoviceContent, updateTrophiesContent]);
 
   return (
-    <main className="min-h-screen bg-[#eeeae6] text-[#2D2926]">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,rgba(45,41,38,0.045)_1px,transparent_1px),linear-gradient(rgba(45,41,38,0.045)_1px,transparent_1px)] bg-[size:48px_48px]" />
-
-      <header className="sticky top-0 z-50 border-b border-[#ded8d2] bg-white/95 shadow-[0_10px_28px_rgba(45,41,38,0.07)] backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-[98rem] items-center justify-between gap-4 px-5 py-3 md:px-8">
+    <main className="min-h-screen bg-[#f7f4f1] text-[#2D2926]">
+      <header className="sticky top-0 z-50 border-b border-[#e6e0db] bg-white/96 shadow-[0_6px_22px_rgba(45,41,38,0.06)] backdrop-blur-xl">
+        <nav className="mx-auto flex max-w-[118rem] items-center justify-between gap-6 px-5 py-3 sm:px-8">
           <SiteLink href="/" className="group flex min-w-0 items-center gap-3">
             <img
               src="/buds-logo.png"
               alt="BU Debate Society logo"
-              className="h-14 w-14 shrink-0 rounded-sm object-cover shadow-sm transition group-hover:brightness-95"
+              className="h-14 w-14 shrink-0 rounded-md object-cover shadow-sm transition group-hover:brightness-95"
             />
-            <div className="min-w-0 border-l border-[#ded8d2] pl-3">
-              <p className="text-xl font-black uppercase leading-none tracking-[0.18em] text-[#2D2926]">BUDS</p>
-              <p className="mt-1 hidden truncate text-sm font-medium text-[#6d6560] sm:block">Boston University Debate Society</p>
+            <div className="min-w-0">
+              <p className="text-2xl font-black uppercase leading-none tracking-[0.06em] text-[#111]">BUDS</p>
+              <p className="mt-1 hidden truncate text-sm font-medium text-[#201d1a] sm:block">Boston University Debate Society</p>
             </div>
           </SiteLink>
 
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-6 xl:flex 2xl:gap-8">
             {navItems.map((item) => {
               const active = item.href === path;
               return (
                 <SiteLink
                   key={item.href}
                   href={item.href}
-                  className={`whitespace-nowrap rounded-sm border px-2.5 py-2 text-sm font-extrabold transition lg:px-3.5 ${
+                  className={`whitespace-nowrap text-base font-medium transition ${
                     active
-                      ? "border-[#2D2926] bg-[#2D2926] text-white shadow-[0_8px_18px_rgba(45,41,38,0.14)]"
-                      : "border-transparent text-[#4b4541] hover:border-[#c9c7c3] hover:bg-white hover:text-[#2D2926] hover:shadow-sm"
+                      ? "text-[#CC0000]"
+                      : "text-[#111] hover:text-[#CC0000]"
                   }`}
                 >
                   {item.label}
@@ -7770,23 +7973,23 @@ export default function App() {
             })}
           </div>
 
-          <div className="hidden items-center gap-2 md:flex lg:gap-3">
-            <PrimaryButton href="/join" className="rounded-sm px-4 lg:px-6">
-              Join <ArrowRight size={16} />
+          <div className="hidden items-center gap-3 xl:flex">
+            <PrimaryButton href="/join" className="rounded-md px-6 py-3">
+              Join BUDS <ArrowRight size={16} />
             </PrimaryButton>
-            <SecondaryButton href={auth ? "/hub" : "/login"} className="rounded-sm bg-[#fbfaf9] px-4 lg:px-6">
-              {auth ? "Hub" : "Login"}
+            <SecondaryButton href={auth ? "/hub" : "/login"} className="rounded-md border-[#bca7a0] bg-white px-6 py-3">
+              Hub
             </SecondaryButton>
           </div>
 
-          <button className="rounded-sm border border-[#ded8d2] bg-white p-3 shadow-sm md:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <button className="rounded-sm border border-[#ded8d2] bg-white p-3 shadow-sm xl:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Menu size={20} />
           </button>
         </nav>
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#2D2926]/45 p-4 backdrop-blur-sm md:hidden">
+        <div className="fixed inset-0 z-[60] bg-[#2D2926]/45 p-4 backdrop-blur-sm xl:hidden">
           <div className="overflow-hidden rounded-sm border border-[#ded8d2] bg-white shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-3 px-5 pt-5">
