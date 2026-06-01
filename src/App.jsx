@@ -2398,7 +2398,172 @@ function ContactPage() {
   );
 }
 
-function JoinPage({ auth, onRequestConfirmation }) {
+function MembershipRequestsPanel({ auth, onRequestConfirmation }) {
+  const [requests, setRequests] = useState(() => getStoredMembershipRequests());
+  const [reviewReasons, setReviewReasons] = useState({});
+  const isAdmin = auth?.role === ADMIN_ROLE;
+  const defaultDenyReason = "Your membership request was not approved at this time.";
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateRequests() {
+      const databaseRequests = await loadMembershipRequests();
+      if (!databaseRequests || ignore) return;
+      setRequests(databaseRequests);
+      saveStoredMembershipRequests(databaseRequests);
+    }
+
+    hydrateRequests();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const reviewMembershipRequest = async (id, status) => {
+    const reviewedRequest = requests.find((request) => request.id === id);
+    if (status === "Accepted" && reviewedRequest && RESERVED_ACCOUNT_EMAILS.includes(reviewedRequest.email.toLowerCase())) {
+      setReviewReasons((current) => ({ ...current, [id]: "This email is reserved and cannot be accepted through requests." }));
+      return;
+    }
+
+    const reason = reviewReasons[id]?.trim() || (status === "Accepted" ? "Welcome to BUDS!" : defaultDenyReason);
+    if (!reason) {
+      setReviewReasons((current) => ({ ...current, [id]: "Please add a reason before deciding." }));
+      return;
+    }
+
+    const nextRequests = requests.map((request) => (
+      request.id === id
+        ? { ...request, status, reason, reviewed_at: new Date().toISOString() }
+        : request
+    ));
+    setRequests(nextRequests);
+    saveStoredMembershipRequests(nextRequests);
+    updateMembershipRequestStatus(id, status, reason);
+    if (status === "Accepted" && reviewedRequest) {
+      if (isSupabaseConfigured && reviewedRequest.password) {
+        await supabase.auth.signUp({
+          email: reviewedRequest.email,
+          password: reviewedRequest.password,
+          options: {
+            data: { name: reviewedRequest.name, membership_status: "accepted" },
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
+        });
+        await supabase.auth.signOut();
+      }
+
+      upsertMemberAccount({
+        id: reviewedRequest.email,
+        name: reviewedRequest.name,
+        email: reviewedRequest.email,
+        ...(!isSupabaseConfigured ? { password: reviewedRequest.password } : {}),
+        role: "member",
+        status: "active",
+        updated_at: new Date().toISOString(),
+      });
+    }
+    setReviewReasons((current) => ({ ...current, [id]: "" }));
+  };
+
+  const requestMembershipDecision = (request, status) => {
+    const isAccepting = status === "Accepted";
+    onRequestConfirmation({
+      title: `${isAccepting ? "Accept" : "Deny"} ${request.name || request.email}?`,
+      body: isAccepting
+        ? "Accepting this request gives this person access to private BUDS resources. Make sure this membership has been approved by a member of e-board before continuing."
+        : `This will deny the membership request. If you do not write a custom reason, the default message will be: "${defaultDenyReason}"`,
+      actionLabel: isAccepting ? "Accept" : "Deny",
+      onConfirm: () => reviewMembershipRequest(request.id, status),
+    });
+  };
+
+  const removeMembershipRequest = (id) => {
+    const nextRequests = requests.filter((request) => request.id !== id);
+    setRequests(nextRequests);
+    saveStoredMembershipRequests(nextRequests);
+    deleteMembershipRequest(id);
+  };
+
+  return (
+    <Card className="p-4">
+      <div className="flex flex-col gap-1.5 border-b-4 border-[#CC0000] pb-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <Eyebrow>{isAdmin ? "Administrator" : "E-Board"}</Eyebrow>
+          <h2 className="mt-1.5 text-2xl font-black text-[#2D2926]">Membership Requests</h2>
+        </div>
+        <p className="text-xs font-black uppercase tracking-[0.08em] text-[#6d6560]">{requests.length} total</p>
+      </div>
+      <div className="mt-4 grid gap-3">
+        {requests.length === 0 && (
+          <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-4 text-sm font-bold text-[#5b5450]">
+            No membership requests yet.
+          </div>
+        )}
+        {requests.map((request) => {
+          const isAccepted = request.status === "Accepted";
+          const hasDecision = request.status === "Accepted" || request.status === "Denied";
+          return (
+            <div key={request.id} className={`relative grid gap-3 border p-4 pr-12 lg:grid-cols-[1fr_0.8fr] ${hasDecision ? "border-[#a9a29c] bg-[#d4d0cc] opacity-90" : "border-[#ded8d2] bg-white"}`}>
+              <button
+                type="button"
+                onClick={() => onRequestConfirmation({
+                  title: `Delete request from ${request.name}?`,
+                  body: "This membership request will be permanently removed from the review queue.",
+                  onConfirm: () => removeMembershipRequest(request.id),
+                })}
+                aria-label={`Delete request from ${request.name}`}
+                className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center border border-[#bdb6b0] bg-white/80 text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+              >
+                <Trash2 size={15} />
+              </button>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-black text-[#2D2926]">{request.name}</h3>
+                  <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f3f4f4] text-[#6d6560]"}`}>
+                    {MEMBERSHIP_REQUEST_STATUSES.includes(request.status) ? request.status : "Pending"}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-sm font-semibold text-[#6d6560]">{request.email}</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-5 text-[#5b5450]">{request.message || "No optional note added."}</p>
+                {request.reason && <p className="mt-3 border-l-4 border-[#0b6b35] bg-[#e5f7ec] px-3 py-2 text-sm font-bold text-[#0b6b35]">Reason: {request.reason}</p>}
+              </div>
+              <div className="grid gap-2.5">
+                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                  Decision reason
+                  <textarea
+                    value={reviewReasons[request.id] ?? ""}
+                    onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
+                    rows={3}
+                    placeholder="Defaults to Welcome to BUDS! when accepting"
+                    className="resize-none border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
+                  />
+                </label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button type="button" onClick={() => requestMembershipDecision(request, "Accepted")} className="flex-1 bg-[#2D2926] px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-white">
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => requestMembershipDecision(request, "Denied")}
+                    disabled={isAccepted}
+                    className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-[0.08em] text-white ${isAccepted ? "cursor-not-allowed bg-[#8f8781] opacity-60" : "bg-[#CC0000]"}`}
+                  >
+                    Deny
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function JoinPage() {
   const [requests, setRequests] = useState(() => getStoredMembershipRequests());
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -2406,8 +2571,6 @@ function JoinPage({ auth, onRequestConfirmation }) {
   const [message, setMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitMessageType, setSubmitMessageType] = useState("success");
-  const [reviewReasons, setReviewReasons] = useState({});
-  const isAdmin = auth?.role === ADMIN_ROLE;
 
   useEffect(() => {
     let ignore = false;
@@ -2452,7 +2615,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
     const existingLocalRequest = requests.find((request) => request.email.toLowerCase() === normalizedEmail);
     if (existingLocalRequest) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has a membership request. Please wait for an administrator to review it.");
+      setSubmitMessage("That email already has a membership request. Please wait for an admin or e-board member to review it.");
       return;
     }
 
@@ -2463,7 +2626,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
 
     if (existingDatabaseRequest) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has a membership request. Please wait for an administrator to review it.");
+      setSubmitMessage("That email already has a membership request. Please wait for an admin or e-board member to review it.");
       return;
     }
 
@@ -2513,61 +2676,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
     setRequestPassword("");
     setMessage("");
     setSubmitMessageType("success");
-    setSubmitMessage("Request sent. An administrator can review it from this page.");
-  };
-
-  const reviewMembershipRequest = async (id, status) => {
-    const reviewedRequest = requests.find((request) => request.id === id);
-    if (status === "Accepted" && reviewedRequest && RESERVED_ACCOUNT_EMAILS.includes(reviewedRequest.email.toLowerCase())) {
-      setReviewReasons((current) => ({ ...current, [id]: "This email is reserved and cannot be accepted through requests." }));
-      return;
-    }
-
-    const reason = reviewReasons[id]?.trim() || (status === "Accepted" ? "Welcome to BUDS!" : "");
-    if (!reason) {
-      setReviewReasons((current) => ({ ...current, [id]: "Please add a reason before deciding." }));
-      return;
-    }
-
-    const nextRequests = requests.map((request) => (
-      request.id === id
-        ? { ...request, status, reason, reviewed_at: new Date().toISOString() }
-        : request
-    ));
-    setRequests(nextRequests);
-    saveStoredMembershipRequests(nextRequests);
-    updateMembershipRequestStatus(id, status, reason);
-    if (status === "Accepted" && reviewedRequest) {
-      if (isSupabaseConfigured && reviewedRequest.password) {
-        await supabase.auth.signUp({
-          email: reviewedRequest.email,
-          password: reviewedRequest.password,
-          options: {
-            data: { name: reviewedRequest.name, membership_status: "accepted" },
-            emailRedirectTo: `${window.location.origin}/login`,
-          },
-        });
-        await supabase.auth.signOut();
-      }
-
-      upsertMemberAccount({
-        id: reviewedRequest.email,
-        name: reviewedRequest.name,
-        email: reviewedRequest.email,
-        ...(!isSupabaseConfigured ? { password: reviewedRequest.password } : {}),
-        role: "member",
-        status: "active",
-        updated_at: new Date().toISOString(),
-      });
-    }
-    setReviewReasons((current) => ({ ...current, [id]: "" }));
-  };
-
-  const removeMembershipRequest = (id) => {
-    const nextRequests = requests.filter((request) => request.id !== id);
-    setRequests(nextRequests);
-    saveStoredMembershipRequests(nextRequests);
-    deleteMembershipRequest(id);
+    setSubmitMessage("Request sent. An admin or e-board member can review it from this page.");
   };
 
   return (
@@ -2582,7 +2691,7 @@ function JoinPage({ auth, onRequestConfirmation }) {
               Request membership in the Boston University Debate Society.
             </h1>
             <p className="mt-6 max-w-2xl text-base font-medium leading-7 text-white/90 sm:text-lg sm:leading-8">
-              New members request an account first. After an administrator accepts you, use this same BU email and password to log in through the Hub.
+              New members request an account first. After an admin or e-board member accepts you, use this same BU email and password to log in through the Hub.
             </p>
           </div>
           <div className="mt-10 grid gap-4 border border-white/40 bg-white p-4 text-[#2D2926] sm:p-6">
@@ -2667,74 +2776,6 @@ function JoinPage({ auth, onRequestConfirmation }) {
         </Card>
       </div>
 
-      {isAdmin && (
-        <Card className="mt-6">
-          <div className="flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <Eyebrow>Administrator</Eyebrow>
-              <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Membership Requests</h2>
-            </div>
-            <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{requests.length} total</p>
-          </div>
-          <div className="mt-5 grid gap-4">
-            {requests.length === 0 && (
-              <div className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-5 text-sm font-bold text-[#5b5450]">
-                No membership requests yet.
-              </div>
-            )}
-            {requests.map((request) => {
-              const hasDecision = request.status === "Accepted" || request.status === "Denied";
-              return (
-                <div key={request.id} className={`relative grid gap-4 border p-5 pr-14 lg:grid-cols-[1fr_0.95fr] ${hasDecision ? "border-[#a9a29c] bg-[#d4d0cc] opacity-90" : "border-[#ded8d2] bg-white"}`}>
-                  <button
-                    type="button"
-                    onClick={() => onRequestConfirmation({
-                      title: `Delete request from ${request.name}?`,
-                      body: "This membership request will be permanently removed from the review queue.",
-                      onConfirm: () => removeMembershipRequest(request.id),
-                    })}
-                    aria-label={`Delete request from ${request.name}`}
-                    className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center border border-[#bdb6b0] bg-white/80 text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-xl font-black text-[#2D2926]">{request.name}</h3>
-                      <span className={`px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.08em] ${request.status === "Accepted" ? "bg-[#e5f7ec] text-[#0b6b35]" : request.status === "Denied" ? "bg-[#fff1f1] text-[#8a0000]" : "bg-[#f3f4f4] text-[#6d6560]"}`}>
-                        {MEMBERSHIP_REQUEST_STATUSES.includes(request.status) ? request.status : "Pending"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm font-semibold text-[#6d6560]">{request.email}</p>
-                    <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#5b5450]">{request.message || "No optional note added."}</p>
-                    {request.reason && <p className="mt-4 border-l-4 border-[#CC0000] bg-[#f3f4f4] px-4 py-3 text-sm font-bold text-[#2D2926]">Reason: {request.reason}</p>}
-                  </div>
-                  <div className="grid gap-3">
-                    <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                      Decision reason
-                      <textarea
-                        value={reviewReasons[request.id] ?? ""}
-                        onChange={(event) => setReviewReasons((current) => ({ ...current, [request.id]: event.target.value }))}
-                        rows={4}
-                        placeholder="Defaults to Welcome to BUDS! when accepting"
-                        className="resize-none border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 text-sm font-medium normal-case tracking-normal text-[#2D2926] outline-none focus:border-[#CC0000]"
-                      />
-                    </label>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button type="button" onClick={() => reviewMembershipRequest(request.id, "Accepted")} className="flex-1 bg-[#2D2926] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
-                        Accept
-                      </button>
-                      <button type="button" onClick={() => reviewMembershipRequest(request.id, "Denied")} className="flex-1 bg-[#CC0000] px-4 py-3 text-sm font-black uppercase tracking-[0.08em] text-white">
-                        Deny
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
     </Page>
   );
 }
@@ -3108,11 +3149,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     ? `Welcome, ${displayName}`
     : visibleTab === "operations"
       ? "Club Resources"
-    : visibleTab === "members"
-      ? "Members"
-      : visibleTab === "budsite"
-        ? "Budsite Editor"
-        : "E-Board Workspace";
+      : visibleTab === "members"
+        ? "Members"
+        : visibleTab === "budsite"
+          ? "Budsite Editor"
+          : visibleTab === "requests"
+            ? "Membership Requests"
+            : "E-Board Workspace";
   const memberLinksBySection = privateLinkSections.map((section) => ({
     section,
     links: memberLinks
@@ -4907,6 +4950,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             >
               Budsite Editor
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("requests")}
+              className={`px-4 py-2 text-xs font-black uppercase tracking-[0.08em] transition duration-300 ${visibleTab === "requests" ? "bg-[#CC0000] text-white" : "border border-[#ded8d2] bg-white text-[#2D2926]"}`}
+            >
+              Membership Requests
+            </button>
           </>
         )}
         {canManageMembers && (
@@ -5406,6 +5456,10 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </div>
           </SmoothDetails>
         </div>
+      )}
+
+      {visibleTab === "requests" && isEboard && (
+        <MembershipRequestsPanel auth={auth} onRequestConfirmation={onRequestConfirmation} />
       )}
 
       {visibleTab === "members" && canManageMembers && (
