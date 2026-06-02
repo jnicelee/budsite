@@ -1742,6 +1742,7 @@ function NoviceHubPage({ noviceContent }) {
   const [glossarySearch, setGlossarySearch] = useState("");
   const [selectedGlossaryTerm, setSelectedGlossaryTerm] = useState("APDA");
   const noviceFaqSectionRef = useRef(null);
+  const noviceStartScrollRef = useRef(null);
   const apdaSpeechSteps = noviceContent.speechSteps || [];
   const apdaGlossaryTerms = getInitialNoviceGlossaryTerms(noviceContent);
   const resourceAccentClasses = [
@@ -1784,13 +1785,13 @@ function NoviceHubPage({ noviceContent }) {
         </span>
         <h2 className="text-2xl font-black text-[#202020]">Common First-Round Questions</h2>
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid items-start gap-3 md:grid-cols-2">
         {noviceContent.faqs.map((faq, index) => (
           <SmoothDetails
             key={faq.id}
             title={faq.question}
             defaultOpen={index === 0}
-            className={`rounded-lg border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.05)] ${
+            className={`self-start rounded-lg border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.05)] ${
               index === 0 ? "bg-[#fffafa]" : ""
             }`}
             scrollTargetRef={noviceFaqSectionRef}
@@ -1970,12 +1971,13 @@ function NoviceHubPage({ noviceContent }) {
             New to debate? We&apos;ve got you. Explore resources, learn the basics, and take your first step with confidence.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="#start-here"
+            <button
+              type="button"
+              onClick={() => scrollElementIntoComfortView(document.getElementById("start-here"), noviceStartScrollRef, { offset: 112, lowerBoundRatio: 0.18, duration: 760 })}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#CC0000] px-6 py-4 text-sm font-extrabold normal-case tracking-normal text-white shadow-none transition hover:bg-[#A00000]"
             >
               I&apos;m New! Where Do I Start? <ArrowRight size={19} />
-            </a>
+            </button>
             <SecondaryButton href="/calendar" className="rounded-lg px-6 py-4 normal-case tracking-normal shadow-none">
               See Upcoming Events <CalendarDays size={18} />
             </SecondaryButton>
@@ -1990,7 +1992,7 @@ function NoviceHubPage({ noviceContent }) {
         </div>
       </section>
 
-      <section id="start-here" className="mt-8 rounded-2xl border border-[#eaded5] bg-[#fff7f7] p-5 shadow-[0_14px_36px_rgba(45,41,38,0.05)] sm:p-7">
+      <section id="start-here" className="mt-8 scroll-mt-28 rounded-2xl border border-[#eaded5] bg-[#fff7f7] p-5 shadow-[0_14px_36px_rgba(45,41,38,0.05)] sm:p-7">
         <div className="mb-5 flex items-center gap-3">
           <h2 className="text-2xl font-black uppercase tracking-tight text-[#202020]">Start Here</h2>
           <Sparkles className="text-[#CC0000]" size={23} />
@@ -3096,10 +3098,10 @@ function JoinPage() {
       return;
     }
 
-    const existingLocalRequest = requests.find((request) => request.email.toLowerCase() === normalizedEmail);
-    if (existingLocalRequest) {
+    const existingLocalAccount = getStoredMemberAccounts().find((account) => account.email.toLowerCase() === normalizedEmail);
+    if (existingLocalAccount) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has a membership request. Please wait for an admin or e-board member to review it.");
+      setSubmitMessage("That email already has an account. Please log in through the Hub.");
       return;
     }
 
@@ -3108,15 +3110,16 @@ function JoinPage() {
       findMemberAccountByEmail(normalizedEmail),
     ]);
 
-    if (existingDatabaseRequest) {
+    if (existingAccount) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has a membership request. Please wait for an admin or e-board member to review it.");
+      setSubmitMessage("That email already has an account. Please log in through the Hub.");
       return;
     }
 
-    if (existingAccount) {
+    const existingLocalRequest = requests.find((request) => request.email.toLowerCase() === normalizedEmail);
+    if (existingLocalRequest || existingDatabaseRequest) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has a member account. Please log in through the Hub.");
+      setSubmitMessage("That email already has a membership request. Please wait for an admin or e-board member to review it.");
       return;
     }
 
