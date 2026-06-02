@@ -14,6 +14,7 @@ import {
   DollarSign,
   ExternalLink,
   FileText,
+  Filter,
   Gavel,
   Handshake,
   Heart,
@@ -32,6 +33,7 @@ import {
   Plane,
   RefreshCw,
   ScrollText,
+  Search,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -57,6 +59,7 @@ import {
 import {
   ADMIN_ROLE,
   BUDGET_STATUSES,
+  HOME_CAROUSEL_CAPTION_MAX_LENGTH,
   MEMBER_ACCOUNT_ROLES,
   MEMBER_MANAGER_EMAILS,
   MEMBERSHIP_REQUEST_STATUSES,
@@ -214,7 +217,7 @@ function HomePage({ homeContent }) {
           <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-xs font-black uppercase tracking-[0.12em] text-[#CC0000] shadow-[0_10px_30px_rgba(45,41,38,0.08)]">
             <Trophy size={15} /> Ranked #4 nationally in 2026
           </div>
-          <h1 className="max-w-[42rem] font-serif text-5xl font-black leading-[0.92] tracking-normal text-[#070707] sm:text-6xl lg:text-[5.2rem] xl:text-[5.8rem]">
+          <h1 className="max-w-[42rem] text-5xl font-black leading-[0.92] tracking-tight text-[#070707] sm:text-6xl lg:text-[5.2rem] xl:text-[5.8rem]">
             Debate.
             <span className="block whitespace-nowrap"><span className="text-[#CC0000]">Learn.</span> Lead.</span>
           </h1>
@@ -340,7 +343,7 @@ function HomePage({ homeContent }) {
             onMouseEnter={() => setIsCommunityPaused(true)}
             onMouseLeave={() => setIsCommunityPaused(false)}
           >
-            <div className="relative min-h-[24rem] overflow-hidden bg-[#2D2926]">
+            <div className="relative h-[30rem] overflow-hidden bg-[#2D2926] md:h-[28rem]">
               <AnimatePresence mode="popLayout" custom={communityDirection}>
                 <motion.img
                   key={activeCommunityCard.image}
@@ -379,7 +382,7 @@ function HomePage({ homeContent }) {
                 </div>
               </div>
             </div>
-            <div className="relative flex min-h-[24rem] flex-col justify-between overflow-hidden p-8">
+            <div className="relative flex h-[30rem] flex-col justify-between overflow-hidden p-8 md:h-[28rem]">
               <AnimatePresence mode="wait" custom={communityDirection}>
                 <motion.div
                   key={activeCommunityCard.title}
@@ -388,6 +391,7 @@ function HomePage({ homeContent }) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: communityDirection * -28 }}
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+                  className="min-h-0 pr-1"
                 >
                   <div className="grid h-16 w-16 place-items-center !rounded-full border border-[#f0d7c3] bg-white text-[#CC0000]">
                     <ActiveCommunityIcon size={32} strokeWidth={1.8} />
@@ -396,7 +400,7 @@ function HomePage({ homeContent }) {
                     {safeCommunityIndex + 1} / {communityCards.length}
                   </p>
                   <h3 className="mt-3 text-3xl font-black leading-tight text-[#111]">{activeCommunityCard.title}</h3>
-                  <p className="mt-4 text-lg font-medium leading-8 text-[#3e3934]">{activeCommunityCard.body}</p>
+                  <p className="mt-4 line-clamp-2 text-lg font-medium leading-8 text-[#3e3934]">{activeCommunityCard.body}</p>
                 </motion.div>
               </AnimatePresence>
 
@@ -1417,7 +1421,7 @@ function AboutPage({ aboutContent }) {
           <div className="grid items-center gap-8 md:grid-cols-[1fr_16rem]">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.14em] text-[#CC0000]">About BUDS</p>
-              <h1 className="mt-5 max-w-[38rem] font-serif text-5xl font-black leading-[0.98] tracking-normal text-[#111] sm:text-6xl xl:text-[4.6rem]">
+              <h1 className="mt-5 max-w-[38rem] text-5xl font-black leading-[0.98] tracking-tight text-[#111] sm:text-6xl xl:text-[4.6rem]">
                 Debate hard.
                 <span className="block text-[#CC0000]">Learn fast. Find your people.</span>
               </h1>
@@ -1483,7 +1487,11 @@ function AboutPage({ aboutContent }) {
             <Card className="relative overflow-hidden p-7">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-[#CC0000]">Start Here</p>
               <p className="mt-4 pr-12 text-2xl font-bold leading-8 text-[#111]">Show up to practice. No tryout, no dues, no prior debate resume.</p>
-              <Handshake className="absolute bottom-6 right-6 text-[#CC0000]/35" size={72} strokeWidth={1.5} />
+              <img
+                src="/about-handshake.png"
+                alt=""
+                className="absolute bottom-3 right-4 h-28 w-28 object-contain opacity-80"
+              />
             </Card>
           </div>
         </section>
@@ -1736,6 +1744,13 @@ function NoviceHubPage({ noviceContent }) {
   const noviceFaqSectionRef = useRef(null);
   const apdaSpeechSteps = noviceContent.speechSteps || [];
   const apdaGlossaryTerms = getInitialNoviceGlossaryTerms(noviceContent);
+  const resourceAccentClasses = [
+    "bg-[#ef233c] text-white",
+    "bg-[#f49b12] text-white",
+    "bg-[#2f70d8] text-white",
+    "bg-[#4ca85a] text-white",
+  ];
+  const resourceIcons = [ExternalLink, BookOpenText, FileText, Trophy];
   const glossaryQuery = glossarySearch.trim().toLowerCase();
   const getGlossarySearchRank = (item) => {
     if (!glossaryQuery) return 0;
@@ -1762,40 +1777,42 @@ function NoviceHubPage({ noviceContent }) {
     || apdaGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
     || apdaGlossaryTerms[0];
   const noviceFaqSection = (
-    <section ref={noviceFaqSectionRef} className="mt-6">
-      <div className="mb-4 flex flex-col gap-2 border-b-4 border-[#CC0000] pb-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Eyebrow>Novice FAQ</Eyebrow>
-          <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Common First-Round Questions</h2>
-        </div>
+    <section ref={noviceFaqSectionRef} className="mt-5">
+      <div className="mb-3 flex items-center gap-4">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#f2c9c9] bg-white text-[#CC0000]">
+          <CircleHelp size={25} />
+        </span>
+        <h2 className="text-2xl font-black text-[#202020]">Common First-Round Questions</h2>
       </div>
-      <div className="columns-1 gap-3 md:columns-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {noviceContent.faqs.map((faq, index) => (
           <SmoothDetails
             key={faq.id}
             title={faq.question}
             defaultOpen={index === 0}
-            className="mb-3 break-inside-avoid border border-[#ded8d2] bg-white p-4 shadow-[0_14px_38px_rgba(45,41,38,0.06)]"
+            className={`rounded-lg border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.05)] ${
+              index === 0 ? "bg-[#fffafa]" : ""
+            }`}
             scrollTargetRef={noviceFaqSectionRef}
           >
-            <p className="text-sm font-semibold leading-6 text-[#5b5450]">{faq.answer}</p>
+            <p className="text-[0.95rem] font-medium leading-7 text-[#4c4641]">{faq.answer}</p>
           </SmoothDetails>
         ))}
       </div>
     </section>
   );
   const apdaGlossarySection = (
-    <section className="flex flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-6">
-      <div className="border-b-4 border-[#CC0000] pb-4">
+    <section className="flex flex-col rounded-lg border border-[#ded8d2] bg-white p-5 shadow-[0_14px_34px_rgba(45,41,38,0.05)]">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#eaf1ff] text-[#286bd1]">
+          <BookOpenText size={25} />
+        </span>
         <div>
-          <Eyebrow>APDA Glossary</Eyebrow>
-          <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">Common APDA Terms</h2>
-          <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#5b5450]">
-            Quick definitions for league shorthand, round mechanics, and speaker-scale language novices will hear at practice and tournaments.
-          </p>
+          <h2 className="text-2xl font-black leading-tight text-[#202020]">Learn the Lingo</h2>
+          <p className="mt-1 text-sm font-bold text-[#2D2926]">Common APDA Terms</p>
         </div>
       </div>
-      <div className="mt-4 h-[38rem] min-h-0 overflow-hidden border border-[#ded8d2] bg-[#f3f4f4] lg:grid lg:grid-cols-[17rem_1fr]">
+      <div className="h-[34rem] min-h-0 overflow-hidden rounded-lg border border-[#ded8d2] bg-[#f7f4f1] lg:grid lg:grid-cols-[17rem_1fr]">
         <div className="flex h-full min-h-0 flex-col border-b border-[#ded8d2] bg-white p-3 lg:border-b-0 lg:border-r">
           <label className="grid gap-1">
             <span className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">Search terms</span>
@@ -1834,7 +1851,7 @@ function NoviceHubPage({ noviceContent }) {
               )}
           </div>
         </div>
-        <div className="h-full overflow-y-auto bg-[#f3f4f4] p-4 lg:p-5">
+        <div className="h-full overflow-y-auto bg-[#faf8f6] p-4 lg:p-5">
           {displayedGlossaryTerm ? (
             <>
               <span className="inline-flex bg-[#CC0000] px-2.5 py-1 text-[0.6rem] font-black uppercase tracking-[0.12em] text-white">
@@ -1873,24 +1890,28 @@ function NoviceHubPage({ noviceContent }) {
     </section>
   );
   const apdaBasicsSection = (
-    <section className="overflow-hidden border border-[#ded8d2] bg-white p-5 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-6">
-      <div className="border-b-4 border-[#CC0000] pb-4">
-        <Eyebrow>APDA Basics</Eyebrow>
-        <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">APDA Speech Order</h2>
-        <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-[#5b5450]">
+    <section className="overflow-hidden rounded-lg border border-[#ded8d2] bg-white p-5 shadow-[0_14px_34px_rgba(45,41,38,0.05)]">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#eaf1ff] text-[#286bd1]">
+          <Mic2 size={25} />
+        </span>
+        <div>
+          <h2 className="text-2xl font-black leading-tight text-[#202020]">The APDA Speeches</h2>
+          <p className="mt-1 max-w-xl text-sm font-medium leading-6 text-[#5b5450]">
           A quick map of who speaks when in a standard APDA cases round.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-2 border border-[#b7cff8] bg-[#eef5ff] px-3 py-1.5 text-xs font-black text-[#135fbe]">
-            <span className="h-2.5 w-2.5 bg-[#1d67c4]" /> Government
-          </span>
-          <span className="inline-flex items-center gap-2 border border-[#f0b7b7] bg-[#fff1f1] px-3 py-1.5 text-xs font-black text-[#b31313]">
-            <span className="h-2.5 w-2.5 bg-[#CC0000]" /> Opposition
-          </span>
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-2 rounded-sm bg-[#eef5ff] px-2.5 py-1 text-[0.7rem] font-black text-[#135fbe]">
+              <span className="h-2.5 w-2.5 bg-[#1d67c4]" /> Government
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-sm bg-[#fff1f1] px-2.5 py-1 text-[0.7rem] font-black text-[#b31313]">
+              <span className="h-2.5 w-2.5 bg-[#CC0000]" /> Opposition
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="relative mt-5 grid gap-3 before:absolute before:left-4 before:top-0 before:h-full before:w-1 before:bg-[#ded8d2]">
+      <div className="relative grid gap-2 before:absolute before:left-4 before:top-0 before:h-full before:w-1 before:bg-[#ded8d2]">
         {apdaSpeechSteps.map((step) => {
           const Icon = speechIconMap[step.icon] || Mic2;
           const isGov = step.side === "gov";
@@ -1901,7 +1922,7 @@ function NoviceHubPage({ noviceContent }) {
                   {step.order}
                 </span>
               </div>
-              <article className={`grid gap-2 border bg-white p-3 shadow-[0_10px_24px_rgba(45,41,38,0.06)] ${
+              <article className={`grid gap-2 rounded-md border bg-white p-3 shadow-[0_8px_20px_rgba(45,41,38,0.04)] ${
                 isGov
                   ? "border-[#a9c7f5] bg-[#f4f8ff]"
                   : "border-[#f0b7b7] bg-[#fff6f6]"
@@ -1923,7 +1944,7 @@ function NoviceHubPage({ noviceContent }) {
                       {step.time}
                     </p>
                   </div>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-[#403a36]">{step.copy}</p>
+                  <p className="mt-1 text-xs font-medium leading-5 text-[#403a36]">{step.copy}</p>
                 </div>
               </article>
             </div>
@@ -1931,73 +1952,124 @@ function NoviceHubPage({ noviceContent }) {
         })}
       </div>
 
-      <div className="mt-4 flex items-start gap-3 border border-[#f1d38a] bg-[#fff8df] p-3 text-[#2D2926]">
-        <div className="grid h-9 w-9 shrink-0 place-items-center bg-[#f1aa1d] text-white">
-          <Gavel size={20} />
-        </div>
-        <div>
-          <h3 className="text-base font-black">The Judge Decides</h3>
-          <p className="mt-1 text-xs font-semibold leading-5 text-[#5b5450]">
-            After the round, both teams leave the room while the judge deliberates and prepares the RFD.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-  const memberPracticeSection = (
-    <section className="grid gap-6 border border-[#4d4640] bg-[#2D2926] p-5 text-white shadow-[0_16px_45px_rgba(45,41,38,0.16)] sm:p-8 md:grid-cols-[1fr_auto] md:items-center">
-      <div>
-        <div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-[#f4f1ee]"><Lock size={16} /> Learn by Watching Rounds</div>
-        <p className="max-w-4xl text-lg font-semibold leading-8 text-white md:text-xl">
-          The best way to learn APDA is to stay for a practice round, or "pround," after practice. Demonstration rounds, walkthroughs, and examples are also shown regularly during meetings so new debaters can see how cases, rebuttals, and weighing work in real time.
-        </p>
-      </div>
-      <div className="border border-white/30 px-5 py-3 text-center text-xs font-black uppercase tracking-[0.16em] text-white md:justify-self-end">Members Only</div>
     </section>
   );
 
   return (
-    <Page>
-      <PageHeader eyebrow="Novice Hub" title="A Cleaner Path from First Practice to First Tournament.">
-        Give new debaters the essentials in a clear, approachable starting point.
-      </PageHeader>
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {noviceResources.map((resource) => (
-          <Card key={resource.title} className="group flex min-h-52 flex-col p-4 transition hover:-translate-y-1 sm:p-5">
-            <span className="w-fit bg-[#CC0000] px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.14em] text-white">{resource.tag}</span>
-            <h2 className="mt-4 text-xl font-black leading-tight text-[#2D2926]">{resource.title}</h2>
-            <p className="mt-2 flex-1 text-sm leading-6 text-[#5b5450]">{resource.description}</p>
+    <Page className="max-w-[118rem] bg-[#f7f4f1] pb-0">
+      <section className="grid gap-9 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+        <div className="max-w-2xl">
+          <span className="inline-flex rounded-full bg-[#f9dddd] px-5 py-2 text-[0.75rem] font-black uppercase tracking-[0.18em] text-[#CC0000]">
+            Novice Hub
+          </span>
+          <h1 className="mt-7 max-w-[48rem] text-5xl font-black leading-[0.94] tracking-tight text-[#070707] sm:text-6xl lg:text-[5.2rem] xl:text-[5.8rem]">
+            Your Debate Journey
+            <span className="block text-[#CC0000]">Starts Here.</span>
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-[#5b5450]">
+            New to debate? We&apos;ve got you. Explore resources, learn the basics, and take your first step with confidence.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-4">
             <a
-              href={resource.url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-2 text-left text-xs font-black uppercase tracking-[0.08em] text-[#CC0000]"
+              href="#start-here"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#CC0000] px-6 py-4 text-sm font-extrabold normal-case tracking-normal text-white shadow-none transition hover:bg-[#A00000]"
             >
-              Open link <ChevronRight className="transition group-hover:translate-x-1" size={16} />
+              I&apos;m New! Where Do I Start? <ArrowRight size={19} />
             </a>
-          </Card>
-        ))}
-      </div>
-      {noviceFaqSection}
-      <div className="mt-6 grid gap-5 xl:grid-cols-[1.12fr_0.88fr] xl:items-start">
-        <div className="grid gap-5">
-          {apdaGlossarySection}
-          {memberPracticeSection}
+            <SecondaryButton href="/calendar" className="rounded-lg px-6 py-4 normal-case tracking-normal shadow-none">
+              See Upcoming Events <CalendarDays size={18} />
+            </SecondaryButton>
+          </div>
         </div>
+        <div className="min-w-0 px-4 lg:-ml-16 lg:pl-0 lg:pr-20 xl:-ml-20 xl:pr-24">
+          <img
+            src="/buds-up.png"
+            alt="BUDS growth illustration"
+            className="mx-auto h-auto w-full max-w-[36rem] object-contain"
+          />
+        </div>
+      </section>
+
+      <section id="start-here" className="mt-8 rounded-2xl border border-[#eaded5] bg-[#fff7f7] p-5 shadow-[0_14px_36px_rgba(45,41,38,0.05)] sm:p-7">
+        <div className="mb-5 flex items-center gap-3">
+          <h2 className="text-2xl font-black uppercase tracking-tight text-[#202020]">Start Here</h2>
+          <Sparkles className="text-[#CC0000]" size={23} />
+        </div>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {noviceResources.map((resource, index) => {
+            const Icon = resourceIcons[index] || ExternalLink;
+            return (
+              <a
+                key={resource.title}
+                href={resource.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex min-h-[17rem] flex-col rounded-lg border border-[#ded8d2] bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-[#CC0000]"
+              >
+                <span className={`grid h-16 w-16 place-items-center rounded-full ${resourceAccentClasses[index] || resourceAccentClasses[0]}`}>
+                  <Icon size={30} />
+                </span>
+                <h3 className="mt-8 text-xl font-black leading-tight text-[#202020]">
+                  {index === 0 ? "APDA Website" : resource.title.replace("APDA Online Website", "APDA Website")}
+                </h3>
+                <p className="mt-3 flex-1 text-[0.95rem] font-medium leading-6 text-[#403a36]">{resource.description}</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#CC0000]">
+                  {index === 0 ? "Visit Site" : index === 1 ? "Read Guide" : index === 2 ? "Open Dictionary" : "Explore Guide"}
+                  <ArrowRight className="transition group-hover:translate-x-1" size={15} />
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+
+      {noviceFaqSection}
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr] xl:items-start">
+        {apdaGlossarySection}
         {apdaBasicsSection}
       </div>
+      <section className="mt-5 grid gap-4 rounded-lg border border-[#f1d38a] bg-[#fff2d8] p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-5">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-white text-[#f49b12]">
+          <Gavel size={29} />
+        </span>
+        <div>
+          <h2 className="text-xl font-black text-[#202020]">You don&apos;t need to know everything yet.</h2>
+          <p className="mt-1 text-base font-medium text-[#403a36]">Show up, ask questions, and we&apos;ll help you learn the rest.</p>
+        </div>
+        <PrimaryButton href="/calendar" className="rounded-lg px-6 py-3 normal-case tracking-normal shadow-none">
+          Join Our Next Meeting <ArrowRight size={18} />
+        </PrimaryButton>
+      </section>
     </Page>
   );
 }
 
 function CalendarPage({ calendarEmbedUrl }) {
   return (
-    <Page>
-      <PageHeader eyebrow="Calendar" title="Practices, Tournaments, and Team Events.">
-        Feel free to pull up to any meeting! No Pressure!
-      </PageHeader>
-      <Card className="overflow-hidden p-3">
-        <div className="aspect-[16/10] overflow-hidden border border-[#ded8d2] bg-white md:aspect-[16/8]">
+    <Page className="max-w-[118rem]">
+      <section className="mb-9 grid items-center gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="min-w-0">
+          <span className="inline-flex rounded-full bg-[#fff0f0] px-5 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">
+            Calendar
+          </span>
+          <h1 className="mt-6 text-5xl font-black leading-[0.94] tracking-tight text-[#070707] sm:text-6xl xl:text-[5.2rem]">
+            Practices, Tournaments,
+            <span className="block text-[#CC0000]">and Team Events.</span>
+          </h1>
+          <p className="mt-6 max-w-4xl text-xl font-medium leading-9 text-[#403a36] lg:whitespace-nowrap">
+            Feel free to pull up to any meeting. No pressure, just come see what BUDS is about.
+          </p>
+        </div>
+        <div className="min-w-0 overflow-visible">
+          <img
+            src="/calendar-page-art.png"
+            alt="Calendar illustration"
+            className="mx-auto h-auto max-h-[20rem] w-full max-w-[42rem] object-contain lg:mr-0 xl:max-h-[22rem]"
+          />
+        </div>
+      </section>
+      <Card className="overflow-hidden rounded-[1.5rem] p-3 shadow-[0_16px_45px_rgba(45,41,38,0.07)]">
+        <div className="aspect-[16/10] overflow-hidden rounded-[1.2rem] border border-[#ded8d2] bg-white md:aspect-[16/8]">
           <iframe
             src={calendarEmbedUrl}
             title="BUDS Google Calendar"
@@ -2012,14 +2084,29 @@ function CalendarPage({ calendarEmbedUrl }) {
 
 function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
   const [meetingPosts, setMeetingPosts] = useState(() => getStoredNotes());
+  const [meetingSearch, setMeetingSearch] = useState("");
+  const [meetingFilter, setMeetingFilter] = useState("all");
+  const [expandedMeetingId, setExpandedMeetingId] = useState(null);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const canDeletePosts = auth?.role === "eboard" || auth?.role === ADMIN_ROLE;
   const sortedPosts = sortMeetingPosts(meetingPosts);
+  const currentYear = new Date().getFullYear();
+  const meetingQuery = meetingSearch.trim().toLowerCase();
+  const filteredPosts = sortedPosts.filter((post) => {
+    const plainBody = richTextToPlainText(post.body || "").toLowerCase();
+    const matchesQuery = !meetingQuery
+      || (post.title || "").toLowerCase().includes(meetingQuery)
+      || plainBody.includes(meetingQuery)
+      || formatMeetingDate(post.date).toLowerCase().includes(meetingQuery);
+    const postYear = post.date ? new Date(`${post.date}T00:00:00`).getFullYear() : null;
+    const matchesFilter = meetingFilter === "all" || postYear === currentYear;
+    return matchesQuery && matchesFilter;
+  });
   const meetingNumberById = new Map(
     [...sortedPosts]
       .reverse()
       .map((post, index) => [post.id, String(index + 1).padStart(2, "0")])
   );
-  const latestMeetingLabel = sortedPosts[0]?.date ? formatMeetingDate(sortedPosts[0].date) : "None yet";
   const announcementTitle = meetingsContent.announcementTitle.trim() || "No Announcements";
   const announcementBody = meetingsContent.announcementBody.trim() || "No announcements right now. Check back soon for meeting updates.";
 
@@ -2058,92 +2145,219 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
   };
 
   return (
-    <Page>
-      <div className="mb-8 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-        <div className="border border-[#2D2926] bg-[#2D2926] p-6 text-white shadow-[0_22px_70px_rgba(45,41,38,0.14)] md:p-10">
-          <Eyebrow light>Meetings</Eyebrow>
-          <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight md:text-6xl">
-            Meeting Notes, Organized Like a Team Record.
+    <>
+      <AnimatePresence>
+        {showAnnouncementModal && (
+          <motion.div
+            className="fixed inset-0 z-[80] grid place-items-center bg-[#2D2926]/55 p-4 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <motion.article
+              className="relative max-h-[86vh] w-full max-w-3xl overflow-y-auto rounded-[1.75rem] border border-[#f1cfcf] bg-white p-6 shadow-[0_28px_80px_rgba(45,41,38,0.24)] sm:p-8"
+              initial={{ opacity: 0, y: 18, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowAnnouncementModal(false)}
+                className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full border border-[#ded8d2] bg-[#f7f4f1] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]"
+                aria-label="Close announcement"
+              >
+                <X size={18} />
+              </button>
+              <span className="inline-flex rounded-full bg-[#fff0f0] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#CC0000]">
+                Announcement
+              </span>
+              <h2 className="mt-5 pr-10 text-4xl font-black leading-tight text-[#202020] sm:text-5xl">
+                {announcementTitle}
+              </h2>
+              <p className="mt-5 whitespace-pre-wrap text-lg font-medium leading-9 text-[#403a36]">
+                {announcementBody}
+              </p>
+              <p className="mt-8 border-t border-[#eaded5] pt-4 text-sm font-black text-[#766f69]">
+                {meetingsContent.announcementUpdatedAt ? `Updated ${formatMeetingDate(meetingsContent.announcementUpdatedAt)}` : "No update posted yet"}
+              </p>
+            </motion.article>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Page className="max-w-[118rem]">
+      <section className="grid items-center gap-10 lg:grid-cols-[0.82fr_1.18fr] xl:gap-14">
+        <div className="min-w-0">
+          <h1 className="max-w-[42rem] text-5xl font-black leading-[0.94] tracking-tight text-[#070707] sm:text-6xl xl:text-[4.8rem]">
+            Stay in the Loop.
+            <span className="block text-[#CC0000]">Never Miss a Meeting.</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">
-            <span className="block">Don't worry! Secretary records the meetings in case you miss one.</span>
-            <span className="block">Organized newest first, so announcements and lecture updates stay easy to browse.</span>
+          <p className="mt-7 max-w-[36rem] text-xl font-medium leading-9 text-[#4b4540]">
+            All meeting notes, announcements, and important updates in one place, organized by our secretary, so you can focus on debating.
           </p>
         </div>
-        <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
-          <div className="grid gap-3 border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)]">
-            <div>
-              <p className="text-4xl font-black leading-none text-[#CC0000]">{sortedPosts.length}</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Published Posts</p>
-            </div>
-            <div className="border-t border-[#ded8d2] pt-3">
-              <p className="text-xl font-black leading-tight text-[#2D2926]">{latestMeetingLabel}</p>
-              <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-[#6d6560]">Latest Update</p>
-            </div>
-          </div>
-          <div className="flex min-h-44 flex-col border border-[#ded8d2] bg-white p-5 shadow-[0_16px_45px_rgba(45,41,38,0.08)]">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-[#CC0000]">Announcements</p>
-              <h2 className="mt-2 text-2xl font-black leading-tight text-[#2D2926]">{announcementTitle}</h2>
-              <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-[#5b5450]">{announcementBody}</p>
-            </div>
-            <p className="mt-auto pt-4 text-xs font-black uppercase tracking-[0.12em] text-[#6d6560]">
+        <div className="min-w-0 overflow-visible">
+          <img
+            src="/meetings-page-art.png"
+            alt="Meetings checklist illustration"
+            className="mx-auto h-auto max-h-[20rem] w-full max-w-[40rem] object-contain lg:mr-0 xl:max-h-[22rem]"
+          />
+        </div>
+      </section>
+
+      <section className="mt-9 grid gap-4 lg:grid-cols-[1.25fr_0.9fr_0.95fr]">
+        <article className="flex min-h-36 items-center gap-4 rounded-lg border border-[#f1cfcf] bg-[#fff4f4] p-5 shadow-[0_12px_28px_rgba(45,41,38,0.045)]">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#f2c5c5] bg-[#fff7f7] text-[#CC0000]">
+            <ClipboardList size={24} />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#CC0000]">Announcement</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight text-[#202020]">{announcementTitle}</h2>
+            <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-base font-medium leading-6 text-[#403a36]">{announcementBody}</p>
+            <p className="mt-3 text-xs font-black text-[#766f69]">
               {meetingsContent.announcementUpdatedAt ? `Updated ${formatMeetingDate(meetingsContent.announcementUpdatedAt)}` : "No update posted yet"}
             </p>
           </div>
-        </div>
-      </div>
+          <button
+            type="button"
+            onClick={() => setShowAnnouncementModal(true)}
+            className="ml-auto hidden h-11 w-11 shrink-0 place-items-center rounded-full border border-[#f1cfcf] bg-white text-[#CC0000] transition hover:border-[#CC0000] hover:bg-[#fff8f8] sm:grid"
+            aria-label="Open full announcement"
+          >
+            <ArrowRight size={24} />
+          </button>
+        </article>
 
-      <div className="grid gap-4">
-        {sortedPosts.length === 0 && (
-          <Card className="border-dashed p-10 text-center">
-            <Eyebrow>No Posts Yet</Eyebrow>
-            <h2 className="mt-3 text-3xl font-black text-[#2D2926]">Secretary Notes Will Appear Here Automatically.</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#5b5450]">
-              Saved meeting notes with a date and brief title, and this page will turn them into an organized archive.
-            </p>
-          </Card>
-        )}
-        {sortedPosts.map((post, index) => (
-          <article key={post.id} className="group grid gap-0 border border-[#ded8d2] bg-white shadow-[0_16px_45px_rgba(45,41,38,0.08)] transition hover:-translate-y-1 hover:border-[#CC0000] hover:shadow-[0_24px_70px_rgba(45,41,38,0.12)] sm:grid-cols-[7rem_1fr] lg:grid-cols-[8rem_1fr]">
-            <div className="flex items-center justify-between border-b border-[#ded8d2] bg-[#CC0000] p-5 text-white lg:block lg:border-b-0 lg:border-r">
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-white/70">No.</p>
-              <p className="mt-0 text-5xl font-black leading-none lg:mt-3">{meetingNumberById.get(post.id) || String(index + 1).padStart(2, "0")}</p>
+        <article className="flex min-h-36 items-center gap-4 rounded-lg border border-[#d9eadb] bg-[#f4fbf4] p-5 shadow-[0_12px_28px_rgba(45,41,38,0.045)]">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#cde6d0] bg-[#f6fff7] text-[#2f9d51]">
+            <CalendarDays size={23} />
+          </span>
+          <div>
+            <p className="text-3xl font-black leading-none text-[#2f9d51]">2</p>
+            <h2 className="mt-1 text-xl font-black text-[#202020]">Bi-Weekly Meetings</h2>
+            <p className="mt-2 text-base font-medium leading-6 text-[#403a36]">New meetings posted every other week.</p>
+          </div>
+        </article>
+
+        <article className="flex min-h-36 items-center gap-4 rounded-lg border border-[#e4d9ef] bg-[#faf7ff] p-5 shadow-[0_12px_28px_rgba(45,41,38,0.045)]">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#ded0ef] bg-[#fbf8ff] text-[#5b2dab]">
+            <FileText size={23} />
+          </span>
+          <div>
+            <p className="text-3xl font-black leading-none text-[#5b2dab]">{sortedPosts.length}</p>
+            <h2 className="mt-1 text-xl font-black text-[#202020]">Published Posts</h2>
+            <p className="mt-2 text-base font-medium leading-6 text-[#403a36]">Notes and updates available to read.</p>
+          </div>
+        </article>
+      </section>
+
+      <section className="mt-9">
+        <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-5">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#ffe8e8] text-[#CC0000]">
+              <FileText size={27} />
+            </span>
+            <h2 className="text-3xl font-black text-[#202020]">Meeting Notes</h2>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="flex min-w-0 items-center gap-3 rounded-lg border border-[#ded8d2] bg-white px-4 py-3 text-[#5b5450] sm:w-[24rem]">
+              <Search size={22} className="shrink-0 text-[#2D2926]" />
+              <input
+                type="search"
+                value={meetingSearch}
+                onChange={(event) => setMeetingSearch(event.target.value)}
+                placeholder="Search meetings..."
+                className="min-w-0 flex-1 bg-transparent text-base font-medium outline-none placeholder:text-[#8f8781]"
+              />
+            </label>
+            <label className="flex items-center gap-3 rounded-lg border border-[#ded8d2] bg-white px-4 py-3 text-base font-black text-[#202020]">
+              <Filter size={21} />
+              <select
+                value={meetingFilter}
+                onChange={(event) => setMeetingFilter(event.target.value)}
+                className="bg-transparent pr-1 font-black outline-none"
+              >
+                <option value="all">Filter</option>
+                <option value="year">This Year</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {filteredPosts.length === 0 && (
+            <div className="p-10 text-center">
+              <Eyebrow>No Posts Yet</Eyebrow>
+              <h3 className="mt-3 text-3xl font-black text-[#2D2926]">No meeting notes match this view.</h3>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#5b5450]">
+                Try clearing the search or changing the filter.
+              </p>
             </div>
-            <div className="p-6 md:p-8">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">{formatMeetingDate(post.date)}</p>
-                  <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#2D2926] md:text-4xl">{post.title || "Untitled Meeting"}</h2>
+          )}
+          {filteredPosts.map((post, index) => {
+            const plainBody = richTextToPlainText(post.body || "");
+            const preview = plainBody || "No Notes Body Added.";
+            return (
+              <article key={post.id} className="group grid min-h-[8.25rem] overflow-hidden rounded-[2rem] border border-[#d9d0ca] bg-white shadow-[0_12px_30px_rgba(45,41,38,0.06)] transition duration-300 hover:scale-[1.015] hover:border-[#CC0000]/45 hover:shadow-[0_18px_46px_rgba(45,41,38,0.10)] sm:grid-cols-[9.5rem_1fr]">
+                <div className="flex items-center justify-between bg-[#CC0000] px-7 py-5 text-white sm:block">
+                  <p className="text-sm font-black uppercase tracking-[0.18em] text-white/82">No.</p>
+                  <p className="mt-0 text-6xl font-black leading-none sm:mt-3">{meetingNumberById.get(post.id) || String(index + 1).padStart(2, "0")}</p>
                 </div>
-                {canDeletePosts && (
-                  <button
-                    type="button"
-                    onClick={() => onRequestConfirmation({
-                      title: `Delete ${post.title || "this meeting post"}?`,
-                      body: "This meeting post will be removed from the public meeting archive.",
-                      onConfirm: () => removeMeetingPost(post.id),
-                    })}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#ded8d2] bg-[#f3f4f4] text-[#6d6560] opacity-100 transition hover:border-[#CC0000] hover:text-[#CC0000] md:opacity-0 md:group-hover:opacity-100"
-                    aria-label={`Delete ${post.title || "meeting post"}`}
-                  >
-                    <Trash2 size={17} />
-                  </button>
-                )}
-              </div>
-              {post.body ? (
-                <div
-                  className="rich-note mt-5 text-base leading-8 text-[#4d4743]"
-                  dangerouslySetInnerHTML={{ __html: normalizeRichTextForDisplay(post.body) }}
-                />
-              ) : (
-                <p className="mt-5 text-base leading-8 text-[#4d4743]">No Notes Body Added.</p>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </Page>
+                <div className="grid gap-5 bg-[#fffdfb] p-6 md:grid-cols-[1fr_auto] md:items-center md:gap-8">
+                  <div className="min-w-0">
+                    <p className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.14em] text-[#CC0000]">
+                      <CalendarDays size={16} /> {formatMeetingDate(post.date)}
+                    </p>
+                    <h3 className="mt-3 text-3xl font-black leading-tight text-[#202020]">{post.title || "Untitled Meeting"}</h3>
+                    <p className="mt-1 line-clamp-2 max-w-4xl text-lg font-medium leading-7 text-[#403a36]">{preview}</p>
+                  </div>
+                  <div className="flex flex-col items-start gap-3 md:items-end">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedMeetingId((current) => current === post.id ? null : post.id)}
+                      className={`inline-flex items-center justify-center gap-2 rounded-full border px-6 py-3 text-base font-black transition duration-200 ${
+                        expandedMeetingId === post.id
+                          ? "border-[#CC0000] bg-white text-[#CC0000] hover:bg-[#fff3f3]"
+                          : "border-[#CC0000] bg-[#CC0000] text-white shadow-none hover:bg-[#a90000]"
+                      }`}
+                      aria-expanded={expandedMeetingId === post.id}
+                    >
+                      {expandedMeetingId === post.id ? "Hide Notes" : "View Notes"}
+                      <ArrowRight size={18} className={expandedMeetingId === post.id ? "-rotate-90 transition" : "transition"} />
+                    </button>
+                    {canDeletePosts && (
+                      <button
+                        type="button"
+                        onClick={() => onRequestConfirmation({
+                          title: `Delete ${post.title || "this meeting post"}?`,
+                          body: "This meeting post will be removed from the public meeting archive.",
+                          onConfirm: () => removeMeetingPost(post.id),
+                        })}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-[#6d6560] transition hover:text-[#CC0000]"
+                        aria-label={`Delete ${post.title || "meeting post"}`}
+                      >
+                        <Trash2 size={16} /> Delete
+                      </button>
+                    )}
+                  </div>
+                  {expandedMeetingId === post.id && (
+                    <div className="md:col-span-2">
+                      <div
+                        className="rich-note border-t border-[#ded8d2] pt-5 text-base leading-8 text-[#4d4743]"
+                        dangerouslySetInnerHTML={{ __html: normalizeRichTextForDisplay(post.body || "No Notes Body Added.") }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+      </Page>
+    </>
   );
 }
 
@@ -2223,133 +2437,120 @@ const alumniSpotlightDebaters = [
 ];
 
 function HistoryPage({ trophiesContent }) {
-  const historyPulse = [
+  const archiveStats = [
     {
       label: "Timeline Milestones",
       value: trophiesContent.milestones.length,
       detail: "Big BUDS moments saved as public history cards.",
       icon: ScrollText,
-      color: "bg-[#CC0000]",
     },
     {
       label: "Recorded Seasons",
       value: trophiesContent.results.length,
-      detail: "APDA seasons and tournament results preserved in the archive.",
+      detail: "APDA seasons and tournament results preserved.",
       icon: Trophy,
-      color: "bg-[#a91313]",
     },
     {
       label: "Debater Spotlights",
       value: trophiesContent.members.length,
-      detail: "Individual achievements that keep alumni names in the room.",
+      detail: "Alumni achievements that continue to inspire.",
       icon: Medal,
-      color: "bg-[#5f2b2b]",
     },
+    {
+      label: "Historian Note",
+      value: "",
+      detail: "This archive is built to grow: milestones preserve team memory, and alumni spotlights keep the people visible.",
+      icon: Italic,
+    },
+  ];
+  const impactStats = [
+    { icon: Trophy, value: "20+", label: "Years of Debate Excellence" },
+    { icon: Medal, value: "100+", label: "Tournament Wins and Counting" },
+    { icon: UsersRound, value: "1000+", label: "Debaters Who've Called BUDS Home" },
+    { icon: MapPin, value: "Top 5", label: "Consistent National Presence" },
   ];
 
   return (
-    <Page>
-      <PageHeader eyebrow="History" title="A Timeline That Can Grow with the Team.">
-        Add each year once you have records, photos, e-board names, and major results.
-      </PageHeader>
-      <div className="mb-6 grid gap-5 md:grid-cols-3">
-        {trophiesContent.milestones.map((item) => (
-          <Card key={item.id || item.year} className="border-t-8 border-t-[#CC0000]">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#CC0000]">{item.year}</p>
-            <h2 className="mt-4 text-2xl font-black leading-tight text-[#2D2926]">{item.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-[#5b5450]">{item.copy}</p>
-          </Card>
-        ))}
-      </div>
-      <div className="mt-6 grid gap-6 md:grid-cols-[0.78fr_1.22fr]">
-        <motion.section
+    <Page className="max-w-[118rem]">
+      <section className="relative min-h-[34rem] overflow-visible lg:min-h-[38rem]">
+        <div
+          className="pointer-events-none absolute left-[8%] top-[9rem] h-[27rem] w-[84%] bg-[#f3dfcf]/58"
+          style={{ borderRadius: "34% 52% 42% 48% / 42% 34% 56% 48%", transform: "rotate(-7deg)" }}
+        />
+        <span className="pointer-events-none absolute left-[35%] top-[10rem] text-4xl font-black text-[#e9b994]/70">+</span>
+        <span className="pointer-events-none absolute left-[47%] top-[5.5rem] text-2xl font-black text-[#e9b994]/70">+</span>
+        <span className="pointer-events-none absolute right-[30%] top-[6.5rem] text-3xl font-black text-[#e9b994]/70">+</span>
+        <span className="pointer-events-none absolute right-[16%] bottom-[6.5rem] text-3xl font-black text-[#e9b994]/70">+</span>
+        <span className="pointer-events-none absolute left-[7%] bottom-[7rem] h-3 w-3 rounded-full bg-[#e9b994]/70" />
+        <span className="pointer-events-none absolute right-[23%] bottom-[10rem] h-2.5 w-2.5 rounded-full border-2 border-[#e9b994]/70" />
+        <span className="pointer-events-none absolute right-[8%] bottom-[9.5rem] h-4 w-4 rounded-full bg-[#e9b994]/70" />
+        <div className="relative z-10 max-w-[33rem] pt-3">
+          <Eyebrow>History</Eyebrow>
+          <h1 className="mt-6 max-w-[34rem] text-5xl font-black leading-tight tracking-tight text-[#202020] sm:text-6xl xl:text-[4rem]">
+            A Timeline That Can Grow with the Team.
+          </h1>
+          <div className="ml-[9.5rem] mt-1 h-2 w-36 rounded-full bg-[#CC0000]" />
+          <div className="ml-[10.25rem] mt-1 h-1.5 w-28 rounded-full bg-[#CC0000]" />
+          <p className="mt-14 max-w-[22rem] text-lg font-medium leading-8 text-[#403a36]">
+            From our earliest rounds to national recognition, explore the milestones that built BUDS.
+          </p>
+        </div>
+        <div className="relative z-0 mt-6 lg:absolute lg:right-20 lg:top-0 lg:mt-0 xl:right-24">
+          <img
+            src="/history-art.png"
+            alt="BUDS history timeline infographic"
+            className="ml-auto h-auto w-full max-w-[58rem] object-contain mix-blend-multiply lg:max-w-[61rem] xl:max-w-[64rem]"
+          />
+        </div>
+      </section>
+
+      <section className="mt-10 grid gap-8 lg:grid-cols-[0.42fr_0.58fr]">
+        <motion.div
           initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.25 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden border border-[#ded8d2] bg-white p-4 shadow-[0_18px_55px_rgba(45,41,38,0.06)] sm:p-6"
         >
-          <div className="border-b-4 border-[#CC0000] pb-5">
-            <div className="flex items-center gap-3">
-              <ScrollText className="text-[#CC0000]" />
-              <Eyebrow>Archive Pulse</Eyebrow>
-            </div>
-            <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">How BUDS history gets remembered</h2>
-            <p className="mt-2 text-sm font-semibold leading-6 text-[#5b5450]">
-              A living snapshot of the records powering this page, from team milestones to the debaters who shaped the program.
+          <Card className="h-full rounded-[1.5rem] p-8 shadow-[0_18px_50px_rgba(45,41,38,0.06)]">
+            <Eyebrow>The Archive</Eyebrow>
+            <h2 className="mt-4 text-4xl font-black leading-tight text-[#202020]">Preserving Our Debate Legacy.</h2>
+            <p className="mt-5 max-w-md text-lg font-medium leading-8 text-[#403a36]">
+              Every season, every speech, every win, saved for the next generation.
             </p>
-          </div>
-          <div className="mt-5 grid gap-3">
-            {historyPulse.map((item, index) => {
+            <div className="mt-10 grid gap-5 sm:grid-cols-2">
+              {archiveStats.map((item) => {
               const Icon = item.icon;
               return (
-                <motion.article
-                  key={item.label}
-                  initial={{ opacity: 0, x: -18 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.35, delay: index * 0.08 }}
-                  className="group overflow-hidden border border-[#ded8d2] bg-[#f3f4f4]"
-                >
-                  <div className={`${item.color} h-1.5 transition-all duration-300 group-hover:h-2.5`} />
-                  <div className="grid gap-3 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Icon size={18} className="text-[#CC0000]" />
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[#6d6560]">{item.label}</p>
-                      </div>
-                      <motion.p
-                        initial={{ scale: 0.92 }}
-                        whileInView={{ scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.35, delay: index * 0.08 + 0.1 }}
-                        className="text-4xl font-black leading-none text-[#2D2926]"
-                      >
-                        {item.value}
-                      </motion.p>
-                    </div>
-                    <p className="text-sm font-semibold leading-6 text-[#5b5450]">{item.detail}</p>
-                  </div>
-                </motion.article>
+                <article key={item.label} className="min-h-[13rem] rounded-lg border border-[#eaded5] bg-[#fffdfb] p-5">
+                  <Icon size={29} className="text-[#CC0000]" />
+                  <p className="mt-4 text-[0.72rem] font-black uppercase tracking-[0.16em] text-[#202020]">{item.label}</p>
+                  {item.value ? <p className="mt-4 text-5xl font-black leading-none text-[#202020]">{item.value}</p> : null}
+                  <p className="mt-3 text-sm font-medium leading-6 text-[#403a36]">{item.detail}</p>
+                </article>
               );
             })}
-          </div>
-          <div className="mt-4 border border-dashed border-[#ded8d2] bg-[#f3f4f4] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#CC0000]">Historian Note</p>
-            <p className="mt-2 text-sm font-semibold leading-6 text-[#5b5450]">
-              The archive is built to grow: milestones preserve team memory, APDA records document competitive seasons, and alumni spotlights keep the people visible.
-            </p>
-          </div>
-        </motion.section>
-        <motion.section
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.div
           initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden border border-[#ded8d2] bg-[#f3f4f4] p-4 shadow-[0_18px_55px_rgba(45,41,38,0.08)] sm:p-6"
         >
-          <div className="flex flex-col gap-4 border-b-4 border-[#CC0000] pb-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <Sparkles className="text-[#CC0000]" />
-                <Eyebrow>Alumni Spotlight</Eyebrow>
-              </div>
-              <h2 className="mt-2 text-3xl font-black leading-tight text-[#2D2926]">The APDA Results Hall of Heat</h2>
-              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#5b5450]">
+          <Card className="h-full rounded-[1.5rem] p-8 shadow-[0_18px_50px_rgba(45,41,38,0.06)]">
+            <Eyebrow>Alumni Spotlight</Eyebrow>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h2 className="mt-4 text-4xl font-black leading-tight text-[#202020]">The APDA Results Hall of Heat</h2>
+                <p className="mt-5 max-w-3xl text-base font-medium leading-7 text-[#403a36]">
                 Top five BUDS debaters by cumulative Boston University COTY points listed in official APDA Results records, with major APDA History awards called out where listed.
-              </p>
+                </p>
+              </div>
             </div>
-            <a
-              href="https://results.apda.online/core/schools/6"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex w-fit items-center gap-1 text-[0.48rem] font-semibold uppercase tracking-0 text-[#6d6560] underline decoration-[#8f8781]/35 underline-offset-2 transition hover:text-[#2D2926]"
-            >
-              APDA Source <ExternalLink size={7} />
-            </a>
-          </div>
-          <div className="mt-5 grid gap-3">
-            {alumniSpotlightDebaters.map((debater, index) => (
+            <div className="mt-6 grid gap-4">
+              {alumniSpotlightDebaters.slice(0, 3).map((debater, index) => (
               <motion.article
                 key={debater.name}
                 initial={{ opacity: 0, x: 28 }}
@@ -2357,7 +2558,7 @@ function HistoryPage({ trophiesContent }) {
                 viewport={{ once: true, amount: 0.35 }}
                 transition={{ duration: 0.42, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ y: -3 }}
-                className="group grid gap-0 overflow-hidden border border-[#ded8d2] bg-white shadow-[0_10px_28px_rgba(45,41,38,0.05)] transition hover:border-[#CC0000] hover:shadow-[0_18px_45px_rgba(45,41,38,0.1)] lg:grid-cols-[6.5rem_1fr]"
+                className="group grid gap-0 overflow-hidden rounded-lg border border-[#ded8d2] bg-white shadow-[0_10px_28px_rgba(45,41,38,0.05)] transition hover:border-[#CC0000] hover:shadow-[0_18px_45px_rgba(45,41,38,0.1)] lg:grid-cols-[6.5rem_1fr]"
               >
                 <div className={`${debater.accent} grid place-items-center p-4 text-white`}>
                   <div className="text-center">
@@ -2391,9 +2592,37 @@ function HistoryPage({ trophiesContent }) {
                 </div>
               </motion.article>
             ))}
-          </div>
-        </motion.section>
-      </div>
+            </div>
+            <a
+              href="https://results.apda.online/core/schools/6"
+              target="_blank"
+              rel="noreferrer"
+              className="mx-auto mt-7 inline-flex items-center justify-center gap-2 rounded-md border border-[#CC0000] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#CC0000] transition hover:bg-[#CC0000] hover:text-white"
+            >
+              View full hall of heat <ArrowRight size={16} />
+            </a>
+          </Card>
+        </motion.div>
+      </section>
+
+      <section className="mt-8 rounded-[1.5rem] border border-[#eaded5] bg-white p-8 shadow-[0_18px_50px_rgba(45,41,38,0.06)]">
+        <Eyebrow>By The Numbers</Eyebrow>
+        <h2 className="mt-4 text-4xl font-black leading-tight text-[#202020]">Our History. Our Impact.</h2>
+        <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {impactStats.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="flex items-center gap-4">
+                <Icon size={42} className="shrink-0 text-[#CC0000]" />
+                <div>
+                  <p className="text-3xl font-black leading-none text-[#202020]">{item.value}</p>
+                  <p className="mt-1 text-base font-medium leading-6 text-[#403a36]">{item.label}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </Page>
   );
 }
@@ -4577,10 +4806,11 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   };
 
   const updateCarouselSlide = (id, field, value) => {
+    const nextValue = field === "caption" ? value.slice(0, HOME_CAROUSEL_CAPTION_MAX_LENGTH) : value;
     persistHomeContent((content) => ({
       ...content,
       carouselSlides: content.carouselSlides.map((slide) => (
-        slide.id === id ? { ...slide, [field]: value } : slide
+        slide.id === id ? { ...slide, [field]: nextValue } : slide
       )),
     }));
   };
@@ -4619,7 +4849,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
       src: newCarouselSlide.src.trim(),
       alt: newCarouselSlide.alt.trim() || "BUDS team photo",
       kicker: newCarouselSlide.kicker.trim() || fallbackCard.title,
-      caption: newCarouselSlide.caption.trim() || fallbackCard.body,
+      caption: (newCarouselSlide.caption.trim() || fallbackCard.body).slice(0, HOME_CAROUSEL_CAPTION_MAX_LENGTH),
     };
     persistHomeContent((content) => ({ ...content, carouselSlides: [...content.carouselSlides, nextSlide] }));
     setNewCarouselSlide({ src: "", alt: "", kicker: "", caption: "" });
@@ -7821,10 +8051,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                             Card Description
                             <input
                               value={newCarouselSlide.caption}
-                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, caption: event.target.value }))}
+                              maxLength={HOME_CAROUSEL_CAPTION_MAX_LENGTH}
+                              onChange={(event) => setNewCarouselSlide((current) => ({ ...current, caption: event.target.value.slice(0, HOME_CAROUSEL_CAPTION_MAX_LENGTH) }))}
                               placeholder="Short public description"
                               className="border border-[#ded8d2] px-4 py-3 text-base font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                             />
+                            <span className="text-[0.65rem] font-black normal-case tracking-normal text-[#8f8781]">
+                              {newCarouselSlide.caption.length}/{HOME_CAROUSEL_CAPTION_MAX_LENGTH} characters
+                            </span>
                           </label>
                         </div>
                         {newCarouselSlide.src && (
@@ -7900,10 +8134,14 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                               Card Description
                               <textarea
                                 value={slide.caption}
+                                maxLength={HOME_CAROUSEL_CAPTION_MAX_LENGTH}
                                 onChange={(event) => updateCarouselSlide(slide.id, "caption", event.target.value)}
                                 rows={3}
                                 className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                               />
+                              <span className="text-[0.65rem] font-black normal-case tracking-normal text-[#8f8781]">
+                                {slide.caption.length}/{HOME_CAROUSEL_CAPTION_MAX_LENGTH} characters
+                              </span>
                             </label>
                           </fieldset>
                           <button

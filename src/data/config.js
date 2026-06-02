@@ -18,6 +18,7 @@ export const MEMBERSHIP_REQUEST_STATUSES = ["Pending", "Accepted", "Denied"];
 export const MEMBER_ACCOUNT_ROLES = ["member", "eboard", "admin"];
 export const RESERVED_ACCOUNT_EMAILS = ["yeon1@bu.edu"];
 export const TITLE_EDITING_TOGGLE_EMAIL = "yeon1@bu.edu";
+export const HOME_CAROUSEL_CAPTION_MAX_LENGTH = 85;
 
 export const ADMIN_ROLE = "admin";
 export const MEMBER_MANAGER_EMAILS = ["joshml@bu.edu", "njsaxena@bu.edu"];

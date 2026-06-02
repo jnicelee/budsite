@@ -4,6 +4,7 @@ import {
   EBOARD_AGENDA_STORAGE_KEY,
   EBOARD_BUDGET_STORAGE_KEY,
   EBOARD_CONTENT_STORAGE_KEY,
+  HOME_CAROUSEL_CAPTION_MAX_LENGTH,
   HOME_CONTENT_STORAGE_KEY,
   EBOARD_NOTES_STORAGE_KEY,
   LOGIN_STORAGE_KEY,
@@ -294,7 +295,7 @@ function normalizeHomeSlideText(value, index, field) {
   if (!text || LEGACY_HOME_SLIDE_TEXT.has(text)) {
     return HOME_SLIDE_TEXT_FALLBACKS[index % HOME_SLIDE_TEXT_FALLBACKS.length][field];
   }
-  return text;
+  return field === "caption" ? text.slice(0, HOME_CAROUSEL_CAPTION_MAX_LENGTH) : text;
 }
 
 export function normalizeAboutContent(content = defaultAboutContent) {
