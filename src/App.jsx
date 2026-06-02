@@ -1959,7 +1959,7 @@ function NoviceHubPage({ noviceContent }) {
     <Page className="max-w-[118rem] bg-[#f7f4f1] pb-0">
       <section className="grid gap-9 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
         <div className="max-w-2xl">
-          <span className="inline-flex rounded-full bg-[#f9dddd] px-5 py-2 text-[0.75rem] font-black uppercase tracking-[0.18em] text-[#CC0000]">
+          <span className="inline-flex text-[0.75rem] font-black uppercase tracking-[0.18em] text-[#CC0000]">
             Novice Hub
           </span>
           <h1 className="mt-7 max-w-[48rem] text-5xl font-black leading-[0.94] tracking-tight text-[#070707] sm:text-6xl lg:text-[5.2rem] xl:text-[5.8rem]">
@@ -2484,15 +2484,15 @@ function HistoryPage({ trophiesContent }) {
         <span className="pointer-events-none absolute left-[7%] bottom-[7rem] h-3 w-3 rounded-full bg-[#e9b994]/70" />
         <span className="pointer-events-none absolute right-[23%] bottom-[10rem] h-2.5 w-2.5 rounded-full border-2 border-[#e9b994]/70" />
         <span className="pointer-events-none absolute right-[8%] bottom-[9.5rem] h-4 w-4 rounded-full bg-[#e9b994]/70" />
-        <div className="relative z-10 max-w-[33rem] pt-3">
+        <div className="relative z-10 max-w-[40rem] pt-3">
           <Eyebrow>History</Eyebrow>
-          <h1 className="mt-6 max-w-[34rem] text-5xl font-black leading-tight tracking-tight text-[#202020] sm:text-6xl xl:text-[4rem]">
+          <h1 className="mt-6 max-w-[40rem] text-6xl font-black leading-[0.98] tracking-tight text-[#202020] sm:text-7xl xl:text-[5.2rem]">
             A Timeline That Can Grow with the Team.
           </h1>
           <div className="ml-[9.5rem] mt-1 h-2 w-36 rounded-full bg-[#CC0000]" />
           <div className="ml-[10.25rem] mt-1 h-1.5 w-28 rounded-full bg-[#CC0000]" />
-          <p className="mt-14 max-w-[22rem] text-lg font-medium leading-8 text-[#403a36]">
-            From our earliest rounds to national recognition, explore the milestones that built BUDS.
+          <p className="mt-10 max-w-[24rem] text-xl font-medium leading-8 text-[#403a36]">
+            Explore the records, milestones, and alumni moments that built BUDS.
           </p>
         </div>
         <div className="relative z-0 mt-6 lg:absolute lg:right-20 lg:top-0 lg:mt-0 xl:right-24">
