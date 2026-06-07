@@ -91,6 +91,14 @@ export const defaultAboutContent = {
   ],
   quote: "BUDS is where I found my people and learned to turn ideas into impact.",
   quoteAttribution: "BUDS Member",
+  upsideBlocks: [
+    { id: "upside-training", icon: "users", title: "Beginner-friendly training", copy: "You do not need previous debate experience to join. We teach case construction, rebuttal, speaking style, and more." },
+    { id: "upside-travel", icon: "trophy", title: "Competitive travel", copy: "BUDS competes on the APDA circuit, giving members the chance to debate students from colleges across the country." },
+    { id: "upside-skills", icon: "medal", title: "Skills That Transfer", copy: "Debate sharpens public speaking, research instincts, persuasion, fast thinking, teamwork, and confidence under pressure." },
+    { id: "upside-social", icon: "map-pin", title: "A Social Home at BU", copy: "Weekly practices, mentorship, tournament weekends, team events, and older members who help new debaters find their footing." },
+    { id: "upside-resume", icon: "sparkles", title: "Build Your Resume", copy: "Leadership opportunities, speaking awards, and real accomplishments that stand out in internships, grad school, and beyond." },
+    { id: "upside-community", icon: "handshake", title: "Supportive Community", copy: "We celebrate wins, learn from losses, and lift each other up every step of the way." },
+  ],
 };
 
 export const noviceResources = [

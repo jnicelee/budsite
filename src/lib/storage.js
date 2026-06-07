@@ -302,6 +302,8 @@ export function normalizeAboutContent(content = defaultAboutContent) {
   const source = { ...defaultAboutContent, ...content };
   const defaultPhotosById = new Map(defaultAboutContent.photos.map((photo) => [photo.id, photo]));
   const sourcePhotos = Array.isArray(source.photos) && source.photos.length > 0 ? source.photos : defaultAboutContent.photos;
+  const defaultUpsideBlocksById = new Map(defaultAboutContent.upsideBlocks.map((block) => [block.id, block]));
+  const sourceUpsideBlocks = Array.isArray(source.upsideBlocks) && source.upsideBlocks.length > 0 ? source.upsideBlocks : defaultAboutContent.upsideBlocks;
   return {
     photos: normalizeTrophyItems(sourcePhotos, (item, index) => {
       const fallback = defaultPhotosById.get(item.id) || defaultAboutContent.photos[index] || defaultAboutContent.photos[0];
@@ -314,6 +316,15 @@ export function normalizeAboutContent(content = defaultAboutContent) {
     }),
     quote: source.quote || defaultAboutContent.quote,
     quoteAttribution: source.quoteAttribution || defaultAboutContent.quoteAttribution,
+    upsideBlocks: normalizeTrophyItems(sourceUpsideBlocks, (item, index) => {
+      const fallback = defaultUpsideBlocksById.get(item.id) || defaultAboutContent.upsideBlocks[index] || defaultAboutContent.upsideBlocks[0];
+      return {
+        id: item.id || fallback.id || `upside-${index + 1}`,
+        icon: item.icon || fallback.icon || "sparkles",
+        title: item.title || fallback.title || "",
+        copy: item.copy || fallback.copy || "",
+      };
+    }),
   };
 }
 

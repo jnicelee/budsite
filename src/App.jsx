@@ -1387,6 +1387,14 @@ function normalizeSeasonId(value) {
 
 function AboutPage({ aboutContent }) {
   const normalizedAboutContent = normalizeAboutContent(aboutContent);
+  const upsideIconMap = {
+    users: Users,
+    trophy: Trophy,
+    medal: Medal,
+    "map-pin": MapPin,
+    sparkles: Sparkles,
+    handshake: Handshake,
+  };
   const aboutHighlights = [
     { icon: CalendarDays, value: "1999", label: "Founded", detail: "Modern BUDS Era" },
     { icon: Trophy, value: "APDA", label: "National", detail: "Debate Circuit" },
@@ -1399,14 +1407,7 @@ function AboutPage({ aboutContent }) {
     { icon: FileText, label: "Write", detail: "cases" },
     { icon: Heart, label: "Help each", detail: "other improve" },
   ];
-  const joinBenefits = [
-    { icon: Users, title: "Beginner-friendly training", copy: "You do not need previous debate experience to join. We teach case construction, rebuttal, speaking style, and more." },
-    { icon: Trophy, title: "Competitive travel", copy: "BUDS competes on the APDA circuit, giving members the chance to debate students from colleges across the country." },
-    { icon: Medal, title: "Skills That Transfer", copy: "Debate sharpens public speaking, research instincts, persuasion, fast thinking, teamwork, and confidence under pressure." },
-    { icon: MapPin, title: "A Social Home at BU", copy: "Weekly practices, mentorship, tournament weekends, team events, and older members who help new debaters find their footing." },
-    { icon: Sparkles, title: "Build Your Resume", copy: "Leadership opportunities, speaking awards, and real accomplishments that stand out in internships, grad school, and beyond." },
-    { icon: Handshake, title: "Supportive Community", copy: "We celebrate wins, learn from losses, and lift each other up every step of the way." },
-  ];
+  const joinBenefits = normalizedAboutContent.upsideBlocks.map((benefit) => ({ ...benefit, icon: upsideIconMap[benefit.icon] || Sparkles }));
   const aboutTimeline = [
     { year: "Before 1999", title: "A Longer BU Debating Tradition", copy: "Boston University students competed in earlier forms of collegiate debate before the current parliamentary team took shape." },
     { year: "1999", title: "The Modern Society Forms", copy: "The current Boston University Debate Society began its modern chapter in 1999, building a home for APDA-style parliamentary debate on campus." },
@@ -1777,27 +1778,42 @@ function NoviceHubPage({ noviceContent }) {
     || filteredGlossaryTerms[0]
     || apdaGlossaryTerms.find((item) => item.term === selectedGlossaryTerm)
     || apdaGlossaryTerms[0];
+  const renderNoviceFaq = (faq, index) => (
+    <SmoothDetails
+      key={faq.id}
+      title={faq.question}
+      defaultOpen={index === 0}
+      className={`rounded-lg border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.05)] ${
+        index === 0 ? "bg-[#fffafa]" : ""
+      }`}
+      scrollTargetRef={noviceFaqSectionRef}
+    >
+      <p className="text-[0.95rem] font-medium leading-7 text-[#4c4641]">{faq.answer}</p>
+    </SmoothDetails>
+  );
+  const noviceFaqColumns = [
+    noviceContent.faqs.filter((_, index) => index % 2 === 0),
+    noviceContent.faqs.filter((_, index) => index % 2 === 1),
+  ];
   const noviceFaqSection = (
-    <section ref={noviceFaqSectionRef} className="mt-5">
-      <div className="mb-3 flex items-center gap-4">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[#f2c9c9] bg-white text-[#CC0000]">
-          <CircleHelp size={25} />
+    <section ref={noviceFaqSectionRef} className="mt-8 border border-[#d8cbc2] bg-[#f3f4f4] p-5 shadow-[0_18px_42px_rgba(45,41,38,0.07)] sm:p-6">
+      <div className="mb-5 flex items-center gap-4 border-b border-[#d8cbc2] pb-4">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-[#f2c9c9] bg-white text-[#CC0000]">
+          <CircleHelp size={27} />
         </span>
-        <h2 className="text-2xl font-black text-[#202020]">Common First-Round Questions</h2>
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#CC0000]">FAQ</p>
+          <h2 className="mt-1 text-2xl font-black text-[#202020]">Common First-Round Questions</h2>
+        </div>
       </div>
-      <div className="grid items-start gap-3 md:grid-cols-2">
-        {noviceContent.faqs.map((faq, index) => (
-          <SmoothDetails
-            key={faq.id}
-            title={faq.question}
-            defaultOpen={index === 0}
-            className={`self-start rounded-lg border border-[#ded8d2] bg-white p-4 shadow-[0_10px_28px_rgba(45,41,38,0.05)] ${
-              index === 0 ? "bg-[#fffafa]" : ""
-            }`}
-            scrollTargetRef={noviceFaqSectionRef}
-          >
-            <p className="text-[0.95rem] font-medium leading-7 text-[#4c4641]">{faq.answer}</p>
-          </SmoothDetails>
+      <div className="grid gap-3 md:hidden">
+        {noviceContent.faqs.map(renderNoviceFaq)}
+      </div>
+      <div className="hidden items-start gap-3 md:grid md:grid-cols-2">
+        {noviceFaqColumns.map((columnFaqs, columnIndex) => (
+          <div key={`novice-faq-column-${columnIndex}`} className="grid content-start gap-3">
+            {columnFaqs.map((faq) => renderNoviceFaq(faq, noviceContent.faqs.indexOf(faq)))}
+          </div>
         ))}
       </div>
     </section>
@@ -1813,7 +1829,7 @@ function NoviceHubPage({ noviceContent }) {
           <p className="mt-1 text-sm font-bold text-[#2D2926]">Common APDA Terms</p>
         </div>
       </div>
-      <div className="h-[34rem] min-h-0 overflow-hidden rounded-lg border border-[#ded8d2] bg-[#f7f4f1] lg:grid lg:grid-cols-[17rem_1fr]">
+      <div className="h-[40rem] min-h-0 overflow-hidden rounded-lg border border-[#ded8d2] bg-[#f7f4f1] lg:grid lg:grid-cols-[15rem_1fr]">
         <div className="flex h-full min-h-0 flex-col border-b border-[#ded8d2] bg-white p-3 lg:border-b-0 lg:border-r">
           <label className="grid gap-1">
             <span className="text-[0.65rem] font-black uppercase tracking-[0.12em] text-[#8f8781]">Search terms</span>
@@ -1891,68 +1907,94 @@ function NoviceHubPage({ noviceContent }) {
     </section>
   );
   const apdaBasicsSection = (
-    <section className="overflow-hidden rounded-lg border border-[#ded8d2] bg-white p-5 shadow-[0_14px_34px_rgba(45,41,38,0.05)]">
-      <div className="mb-4 flex items-start gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[#eaf1ff] text-[#286bd1]">
-          <Mic2 size={25} />
-        </span>
-        <div>
-          <h2 className="text-2xl font-black leading-tight text-[#202020]">The APDA Speeches</h2>
-          <p className="mt-1 max-w-xl text-sm font-medium leading-6 text-[#5b5450]">
-          A quick map of who speaks when in a standard APDA cases round.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-2 rounded-sm bg-[#eef5ff] px-2.5 py-1 text-[0.7rem] font-black text-[#135fbe]">
-              <span className="h-2.5 w-2.5 bg-[#1d67c4]" /> Government
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-sm bg-[#fff1f1] px-2.5 py-1 text-[0.7rem] font-black text-[#b31313]">
-              <span className="h-2.5 w-2.5 bg-[#CC0000]" /> Opposition
-            </span>
+    <section className="overflow-hidden rounded-lg border border-[#ded8d2] bg-white p-5 shadow-[0_14px_34px_rgba(45,41,38,0.05)] sm:p-6">
+      <div className="mb-5 flex flex-col gap-4 border-b border-[#ded8d2] pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#eaf1ff] text-[#286bd1]">
+            <Mic2 size={28} />
+          </span>
+          <div>
+            <h2 className="text-3xl font-black leading-tight text-[#202020]">The APDA Speeches</h2>
+            <p className="mt-2 max-w-2xl text-base font-medium leading-7 text-[#5b5450]">
+              A quick map of who speaks when in a standard APDA cases round.
+            </p>
           </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <span className="inline-flex items-center gap-2 rounded-sm bg-[#eef5ff] px-3 py-1.5 text-xs font-black text-[#135fbe]">
+            <span className="h-2.5 w-2.5 bg-[#1d67c4]" /> Government
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-sm bg-[#fff1f1] px-3 py-1.5 text-xs font-black text-[#b31313]">
+            <span className="h-2.5 w-2.5 bg-[#CC0000]" /> Opposition
+          </span>
         </div>
       </div>
 
-      <div className="relative grid gap-2 before:absolute before:left-4 before:top-0 before:h-full before:w-1 before:bg-[#ded8d2]">
-        {apdaSpeechSteps.map((step) => {
+      <div className="grid gap-3">
+        {apdaSpeechSteps.map((step, index) => {
           const Icon = speechIconMap[step.icon] || Mic2;
           const isGov = step.side === "gov";
+          const sideLabel = isGov ? "Government" : "Opposition";
+          const sideClasses = isGov
+            ? {
+              card: "border-[#a9c7f5] bg-[#f4f8ff]",
+              marker: "bg-[#1d67c4] text-white",
+              icon: "bg-[#dceaff] text-[#1d67c4]",
+              chip: "bg-[#dceaff] text-[#0b4fa8]",
+              stripe: "bg-[#1d67c4]",
+            }
+            : {
+              card: "border-[#f0b7b7] bg-[#fff6f6]",
+              marker: "bg-[#CC0000] text-white",
+              icon: "bg-[#ffe0e0] text-[#CC0000]",
+              chip: "bg-[#ffe0e0] text-[#9b0d0d]",
+              stripe: "bg-[#CC0000]",
+            };
           return (
-            <div key={step.order} className="relative grid grid-cols-[2.25rem_1fr] gap-3">
-              <div className="relative z-10 grid h-8 w-8 place-items-center self-start border-4 border-white text-xs font-black text-white shadow-[0_8px_18px_rgba(45,41,38,0.12)]">
-                <span className={`grid h-full w-full place-items-center ${isGov ? "bg-[#1d67c4]" : "bg-[#CC0000]"}`}>
-                  {step.order}
-                </span>
-              </div>
-              <article className={`grid gap-2 rounded-md border bg-white p-3 shadow-[0_8px_20px_rgba(45,41,38,0.04)] ${
-                isGov
-                  ? "border-[#a9c7f5] bg-[#f4f8ff]"
-                  : "border-[#f0b7b7] bg-[#fff6f6]"
-              }`}>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Icon size={16} className={isGov ? "text-[#1d67c4]" : "text-[#CC0000]"} />
-                    <h3 className="text-sm font-black leading-tight text-[#202020]">{step.title}</h3>
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    <p className={`inline-flex px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-[0.08em] ${
-                      isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
-                    }`}>
-                      {isGov ? "Government" : "Opposition"}
-                    </p>
-                    <p className={`inline-flex px-2 py-0.5 text-[0.58rem] font-black ${
-                      isGov ? "bg-[#dceaff] text-[#0b4fa8]" : "bg-[#ffe0e0] text-[#9b0d0d]"
-                    }`}>
-                      {step.time}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-xs font-medium leading-5 text-[#403a36]">{step.copy}</p>
+            <article key={step.order} className={`relative overflow-hidden rounded-lg border p-4 shadow-[0_10px_24px_rgba(45,41,38,0.05)] ${sideClasses.card}`}>
+              <div className={`absolute bottom-0 left-0 top-0 w-1.5 ${sideClasses.stripe}`} />
+              <div className="grid gap-4 pl-2 sm:grid-cols-[4.25rem_1fr] sm:items-start">
+                <div className="flex items-center gap-3 sm:grid sm:justify-items-center sm:gap-2">
+                  <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-lg font-black shadow-[0_8px_18px_rgba(45,41,38,0.14)] ${sideClasses.marker}`}>
+                    {step.order}
+                  </span>
+                  {index < apdaSpeechSteps.length - 1 && (
+                    <span className="hidden h-8 w-px bg-[#cfc7c0] sm:block" />
+                  )}
                 </div>
-              </article>
-            </div>
+                <div className="min-w-0">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-3">
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${sideClasses.icon}`}>
+                          <Icon size={20} />
+                        </span>
+                        <h3 className="text-xl font-black leading-tight text-[#202020]">{step.title}</h3>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <p className={`inline-flex px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] ${sideClasses.chip}`}>
+                          {sideLabel}
+                        </p>
+                        <p className={`inline-flex px-3 py-1.5 text-xs font-black ${sideClasses.chip}`}>
+                          {step.time}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="max-w-2xl text-base font-medium leading-7 text-[#403a36] lg:pt-1">
+                      {step.copy}
+                    </p>
+                  </div>
+                  {step.note && (
+                    <p className="mt-3 border-t border-[#ded8d2] pt-3 text-sm font-bold leading-6 text-[#6d6560]">
+                      {step.note}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </article>
           );
         })}
       </div>
-
     </section>
   );
 
@@ -2026,7 +2068,7 @@ function NoviceHubPage({ noviceContent }) {
       </section>
 
       {noviceFaqSection}
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr] xl:items-start">
+      <div className="mt-5 grid gap-5 xl:grid-cols-[0.9fr_1.1fr] xl:items-start">
         {apdaGlossarySection}
         {apdaBasicsSection}
       </div>
@@ -2238,8 +2280,8 @@ function MeetingsPage({ auth, meetingsContent, onRequestConfirmation }) {
           </span>
           <div>
             <p className="text-3xl font-black leading-none text-[#2f9d51]">2</p>
-            <h2 className="mt-1 text-xl font-black text-[#202020]">Bi-Weekly Meetings</h2>
-            <p className="mt-2 text-base font-medium leading-6 text-[#403a36]">New meetings posted every other week.</p>
+            <h2 className="mt-1 text-xl font-black text-[#202020]">Twice-Weekly Meetings</h2>
+            <p className="mt-2 text-base font-medium leading-6 text-[#403a36]">New meetings posted twice a week.</p>
           </div>
         </article>
 
@@ -3057,6 +3099,8 @@ function JoinPage() {
   const [message, setMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitMessageType, setSubmitMessageType] = useState("success");
+  const existingAccountMessage = "That email already has an account. Please log in through the Hub.";
+  const existingRequestMessage = "That email already has a membership request. Please wait for an admin or e-board member to review it.";
 
   useEffect(() => {
     let ignore = false;
@@ -3101,7 +3145,7 @@ function JoinPage() {
     const existingLocalAccount = getStoredMemberAccounts().find((account) => account.email.toLowerCase() === normalizedEmail);
     if (existingLocalAccount) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has an account. Please log in through the Hub.");
+      setSubmitMessage(existingAccountMessage);
       return;
     }
 
@@ -3112,14 +3156,14 @@ function JoinPage() {
 
     if (existingAccount) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has an account. Please log in through the Hub.");
+      setSubmitMessage(existingAccountMessage);
       return;
     }
 
     const existingLocalRequest = requests.find((request) => request.email.toLowerCase() === normalizedEmail);
     if (existingLocalRequest || existingDatabaseRequest) {
       setSubmitMessageType("error");
-      setSubmitMessage("That email already has a membership request. Please wait for an admin or e-board member to review it.");
+      setSubmitMessage(existingRequestMessage);
       return;
     }
 
@@ -3149,7 +3193,8 @@ function JoinPage() {
 
       if (signUpError) {
         setSubmitMessageType("error");
-        setSubmitMessage(signUpError.message || "Supabase could not create this login. Please try again.");
+        const duplicateAccountPattern = /already|registered|exists/i;
+        setSubmitMessage(duplicateAccountPattern.test(signUpError.message || "") ? existingAccountMessage : signUpError.message || "Supabase could not create this login. Please try again.");
         return;
       }
     }
@@ -3580,6 +3625,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const [noviceGlossaryManagerSearch, setNoviceGlossaryManagerSearch] = useState("");
   const [eboardEditorOpen, setEboardEditorOpen] = useState(false);
   const [carouselEditorOpen, setCarouselEditorOpen] = useState(false);
+  const [aboutPhotosEditorOpen, setAboutPhotosEditorOpen] = useState(false);
+  const [aboutUpsideEditorOpen, setAboutUpsideEditorOpen] = useState(false);
+  const [aboutQuoteEditorOpen, setAboutQuoteEditorOpen] = useState(false);
   const [historyEditorOpen, setHistoryEditorOpen] = useState(false);
   const [trophyEditorOpen, setTrophyEditorOpen] = useState(false);
   const [trophyEditorSection, setTrophyEditorSection] = useState("stats");
@@ -3589,6 +3637,9 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const noviceInfographicEditorCardRef = useAutoScrollOnOpen(noviceInfographicEditorOpen);
   const noviceFaqEditorCardRef = useAutoScrollOnOpen(noviceFaqEditorOpen);
   const eboardEditorCardRef = useAutoScrollOnOpen(eboardEditorOpen);
+  const aboutPhotosEditorCardRef = useAutoScrollOnOpen(aboutPhotosEditorOpen);
+  const aboutUpsideEditorCardRef = useAutoScrollOnOpen(aboutUpsideEditorOpen);
+  const aboutQuoteEditorCardRef = useAutoScrollOnOpen(aboutQuoteEditorOpen);
   const historyEditorCardRef = useAutoScrollOnOpen(historyEditorOpen);
   const trophyEditorCardRef = useAutoScrollOnOpen(trophyEditorOpen);
   const carouselEditorCardRef = useAutoScrollOnOpen(carouselEditorOpen);
@@ -3607,6 +3658,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   const authEmail = auth?.email?.toLowerCase();
   const canManageMembers = isAdmin || MEMBER_MANAGER_EMAILS.includes(authEmail);
   const isEboard = auth?.role === "eboard" || isAdmin;
+  const canViewMembers = isEboard || canManageMembers;
   const canEditWorkspace = isEboard;
   const canEditTrophies = isEboard;
   const canWriteNotes = isEboard;
@@ -4106,7 +4158,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
   }, [isAdmin, onAboutContentChange, onEboardContentChange, onHomeContentChange, onMeetingsContentChange, onNoviceContentChange]);
 
   const hydrateMemberAccounts = useCallback(async () => {
-    if (!canManageMembers) return;
+    if (!canViewMembers) return;
     setMemberAccountsStatus("loading");
     const databaseAccounts = await loadMemberAccounts();
     if (!databaseAccounts) {
@@ -4116,13 +4168,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     setMemberAccounts(databaseAccounts);
     saveStoredMemberAccounts(databaseAccounts);
     setMemberAccountsStatus("loaded");
-  }, [canManageMembers]);
+  }, [canViewMembers]);
 
   useEffect(() => {
     let ignore = false;
 
     async function hydrateOnMount() {
-      if (!canManageMembers) return;
+      if (!canViewMembers) return;
       const databaseAccounts = await loadMemberAccounts();
       if (!databaseAccounts || ignore) {
         if (!ignore) setMemberAccountsStatus("error");
@@ -4138,13 +4190,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     return () => {
       ignore = true;
     };
-  }, [canManageMembers]);
+  }, [canViewMembers]);
 
   useEffect(() => {
     let ignore = false;
 
     async function hydrateOnMembersTab() {
-      if (!canManageMembers || visibleTab !== "members") return;
+      if (!canViewMembers || visibleTab !== "members") return;
       const databaseAccounts = await loadMemberAccounts();
       if (!databaseAccounts || ignore) {
         if (!ignore) setMemberAccountsStatus("error");
@@ -4160,7 +4212,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     return () => {
       ignore = true;
     };
-  }, [canManageMembers, visibleTab]);
+  }, [canViewMembers, visibleTab]);
 
   useEffect(() => {
     if (!editorNotice.message) return undefined;
@@ -4906,6 +4958,15 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
     }));
   };
 
+  const updateAboutUpsideBlock = (id, field, value) => {
+    persistAboutContent((content) => ({
+      ...content,
+      upsideBlocks: content.upsideBlocks.map((block) => (
+        block.id === id ? { ...block, [field]: value } : block
+      )),
+    }));
+  };
+
   const handleAboutPhotoUpload = async (id, file) => {
     if (!canWriteNotes || !file || !file.type.startsWith("image/")) return;
     const storedUrl = await uploadPublicImage(file, "about-page");
@@ -5370,7 +5431,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
 
   return (
     <>
-    <Page className={isEboard ? "max-w-[98rem] py-3 md:py-4" : ""}>
+    <Page className={isEboard ? "max-w-[118rem] py-3 md:py-4" : ""}>
       <div className="mb-3 border-b-4 border-[#CC0000] bg-white px-4 py-3 shadow-[0_16px_45px_rgba(45,41,38,0.08)] md:px-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0">
@@ -5498,7 +5559,7 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             </button>
           </>
         )}
-        {canManageMembers && (
+        {canViewMembers && (
           <button
             type="button"
             onClick={() => setActiveTab("members")}
@@ -6001,13 +6062,17 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
         <MembershipRequestsPanel auth={auth} onRequestConfirmation={onRequestConfirmation} />
       )}
 
-      {visibleTab === "members" && canManageMembers && (
+      {visibleTab === "members" && canViewMembers && (
         <Card className="p-5">
           <div className="flex flex-col gap-2 border-b-4 border-[#CC0000] pb-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <Eyebrow>{isAdmin ? "Administrator" : "Member Manager"}</Eyebrow>
+              <Eyebrow>{canManageMembers ? (isAdmin ? "Administrator" : "Member Manager") : "Read Only"}</Eyebrow>
               <h2 className="mt-2 text-3xl font-black text-[#2D2926]">Member Accounts</h2>
-              <p className="mt-2 text-sm leading-6 text-[#5b5450]">Change account status between member and e-board, or revoke membership access.</p>
+              <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                {canManageMembers
+                  ? "Change account status between member and e-board, or revoke membership access."
+                  : "View approved member accounts. E-board users cannot edit names, roles, status, or account access from this page."}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-black uppercase tracking-[0.08em] text-[#6d6560]">{memberAccounts.length} accounts</p>
@@ -6030,13 +6095,13 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                   <th className="px-4 py-3 font-black">Email</th>
                   <th className="px-4 py-3 font-black">Status</th>
                   <th className="px-4 py-3 font-black">Role</th>
-                  <th className="w-64 px-4 py-3 font-black">Action</th>
+                  {canManageMembers && <th className="w-64 px-4 py-3 font-black">Action</th>}
                 </tr>
               </thead>
               <tbody>
                 {memberAccounts.length === 0 && (
                   <tr>
-                    <td colSpan="5" className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] px-4 py-6 text-center font-bold text-[#5b5450]">
+                    <td colSpan={canManageMembers ? 5 : 4} className="border border-dashed border-[#ded8d2] bg-[#f3f4f4] px-4 py-6 text-center font-bold text-[#5b5450]">
                       No Accepted Member Accounts Yet.
                     </td>
                   </tr>
@@ -6062,46 +6127,54 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <select
-                        value={MEMBER_ACCOUNT_ROLES.includes(account.role) ? account.role : "member"}
-                        onChange={(event) => updateMemberStatus(account.id, event.target.value)}
-                        disabled={account.status === "revoked"}
-                        className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 font-bold uppercase tracking-[0.08em] text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-50"
-                      >
-                        <option value="member">Member</option>
-                        <option value="eboard">E-Board</option>
-                      </select>
-                    </td>
-                    <td className="w-64 px-4 py-3">
-                      <div className="flex w-full items-center justify-between gap-4">
-                        {account.status === "revoked" ? (
-                          <button
-                            type="button"
-                            onClick={() => unrevokeMember(account.id)}
-                            className="inline-flex items-center gap-2 bg-[#2D2926] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#48423e]"
-                          >
-                            Unrevoke
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => revokeMember(account.id)}
-                            className="inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#a90000]"
-                          >
-                            Revoke
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => deleteMember(account)}
-                          className="grid h-9 w-9 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
-                          aria-label={`Delete ${account.name || account.email}`}
-                          title="Delete member"
+                      {canManageMembers ? (
+                        <select
+                          value={MEMBER_ACCOUNT_ROLES.includes(account.role) ? account.role : "member"}
+                          onChange={(event) => updateMemberStatus(account.id, event.target.value)}
+                          disabled={account.status === "revoked"}
+                          className="border border-[#ded8d2] bg-[#f3f4f4] px-3 py-2 font-bold uppercase tracking-[0.08em] text-[#CC0000] outline-none focus:border-[#CC0000] disabled:opacity-50"
                         >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                          <option value="member">Member</option>
+                          <option value="eboard">E-Board</option>
+                        </select>
+                      ) : (
+                        <span className="font-black uppercase tracking-[0.08em] text-[#CC0000]">
+                          {account.role === "eboard" ? "E-Board" : "Member"}
+                        </span>
+                      )}
                     </td>
+                    {canManageMembers && (
+                      <td className="w-64 px-4 py-3">
+                        <div className="flex w-full items-center justify-between gap-4">
+                          {account.status === "revoked" ? (
+                            <button
+                              type="button"
+                              onClick={() => unrevokeMember(account.id)}
+                              className="inline-flex items-center gap-2 bg-[#2D2926] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#48423e]"
+                            >
+                              Unrevoke
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => revokeMember(account.id)}
+                              className="inline-flex items-center gap-2 bg-[#CC0000] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#a90000]"
+                            >
+                              Revoke
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => deleteMember(account)}
+                            className="grid h-9 w-9 place-items-center border border-[#ded8d2] bg-white text-[#2D2926] transition hover:border-[#CC0000] hover:bg-[#fff1f1] hover:text-[#CC0000]"
+                            aria-label={`Delete ${account.name || account.email}`}
+                            title="Delete member"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -6513,91 +6586,220 @@ function PrivateHubPage({ auth, trophiesContent, meetingsContent, noviceContent,
             title={renderBudsiteEditorSectionTitle("about")}
           >
             <div className="grid gap-5">
-              <Card className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
-                <div className="border-b-4 border-[#CC0000] pb-4">
-                  <div className="flex items-center gap-3">
-                    <ImageIcon className="text-[#CC0000]" />
-                    <Eyebrow>Budsite Editor</Eyebrow>
+              <Card ref={aboutPhotosEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
+                <button
+                  type="button"
+                  onClick={() => setAboutPhotosEditorOpen((current) => !current)}
+                  className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+                  aria-expanded={aboutPhotosEditorOpen}
+                >
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <ImageIcon className="text-[#CC0000]" />
+                      <Eyebrow>Budsite Editor</Eyebrow>
+                    </div>
+                    <h2 className="mt-2 text-2xl font-black text-[#2D2926]">About Page Photos</h2>
+                    <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                      Edit the right-side photo collage images, alt text, and hover captions.
+                    </p>
                   </div>
-                  <h2 className="mt-2 text-2xl font-black text-[#2D2926]">About Page Photos and Quote</h2>
-                  <p className="mt-2 text-sm leading-6 text-[#5b5450]">
-                    Edit the right-side photo collage hover captions and the red testimonial quote block.
-                  </p>
-                </div>
+                  <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                    {aboutPhotosEditorOpen ? "Close Photos" : "Open Photos"} <ChevronDown size={16} className={`transition ${aboutPhotosEditorOpen ? "rotate-180" : ""}`} />
+                  </span>
+                </button>
 
-                <fieldset disabled={!canWriteNotes} className="mt-5 grid gap-5 disabled:opacity-55">
-                  <div className="grid gap-4">
-                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Photo Hover Captions</p>
-                    {draftAboutContent.photos.map((photo, index) => (
-                      <div key={photo.id} className="grid gap-4 border border-[#ded8d2] bg-[#f3f4f4] p-3 lg:grid-cols-[12rem_1fr]">
-                        <div className="grid gap-2">
-                          <div className="aspect-[4/3] overflow-hidden bg-[#2D2926]">
-                            {photo.src ? (
-                              <img src={photo.src} alt={photo.alt || "About page preview"} className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="grid h-full place-items-center text-sm font-black uppercase tracking-[0.08em] text-white">No photo</div>
-                            )}
+                <AnimatePresence initial={false}>
+                  {aboutPhotosEditorOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <fieldset disabled={!canWriteNotes} className="mt-5 grid gap-4 disabled:opacity-55">
+                        {draftAboutContent.photos.map((photo, index) => (
+                          <div key={photo.id} className="grid gap-4 border border-[#ded8d2] bg-[#f3f4f4] p-3 lg:grid-cols-[12rem_1fr]">
+                            <div className="grid gap-2">
+                              <div className="aspect-[4/3] overflow-hidden bg-[#2D2926]">
+                                {photo.src ? (
+                                  <img src={photo.src} alt={photo.alt || "About page preview"} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="grid h-full place-items-center text-sm font-black uppercase tracking-[0.08em] text-white">No photo</div>
+                                )}
+                              </div>
+                              <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
+                                <Upload size={14} /> Upload Photo
+                                <input type="file" accept="image/*" onChange={(event) => handleAboutPhotoUpload(photo.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
+                              </label>
+                            </div>
+                            <div className="grid gap-3">
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                  Image URL
+                                  <input
+                                    value={photo.src}
+                                    onChange={(event) => updateAboutPhoto(photo.id, "src", event.target.value)}
+                                    className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                  />
+                                </label>
+                                <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                  Alt Text
+                                  <input
+                                    value={photo.alt}
+                                    onChange={(event) => updateAboutPhoto(photo.id, "alt", event.target.value)}
+                                    placeholder={`About photo ${index + 1}`}
+                                    className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                  />
+                                </label>
+                              </div>
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Hover Caption
+                                <textarea
+                                  value={photo.caption}
+                                  onChange={(event) => updateAboutPhoto(photo.id, "caption", event.target.value)}
+                                  rows={3}
+                                  className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                            </div>
                           </div>
-                          <label className="inline-flex cursor-pointer items-center justify-center gap-2 border border-[#ded8d2] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] transition hover:border-[#CC0000] hover:text-[#CC0000]">
-                            <Upload size={14} /> Upload Photo
-                            <input type="file" accept="image/*" onChange={(event) => handleAboutPhotoUpload(photo.id, event.target.files?.[0])} disabled={!canWriteNotes} className="sr-only" />
-                          </label>
-                        </div>
-                        <div className="grid gap-3">
-                          <div className="grid gap-3 md:grid-cols-2">
+                        ))}
+                      </fieldset>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+
+              <Card ref={aboutUpsideEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
+                <button
+                  type="button"
+                  onClick={() => setAboutUpsideEditorOpen((current) => !current)}
+                  className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+                  aria-expanded={aboutUpsideEditorOpen}
+                >
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="text-[#CC0000]" />
+                      <Eyebrow>Budsite Editor</Eyebrow>
+                    </div>
+                    <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Practical Upside Blocks</h2>
+                    <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                      Edit the six cards in the Practical Upside of BUDS section.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                    {aboutUpsideEditorOpen ? "Close Blocks" : "Open Blocks"} <ChevronDown size={16} className={`transition ${aboutUpsideEditorOpen ? "rotate-180" : ""}`} />
+                  </span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {aboutUpsideEditorOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <fieldset disabled={!canWriteNotes} className="mt-5 grid gap-3 disabled:opacity-55">
+                        {draftAboutContent.upsideBlocks.map((block) => (
+                          <div key={block.id} className="grid gap-3 border border-[#ded8d2] bg-[#f3f4f4] p-3">
+                            <div className="grid gap-3 md:grid-cols-[12rem_1fr]">
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Icon
+                                <select
+                                  value={block.icon}
+                                  onChange={(event) => updateAboutUpsideBlock(block.id, "icon", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-bold normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                >
+                                  <option value="users">Users</option>
+                                  <option value="trophy">Trophy</option>
+                                  <option value="medal">Medal</option>
+                                  <option value="map-pin">Map Pin</option>
+                                  <option value="sparkles">Sparkles</option>
+                                  <option value="handshake">Handshake</option>
+                                </select>
+                              </label>
+                              <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                                Title
+                                <input
+                                  value={block.title}
+                                  onChange={(event) => updateAboutUpsideBlock(block.id, "title", event.target.value)}
+                                  className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                                />
+                              </label>
+                            </div>
                             <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                              Image URL
-                              <input
-                                value={photo.src}
-                                onChange={(event) => updateAboutPhoto(photo.id, "src", event.target.value)}
-                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                              Body
+                              <textarea
+                                value={block.copy}
+                                onChange={(event) => updateAboutUpsideBlock(block.id, "copy", event.target.value)}
+                                rows={3}
+                                className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
                               />
                             </label>
-                            <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                              Alt Text
-                              <input
-                                value={photo.alt}
-                                onChange={(event) => updateAboutPhoto(photo.id, "alt", event.target.value)}
-                                placeholder={`About photo ${index + 1}`}
-                                className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                              />
-                            </label>
                           </div>
-                          <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                            Hover Caption
-                            <textarea
-                              value={photo.caption}
-                              onChange={(event) => updateAboutPhoto(photo.id, "caption", event.target.value)}
-                              rows={3}
-                              className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        ))}
+                      </fieldset>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
 
-                  <div className="grid gap-3 border-t border-[#ded8d2] pt-5">
-                    <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[#CC0000]">Quote Block</p>
-                    <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                      Quote
-                      <textarea
-                        value={draftAboutContent.quote}
-                        onChange={(event) => persistAboutContent((content) => ({ ...content, quote: event.target.value }))}
-                        rows={3}
-                        className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                      />
-                    </label>
-                    <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
-                      Attribution
-                      <input
-                        value={draftAboutContent.quoteAttribution}
-                        onChange={(event) => persistAboutContent((content) => ({ ...content, quoteAttribution: event.target.value }))}
-                        className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
-                      />
-                    </label>
+              <Card ref={aboutQuoteEditorCardRef} className="budsite-editor-card flex min-h-0 flex-col p-4 sm:p-5">
+                <button
+                  type="button"
+                  onClick={() => setAboutQuoteEditorOpen((current) => !current)}
+                  className="flex w-full flex-col gap-3 border-b-4 border-[#CC0000] pb-4 text-left md:flex-row md:items-end md:justify-between"
+                  aria-expanded={aboutQuoteEditorOpen}
+                >
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <Heart className="text-[#CC0000]" />
+                      <Eyebrow>Budsite Editor</Eyebrow>
+                    </div>
+                    <h2 className="mt-2 text-2xl font-black text-[#2D2926]">Quote Block</h2>
+                    <p className="mt-2 text-sm leading-6 text-[#5b5450]">
+                      Edit the red testimonial quote on the About page.
+                    </p>
                   </div>
-                </fieldset>
+                  <span className="inline-flex items-center gap-2 self-start border border-[#ded8d2] bg-[#f3f4f4] px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926] md:self-auto">
+                    {aboutQuoteEditorOpen ? "Close Quote" : "Open Quote"} <ChevronDown size={16} className={`transition ${aboutQuoteEditorOpen ? "rotate-180" : ""}`} />
+                  </span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {aboutQuoteEditorOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <fieldset disabled={!canWriteNotes} className="mt-5 grid gap-3 disabled:opacity-55">
+                        <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Quote
+                          <textarea
+                            value={draftAboutContent.quote}
+                            onChange={(event) => persistAboutContent((content) => ({ ...content, quote: event.target.value }))}
+                            rows={3}
+                            className="resize-none border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                        <label className="grid gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#2D2926]">
+                          Attribution
+                          <input
+                            value={draftAboutContent.quoteAttribution}
+                            onChange={(event) => persistAboutContent((content) => ({ ...content, quoteAttribution: event.target.value }))}
+                            className="border border-[#ded8d2] bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal outline-none focus:border-[#CC0000]"
+                          />
+                        </label>
+                      </fieldset>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </Card>
             </div>
           </SmoothDetails>
